@@ -1,4 +1,4 @@
-name: template_pure_win64
+name: axa_dev_win
 channels:
   - conda-forge
   - defaults
@@ -136,3 +136,7 @@ dependencies:
   - xz=5.2.6=h8d14728_0
   - yaml=0.2.5=h8ffe710_2
   - zipp=3.19.2=pyhd8ed1ab_0
+  - pip:
+      - ataraxis-automation==1.0.0
+      - tox-uv==1.9.0
+      - uv==0.2.13

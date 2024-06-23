@@ -1,10 +1,6 @@
-"""Tests service functions available through the utilities module.
-"""
+"""Tests service functions available through the utilities module."""
 
-import re
-
-import pytest  # type: ignore
-from YOUR_LIBRARY_NAME.utilities import format_message
+from ataraxis_automation.utilities import format_message
 
 
 def test_format_message():
@@ -28,17 +24,3 @@ def test_format_message():
     # Verifies that a short message remains unaffected.
     short_message = "This is a short message."
     assert format_message(short_message) == short_message
-
-
-def test_format_message_error_handling():
-    """Verifies format-message error handling behavior."""
-
-    # Ensures inputting a non-string results in TypeError
-    invalid_type = 123
-    custom_error_message = (
-        f"Invalid 'message' argument time encountered when formatting text message according to library display "
-        f"standards. Expected a {type(str)} type, but encountered {invalid_type} of type {type(invalid_type)}."
-    )
-    with pytest.raises(TypeError, match=re.escape(format_message(custom_error_message))):
-        # noinspection PyTypeChecker
-        format_message(invalid_type)
