@@ -174,7 +174,8 @@ This project comes with a fully configured set of automation pipelines implement
 Check tox [ini](tox.ini) file for details about available pipelines and their implementation. __*Note*__, automation 
 pipelines for this specific project list it as a circular dependency in some use cases, which is not ideal, but works.
 
-**Note!** All commits to this library have to successfully complete the ```tox``` task before being uploaded.
+**Note!** All commits to this library have to successfully complete the ```tox``` task before being uploaded. To 
+minimize the runtime task for this task, use ```tox --parallel```.
 
 ### Environments
 
