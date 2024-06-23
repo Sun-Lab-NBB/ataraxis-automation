@@ -4,6 +4,7 @@ A Python library that provides CLI scripts and utility functions used by Sun Lab
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-automation)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-automation)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![type-checked: mypy](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square&logo=python)
 ![PyPI - License](https://img.shields.io/pypi/l/ataraxis-automation)
@@ -70,16 +71,14 @@ ___
 
 ### PIP
 
-Use the following command to install the library using PIP:
-```pip install ataraxis-automation```
+Use the following command to install the library using PIP: ```pip install ataraxis-automation```
 
 ### Conda / Mamba
 
 **_Note. Due to conda-forge contributing process being more nuanced than pip uploads, conda versions may lag behind
 pip and source code distributions._**
 
-Use the following command to install the library using Conda or Mamba:
-```conda install ataraxis-automation```
+Use the following command to install the library using Conda or Mamba: ```conda install ataraxis-automation```
 ___
 
 ## Usage
@@ -163,19 +162,21 @@ of the automation pipeline, but is worth mentioning.
 
 In addition to installing the required python packages, separately install the following dependencies:
 
-- [Python](https://www.python.org/downloads/) distributions, one for each version that you intend to support. Currently,
-  this library supports version 3.10 and above. The easiest way to get tox to work as intended is to have separate
-  python distributions, but using [pyenv](https://github.com/pyenv/pyenv) is a good alternative too. This is needed for
-  the 'test' task to work as intended.
+1. [Python](https://www.python.org/downloads/) distributions, one for each version that you intend to support. 
+  Currently, this library supports version 3.10 and above. The easiest way to get tox to work as intended is to have 
+  separate python distributions, but using [pyenv](https://github.com/pyenv/pyenv) is a good alternative too. 
+  This is needed for the 'test' task to work as intended.
+
 
 ### Development Automation
+
 This project comes with a fully configured set of automation pipelines implemented using 
 [tox](https://tox.wiki/en/latest/config.html#provision_tox_env). 
-Check tox [ini](tox.ini) file for details about available pipelines and their implementation. __*Note*__, automation 
+Check [tox.ini file](tox.ini) for details about available pipelines and their implementation. __*Note*__, automation 
 pipelines for this specific project list it as a circular dependency in some use cases, which is not ideal, but works.
 
-**Note!** All commits to this library have to successfully complete the ```tox``` task before being uploaded. To 
-minimize the runtime task for this task, use ```tox --parallel```.
+**Note!** All commits to this library have to successfully complete the ```tox``` task before being pushed to GitHub. 
+To minimize the runtime task for this task, use ```tox --parallel```.
 
 ### Environments
 

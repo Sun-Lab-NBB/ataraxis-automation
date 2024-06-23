@@ -120,6 +120,7 @@ dependencies:
   - tox=4.15.1=pyhd8ed1ab_0
   - trove-classifiers=2024.5.22=pyhd8ed1ab_0
   - twine=5.1.0=pyhd8ed1ab_0
+  - types-pyyaml=6.0.12.20240311=pyhd8ed1ab_0
   - typing-extensions=4.12.2=hd8ed1ab_0
   - typing_extensions=4.12.2=pyha770c72_0
   - tzdata=2024a=h0c530f3_0

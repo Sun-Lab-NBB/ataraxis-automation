@@ -130,3 +130,6 @@
 2024-06-21 15:18:09  (rev 1)
     +uv-0.2.13 (conda-forge/osx-arm64)
 
+2024-06-23 19:36:57  (rev 2)
+    +types-pyyaml-6.0.12.20240311 (conda-forge/noarch)
+
