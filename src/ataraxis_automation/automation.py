@@ -243,11 +243,18 @@ def resolve_library_root() -> str:
         if len(os.listdir("src")) > 1:
             click.echo(error_message, err=True)
             raise click.Abort()
-        candidate_path: str = os.path.join(src_path, os.listdir(src_path)[0])
-        if not os.path.isdir(candidate_path):
+
+        directories: set[str] = set()
+        for candidate_name in os.listdir(src_path):
+            candidate_path: str = os.path.join(src_path, candidate_name)
+            if os.path.isdir(candidate_path):
+                directories.add(candidate_path)
+
+        if len(directories) != 1:
             click.echo(error_message, err=True)
             raise click.Abort()
-        if "__init__.py" not in os.listdir(candidate_path):
+
+        if "__init__.py" not in os.listdir(directories.pop()):
             click.echo(error_message, err=True)
             raise click.Abort()
 
