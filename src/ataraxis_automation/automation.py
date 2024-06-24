@@ -240,12 +240,11 @@ def resolve_library_root() -> str:
     # project and, in this case, it is expected that there is a single library-directory under /src that is the
     # root.
     if "__init__.py" not in os.listdir(src_path):
-        
+
         # Ensures there is a single directory at the level of the /src
         directories: set[str] = set()
         for candidate_name in os.listdir(src_path):
             candidate_path: str = os.path.join(src_path, candidate_name)
-            print(candidate_path)
             if os.path.isdir(candidate_path):
                 directories.add(candidate_path)
         if len(directories) != 1:
@@ -254,7 +253,6 @@ def resolve_library_root() -> str:
 
         # Ensures the single directory has the init.py
         candidate_path = directories.pop()
-        print(candidate_path)
         if "__init__.py" not in os.listdir(candidate_path):
             click.echo(error_message, err=True)
             raise click.Abort()
