@@ -774,6 +774,11 @@ def test_resolve_environment_commands(
     monkeypatch.setattr(aa, "resolve_pip_engine", lambda: pip_engine)
     monkeypatch.setattr(sys, "platform", platform)
 
+    # Create a mock .yml file
+    yml_path = project_dir / f"envs/test_env{os_suffix}.yml"
+    yml_path.parent.mkdir(parents=True, exist_ok=True)
+    yml_path.touch()
+
     # Runs the tested command
     result = aa.resolve_environment_commands(project_dir, "test_env", python_version=python_version)
 
@@ -825,13 +830,22 @@ def test_resolve_environment_commands(
         assert "tail -r | tail -n +2 | tail -r" in result.export_yml_command
 
     # Verifies that pip-engine-dependent additional parameters match expectation.
-    if pip_engine == "uv pip" and len(dependencies[1]) != 0:
-        assert "uv pip install . --no-cache" in result.install_project_command
-        assert "uv pip install pip_dep --compile-bytecode" in result.pip_dependencies_command
-    elif len(dependencies[1]) != 0:
-        assert "pip install pip_dep --compile" in result.pip_dependencies_command
+    if pip_engine == "uv pip":
+        assert f"--python={python_version}" in result.uninstall_project_command
+        assert f"--no-cache --compile-bytecode --python={python_version}" in result.install_project_command
+        if len(dependencies[1]) != 0:
+            assert f"--compile-bytecode --python={python_version}" in result.pip_dependencies_command
     else:
-        assert result.pip_dependencies_command is None
+        assert "--yes" in result.uninstall_project_command
+        assert "--compile" in result.install_project_command
+        if len(dependencies[1]) != 0:
+            assert "--compile" in result.pip_dependencies_command
+        else:
+            assert result.pip_dependencies_command is None
+
+    # Check for new yml-related commands
+    assert result.create_from_yml_command == f"{conda_engine} env create -f {yml_path} --yes"
+    assert result.update_command == f"{conda_engine} env update -n test_env{os_suffix} -f {yml_path} --prune"
 
 
 def test_generate_typed_marker(tmp_path) -> None:
