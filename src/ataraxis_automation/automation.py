@@ -1010,7 +1010,7 @@ def resolve_environment_commands(
         project_root: Path, environment_name: str, python_version: str = "3.12"
 ) -> EnvironmentCommands:
     """Generates the list of conda and pip commands used to manipulate the project- and os-specific conda environment
-        and packages it into EnvironmentCommands class.
+    and packages it into EnvironmentCommands class.
 
     This function is a prerequisite for all environment-related cli commands, as it is used to resolve and generate
     all necessary commands in a project-, os- and engine(backend)-specific fashion.
@@ -1188,7 +1188,7 @@ def create_conda_environment(commands: EnvironmentCommands) -> None:
     If the environment to be created already exists, this function will first remove the environment and then create
     it from scratch. The creation process includes installing conda and pip dependencies, if any are provided.
 
-    Note:
+    Notes:
         This function DOES NOT install the project. This is intentional. Use the dedicated cli command to install and
         uninstall the project as needed.
 
@@ -1322,7 +1322,7 @@ def process_typed_markers() -> None:
 @cli.command()
 def process_stubs() -> None:
     """Distributes the stub files from the '/stubs' directory to the appropriate level of the '/src' or
-     'src/library' directory (depending on the type of the processed project).
+    'src/library' directory (depending on the type of the processed project).
 
     Notes:
         This command is intended to be called after the /stubs directory has been generated using the appropriate tox
@@ -1426,7 +1426,7 @@ def generate_recipe_folder() -> None:
 )
 def acquire_pypi_token(replace_token: bool) -> None:
     """Ensures that a validly-formatted PyPI API token is available from the .pypirc file stored in the root directory
-        of the project.
+    of the project.
 
     This method is intended to be used before tox 'upload' task to ensure that twine is able to access the PyPI API
     token. If the toke is available from the '.pypirc' file and appears valid, it is used. If the token or file are
@@ -1919,14 +1919,14 @@ def export_env(environment_name: str) -> None:
 def rename_environments(new_name: str) -> None:
     """Iteratively renames environment files inside the 'envs' directory to use the provided name as the base-name.
 
-    Args:
-        new_name: The new 'base' name to use for the .yml / spec.txt files and the 'name' field inside the .yml file.
-
     Notes:
         This function does not rename any existing conda environments. This behavior is intentional. It is advised to
         first export the environment via 'export-env' ('tox -e export'). Then to use 'remove-env' ('tox -e remove') to
         remove the existing environment, followed by this function to rename the .yml and spec.txt files. Finally,
         re-import the environment via 'import-env' ('tox -e import').
+
+    Args:
+        new_name: The new 'base' name to use for the .yml / spec.txt files and the 'name' field inside the .yml file.
 
     """
     # Connects to the Console instance.
