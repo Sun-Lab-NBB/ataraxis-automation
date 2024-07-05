@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 # Project metdata section. Provides the genral ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "1.1.0"
+version = "2.0.0"
 description = "Provides CLI scripts and utility functions used by Sun Lab automation pipelines."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -48,6 +48,7 @@ dependencies = [
     "pyyaml>=6",
     "appdirs>=1",
     "ataraxis-base-utilities>=1",
+    "tomli>=2",
 ]
 
 [project.urls]
@@ -58,13 +59,14 @@ Documentation = "https://ataraxis-automation-api-docs.netlify.app/"
 # required to run the library is found inside one of these specifications.
 [project.optional-dependencies]
 
-# Run dependencies know to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
+# Run dependencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
 # This specification is used by ataraxis-automation to resolve as many project dependencies with conda over pip as
 # possible.
 condarun = [
     "click>=8",
     "pyyaml>=6",
     "appdirs>=1",
+    "tomli>=2",
 ]
 
 # Depepndencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
@@ -90,7 +92,6 @@ conda = [
     # Types
     "types-pyyaml>=6",
     # Building
-    "build>=1",
     "hatchling>=1",
     # Distribution
     "twine>=5",
@@ -105,6 +106,7 @@ conda = [
 noconda = [
     # Tox and Automation
     "tox-uv>=1",
+    "build>=1",
     "ataraxis-automation>=1",
 ]
 

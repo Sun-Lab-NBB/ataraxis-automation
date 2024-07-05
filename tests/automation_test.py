@@ -1,23 +1,22 @@
 """This module stores the tests for all classes and functions available from the automation.py module."""
 
-import tempfile
-
-import pytest
 import os
-import sys
+import re
+import shutil as sh
 import subprocess
+import sys
+import tempfile
+import textwrap
+from configparser import ConfigParser
 from pathlib import Path
+from unittest.mock import Mock
+
+import click
+import pytest
+import yaml
+
 import ataraxis_automation.automation as aa
 from ataraxis_automation.automation import EnvironmentCommands
-import shutil as sh
-import re
-import textwrap
-import subprocess
-from unittest.mock import Mock, patch
-import tomllib
-from configparser import ConfigParser
-import yaml
-import click
 
 
 @pytest.fixture
@@ -136,10 +135,13 @@ def test_resolve_project_directory_error(tmp_path) -> None:
         aa.resolve_project_directory()
 
 
-@pytest.mark.parametrize("init_location, expected", [
-    ("src", "src"),
-    ("src/library", "src/library"),
-])
+@pytest.mark.parametrize(
+    "init_location, expected",
+    [
+        ("src", "src"),
+        ("src/library", "src/library"),
+    ],
+)
 def test_resolve_library_root(project_dir, init_location, expected) -> None:
     """Verifies that aa.resolve_library_root() function works as expected for src-root and library_name-root projects.
 
@@ -153,7 +155,7 @@ def test_resolve_library_root(project_dir, init_location, expected) -> None:
     aa.configure_console(verbose=False, enable_logging=False)
     init_dir = project_dir.joinpath(init_location)
     init_dir.mkdir(parents=True, exist_ok=True)
-    init_dir.joinpath('__init__.py').touch()
+    init_dir.joinpath("__init__.py").touch()
     result = aa.resolve_library_root(project_root=project_dir)
     assert result == project_dir / expected
 
@@ -183,8 +185,8 @@ def test_resolve_library_root_error(project_dir) -> None:
     library2 = project_dir.joinpath("src/library2")
     library1.mkdir(parents=True, exist_ok=True)
     library2.mkdir(parents=True, exist_ok=True)
-    library1.joinpath('__init__.py').touch()
-    library2.joinpath('__init__.py').touch()
+    library1.joinpath("__init__.py").touch()
+    library2.joinpath("__init__.py").touch()
     message: str = (
         f"Unable to resolve the path to the library root directory from the project root path {project_dir}. "
         f"Specifically, did not find an __init__.py inside the /src directory and found {2} "
@@ -210,25 +212,28 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
     project_dir: Path = aa.resolve_project_directory()
 
     # Verifies environment resolution works as expected for linux platform
-    monkeypatch.setattr(sys, 'platform', 'linux')
-    env_name, yml_path, spec_path = aa.resolve_environment_files(project_root=project_dir,
-                                                                 environment_base_name=environment_base_name)
+    monkeypatch.setattr(sys, "platform", "linux")
+    env_name, yml_path, spec_path = aa.resolve_environment_files(
+        project_root=project_dir, environment_base_name=environment_base_name
+    )
     assert env_name == f"{environment_base_name}_lin"
     assert yml_path == project_dir / "envs" / f"{environment_base_name}_lin.yml"
     assert spec_path == project_dir / "envs" / f"{environment_base_name}_lin_spec.txt"
 
     # Verifies environment resolution works as expected for windows platform
-    monkeypatch.setattr(sys, 'platform', 'win32')
-    env_name, yml_path, spec_path = aa.resolve_environment_files(project_root=project_dir,
-                                                                 environment_base_name=environment_base_name)
+    monkeypatch.setattr(sys, "platform", "win32")
+    env_name, yml_path, spec_path = aa.resolve_environment_files(
+        project_root=project_dir, environment_base_name=environment_base_name
+    )
     assert env_name == f"{environment_base_name}_win"
     assert yml_path == project_dir / "envs" / f"{environment_base_name}_win.yml"
     assert spec_path == project_dir / "envs" / f"{environment_base_name}_win_spec.txt"
 
     # Verifies environment resolution works as expected for darwin (OSx ARM64) platform
-    monkeypatch.setattr(sys, 'platform', 'darwin')
-    env_name, yml_path, spec_path = aa.resolve_environment_files(project_root=project_dir,
-                                                                 environment_base_name=environment_base_name)
+    monkeypatch.setattr(sys, "platform", "darwin")
+    env_name, yml_path, spec_path = aa.resolve_environment_files(
+        project_root=project_dir, environment_base_name=environment_base_name
+    )
     assert env_name == f"{environment_base_name}_osx"
     assert yml_path == project_dir / "envs" / f"{environment_base_name}_osx.yml"
     assert spec_path == project_dir / "envs" / f"{environment_base_name}_osx_spec.txt"
@@ -243,12 +248,9 @@ def test_resolve_environment_files_error(project_dir, monkeypatch) -> None:
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
     aa.configure_console(verbose=False, enable_logging=False)
-    supported_platforms: dict[str, str] = {"win32": "_win",
-                                           "linux": "_lin",
-                                           "darwin": "_osx"
-                                           }
-    monkeypatch.setattr(sys, 'platform', 'unsupported')
-    environment_base_name: str = 'text_env'
+    supported_platforms: dict[str, str] = {"win32": "_win", "linux": "_lin", "darwin": "_osx"}
+    monkeypatch.setattr(sys, "platform", "unsupported")
+    environment_base_name: str = "text_env"
     os.chdir(project_dir)
     message: str = (
         f"Unable to resolve the os-specific suffix to use for conda environment file(s). Unsupported host OS "
@@ -269,13 +271,13 @@ def test_resolve_conda_engine(monkeypatch) -> None:
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
-        """Returns success code for either mamba or conda command. """
-        if 'mamba --version' == args[0] or 'conda --version' in args[0]:
+        """Returns success code for either mamba or conda command."""
+        if "mamba --version" == args[0] or "conda --version" in args[0]:
             return Mock(returncode=0)
-        raise subprocess.CalledProcessError(1, 'cmd')
+        raise subprocess.CalledProcessError(1, "cmd")
 
     # Expects that when both mamba and conda commands return success codes, mamba is chosen over conda.
-    monkeypatch.setattr(subprocess, 'run', mock_subprocess_run)
+    monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
     result = aa.resolve_conda_engine()
     assert result == "mamba"
 
@@ -291,12 +293,12 @@ def test_resolve_conda_engine_fallback(monkeypatch) -> None:
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
         """Ensures 'conda --version' returns success code 0."""
-        if 'conda --version' == args[0]:
+        if "conda --version" == args[0]:
             return Mock(returncode=0)
-        raise subprocess.CalledProcessError(1, 'cmd')
+        raise subprocess.CalledProcessError(1, "cmd")
 
     # When mamba is not available, expects that conda is selected as the conda engine.
-    monkeypatch.setattr(subprocess, 'run', mock_subprocess_run)
+    monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
     result = aa.resolve_conda_engine()
     assert result == "conda"
 
@@ -315,13 +317,15 @@ def test_resolve_conda_engine_error(monkeypatch) -> None:
 
         This makes it fail for both mamba and conda.
         """
-        raise subprocess.CalledProcessError(1, 'cmd')
+        raise subprocess.CalledProcessError(1, "cmd")
 
     # When neither conda nor mamba is available, expects a RuntimeError
-    monkeypatch.setattr(subprocess, 'run', mock_run)
-    message: str = (f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable"
-                    f"to interface with either conda or mamba. Is conda or supported equivalent installed, initialized "
-                    f"and added to Path?")
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    message: str = (
+        f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable"
+        f"to interface with either conda or mamba. Is conda or supported equivalent installed, initialized "
+        f"and added to Path?"
+    )
     with pytest.raises(RuntimeError, match=error_format(message)):
         aa.resolve_conda_engine()
 
@@ -337,12 +341,12 @@ def test_resolve_pip_engine(monkeypatch) -> None:
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
         """Returns success code for either uv pip or pip command."""
-        if 'uv pip --version' == args[0] or 'pip --version' == args[0]:
+        if "uv pip --version" == args[0] or "pip --version" == args[0]:
             return Mock(returncode=0)
-        raise subprocess.CalledProcessError(1, 'cmd')
+        raise subprocess.CalledProcessError(1, "cmd")
 
     # When both pip and uv are available, expects that uv is selected over pip.
-    monkeypatch.setattr(subprocess, 'run', mock_subprocess_run)
+    monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
     result = aa.resolve_pip_engine()
     assert result == "uv pip"
 
@@ -358,12 +362,12 @@ def test_resolve_pip_engine_fallback(monkeypatch) -> None:
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
         """Ensures 'pip --version' returns success code 0."""
-        if 'pip --version' == args[0]:
+        if "pip --version" == args[0]:
             return Mock(returncode=0)
-        raise subprocess.CalledProcessError(1, 'cmd')
+        raise subprocess.CalledProcessError(1, "cmd")
 
     # When uv is not available, expects that pip is selected as the pip engine.
-    monkeypatch.setattr(subprocess, 'run', mock_subprocess_run)
+    monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
     result = aa.resolve_pip_engine()
     assert result == "pip"
 
@@ -382,10 +386,10 @@ def test_resolve_pip_engine_error(monkeypatch) -> None:
 
         This makes it fail for both uv and pip.
         """
-        raise subprocess.CalledProcessError(1, 'cmd')
+        raise subprocess.CalledProcessError(1, "cmd")
 
     # When neither pip nor uv is available, expects a RuntimeError
-    monkeypatch.setattr(subprocess, 'run', mock_run)
+    monkeypatch.setattr(subprocess, "run", mock_run)
     message: str = (
         f"Unable to determine the engine to use for pip commands. Specifically, was not able to interface with any of "
         f"the supported pip-engines. Is pip, uv or supported equivalent installed in the currently active "
@@ -395,16 +399,19 @@ def test_resolve_pip_engine_error(monkeypatch) -> None:
         aa.resolve_pip_engine()
 
 
-@pytest.mark.parametrize("dependency, expected", [
-    ("package==1.0", "package"),
-    ("package>=1.0", "package"),
-    ("package<=1.0", "package"),
-    ("package<1.0", "package"),
-    ("package>1.0", "package"),
-    ("package[extra]", "package"),
-    ("package[extra]==1.0", "package"),
-    ("package", "package"),
-])
+@pytest.mark.parametrize(
+    "dependency, expected",
+    [
+        ("package==1.0", "package"),
+        ("package>=1.0", "package"),
+        ("package<=1.0", "package"),
+        ("package<1.0", "package"),
+        ("package>1.0", "package"),
+        ("package[extra]", "package"),
+        ("package[extra]==1.0", "package"),
+        ("package", "package"),
+    ],
+)
 def test_get_base_name(dependency, expected) -> None:
     """Verifies that get_base_name() function correctly strips versions and extras from dependency names.
 
@@ -425,10 +432,10 @@ def test_add_dependency() -> None:
 
     # Ensures that if the base name of the dependency (stripped of "version") is correctly added to dependencies_list,
     # unless it is already contained in processed_dependencies
-    dependencies_list, processed_dependencies = aa.add_dependency(dependency="package==1.0",
-                                                                  dependencies_list=dependencies_list,
-                                                                  processed_dependencies=processed_dependencies)
-    assert dependencies_list == ["package==1.0"]
+    dependencies_list, processed_dependencies = aa.add_dependency(
+        dependency="package==1.0", dependencies_list=dependencies_list, processed_dependencies=processed_dependencies
+    )
+    assert dependencies_list == [f'"package==1.0"']
     assert processed_dependencies == {"package"}
 
     # Verifies that packages with same base name but different 'extras' are correctly recognized as duplicates.
@@ -436,21 +443,24 @@ def test_add_dependency() -> None:
     message: str = (
         f"Unable to resolve conda-installable and pip-installable project dependencies. Found a duplicate "
         f"dependency for '{dependency}', listed in pyproject.toml. A dependency should only "
-        f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun.")
+        f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun."
+    )
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.add_dependency(dependency=dependency,
-                          dependencies_list=dependencies_list,
-                          processed_dependencies=processed_dependencies)
+        aa.add_dependency(
+            dependency=dependency, dependencies_list=dependencies_list, processed_dependencies=processed_dependencies
+        )
 
     # Verifies that packages with the same base name but different versions are correctly recognized as duplicates.
     dependency = "package>=2.0"
     message = (
         f"Unable to resolve conda-installable and pip-installable project dependencies. Found a duplicate "
         f"dependency for '{dependency}', listed in pyproject.toml. A dependency should only "
-        f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun.")
+        f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun."
+    )
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.add_dependency(dependency=dependency, dependencies_list=dependencies_list,
-                          processed_dependencies=processed_dependencies)
+        aa.add_dependency(
+            dependency=dependency, dependencies_list=dependencies_list, processed_dependencies=processed_dependencies
+        )
 
 
 def write_pyproject_toml(project_dir: Path, content: str) -> None:
@@ -513,8 +523,8 @@ requires =
 
     conda_deps, pip_deps = aa.resolve_dependencies(project_dir)
 
-    assert set(conda_deps) == {"conda_dep1[test]", "conda_dep2", "condarun_dep==3"}
-    assert set(pip_deps) == {"dep1==1.0", "dep2>=2.0", "noconda_dep<2.0.1"}
+    assert set(conda_deps) == {f'"conda_dep1[test]"', f'"conda_dep2"', f'"condarun_dep==3"'}
+    assert set(pip_deps) == {f'"dep1==1.0"', f'"dep2>=2.0"', f'"noconda_dep<2.0.1"'}
 
 
 def test_resolve_dependencies_missing_tox_dep(project_dir: Path) -> None:
@@ -552,8 +562,7 @@ requires =
         f"dependencies in tox.ini are not found in pyproject.toml: {', '.join(['missing_dep'])}. Add them to "
         f"one of the pyproject.toml dependency lists: condarun, conda or noconda."
     )
-    with pytest.raises(ValueError,
-                       match=error_format(message)):
+    with pytest.raises(ValueError, match=error_format(message)):
         aa.resolve_dependencies(project_dir)
 
 
@@ -590,9 +599,9 @@ requires =
     message: str = (
         f"Unable to resolve conda-installable and pip-installable project dependencies. Found a duplicate "
         f"dependency for 'dep1<3.0', listed in pyproject.toml. A dependency should only "
-        f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun.")
-    with pytest.raises(ValueError,
-                       match=error_format(message)):
+        f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun."
+    )
+    with pytest.raises(ValueError, match=error_format(message)):
         aa.resolve_dependencies(project_dir)
 
 
@@ -631,8 +640,8 @@ def test_resolve_dependencies_priority(project_dir, section: Path) -> None:
 
     conda_deps, pip_deps = aa.resolve_dependencies(project_dir)
 
-    assert "priority_dep" in conda_deps
-    assert "priority_dep" not in pip_deps
+    assert f'"priority_dep"' in conda_deps
+    assert f'"priority_dep"' not in pip_deps
 
 
 def test_resolve_project_name(project_dir) -> None:
@@ -704,17 +713,21 @@ def test_resolve_project_name_errors(project_dir) -> None:
         aa.resolve_project_name(project_dir)
 
 
-@pytest.mark.parametrize("scenario, os_suffix, platform, conda_engine, pip_engine, python_version, dependencies", [
-    ("standard", "_win", "win32", "conda", "pip", "3.12", (["conda_dep"], ["pip_dep"])),
-    ("linux", "_lin", "linux", "conda", "pip", "3.12", (["conda_dep"], ["pip_dep"])),
-    ("macos", "_osx", "darwin", "conda", "pip", "3.12", (["conda_dep"], ["pip_dep"])),
-    ("uv_pip", "_win", "win32", "conda", "uv pip", "3.12", (["conda_dep"], ["pip_dep"])),
-    ("mamba", "_win", "win32", "mamba", "pip", "3.12", (["conda_dep"], ["pip_dep"])),
-    ("python_311", "_win", "win32", "conda", "pip", "3.11", (["conda_dep"], ["pip_dep"])),
-    ("no_dependencies", "_win", "win32", "conda", "pip", "3.12", ([], [])),
-])
-def test_resolve_environment_commands(project_dir, monkeypatch, scenario, os_suffix, platform, conda_engine,
-                                      pip_engine, python_version, dependencies) -> None:
+@pytest.mark.parametrize(
+    "scenario, os_suffix, platform, conda_engine, pip_engine, python_version, dependencies",
+    [
+        ("standard", "_win", "win32", "conda", "pip", "3.12", (["conda_dep"], ["pip_dep"])),
+        ("linux", "_lin", "linux", "conda", "pip", "3.12", (["conda_dep"], ["pip_dep"])),
+        ("macos", "_osx", "darwin", "conda", "pip", "3.12", (["conda_dep"], ["pip_dep"])),
+        ("uv_pip", "_win", "win32", "conda", "uv pip", "3.12", (["conda_dep"], ["pip_dep"])),
+        ("mamba", "_win", "win32", "mamba", "pip", "3.12", (["conda_dep"], ["pip_dep"])),
+        ("python_311", "_win", "win32", "conda", "pip", "3.11", (["conda_dep"], ["pip_dep"])),
+        ("no_dependencies", "_win", "win32", "conda", "pip", "3.12", ([], [])),
+    ],
+)
+def test_resolve_environment_commands(
+        project_dir, monkeypatch, scenario, os_suffix, platform, conda_engine, pip_engine, python_version, dependencies
+) -> None:
     """Verifies that resolve_environment_commands() function works as expected for all supported system
     configurations.
 
@@ -748,14 +761,18 @@ def test_resolve_environment_commands(project_dir, monkeypatch, scenario, os_suf
     # is tested separately.
     # noinspection PyUnusedLocal
     def mock_resolve_environment_files(*args, **kwargs):
-        return f"test_env{os_suffix}", project_dir / f"envs/test_env{os_suffix}.yml", project_dir / f"envs/test_env{os_suffix}_spec.txt"
+        return (
+            f"test_env{os_suffix}",
+            project_dir / f"envs/test_env{os_suffix}.yml",
+            project_dir / f"envs/test_env{os_suffix}_spec.txt",
+        )
 
     # Mocks all previously tested sub-functions to return test-required information, instead of doing a proper runtime.
     monkeypatch.setattr(aa, "resolve_environment_files", mock_resolve_environment_files)
     monkeypatch.setattr(aa, "resolve_dependencies", lambda x: dependencies)
     monkeypatch.setattr(aa, "resolve_conda_engine", lambda: conda_engine)
     monkeypatch.setattr(aa, "resolve_pip_engine", lambda: pip_engine)
-    monkeypatch.setattr(sys, 'platform', platform)
+    monkeypatch.setattr(sys, "platform", platform)
 
     # Runs the tested command
     result = aa.resolve_environment_commands(project_dir, "test_env", python_version=python_version)
@@ -763,14 +780,29 @@ def test_resolve_environment_commands(project_dir, monkeypatch, scenario, os_suf
     # Verifies the returned EnvironmentCommands class instance contains the fields expected given the mocked parameters
     # and sub-function returned data.
     assert isinstance(result, EnvironmentCommands)
-    assert result.activate_command == f"conda activate test_env{os_suffix}"
-    assert result.deactivate_command == "conda deactivate"
-    assert f"{conda_engine} create -n test_env{os_suffix} python={python_version} tox uv pip --yes" in result.create_command
+
+    # Check conda initialization and activation
+    if platform.startswith("win"):
+        assert "call conda.bat" in result.activate_command
+        assert "call conda.bat" in result.deactivate_command
+    else:
+        assert ". $(conda info --base)/etc/profile.d/conda.sh" in result.activate_command
+        assert ". $(conda info --base)/etc/profile.d/conda.sh" in result.deactivate_command
+    assert f"conda activate test_env{os_suffix}" in result.activate_command
+    assert f"conda deactivate" in result.deactivate_command
+    assert (
+            f"{conda_engine} create -n test_env{os_suffix} python={python_version} tox uv pip --yes"
+            in result.create_command
+    )
+    assert f"{conda_engine} remove -n test_env{os_suffix} --all --yes" in result.remove_command
     assert result.environment_name == f"test_env{os_suffix}"
 
     # When there are no conda or pip dependencies, the corresponding command is actually set to None
     if len(dependencies[0]) != 0:
-        assert f"{conda_engine} install {' '.join(dependencies[0])} --yes" in result.conda_dependencies_command
+        assert (
+                f"{conda_engine} install -n test_env{os_suffix} {' '.join(dependencies[0])} --yes"
+                in result.conda_dependencies_command
+        )
     else:
         assert result.conda_dependencies_command is None
     if len(dependencies[1]) != 0:
@@ -785,19 +817,19 @@ def test_resolve_environment_commands(project_dir, monkeypatch, scenario, os_suf
     assert "pip uninstall test-project" in result.uninstall_project_command
 
     # Verifies that OS-specific returned parameters match expectation.
-    if os_suffix == "_win":
+    if platform == "win32":
         assert "findstr -v" in result.export_yml_command
-    elif os_suffix == "_lin":
+    elif platform == "linux":
         assert "head -n -1" in result.export_yml_command
-    elif os_suffix == "_osx":
+    elif platform == "darwin":
         assert "tail -r | tail -n +2 | tail -r" in result.export_yml_command
 
     # Verifies that pip-engine-dependent additional parameters match expectation.
     if pip_engine == "uv pip" and len(dependencies[1]) != 0:
-        assert "uv pip install . -- no-cache" in result.install_project_command
-        assert "uv pip install pip_dep -- compile-bytecode" in result.pip_dependencies_command
+        assert "uv pip install . --no-cache" in result.install_project_command
+        assert "uv pip install pip_dep --compile-bytecode" in result.pip_dependencies_command
     elif len(dependencies[1]) != 0:
-        assert "pip install pip_dep -- compile" in result.pip_dependencies_command
+        assert "pip install pip_dep --compile" in result.pip_dependencies_command
     else:
         assert result.pip_dependencies_command is None
 
@@ -942,49 +974,25 @@ def test_move_stubs_error(project_dir) -> None:
     assert not list(library_root.rglob("*.pyi"))
 
 
-@pytest.mark.parametrize("config, expected_result", [
-    # Valid configuration
-    ({
-         'pypi': {
-             'username': '__token__',
-             'password': 'pypi-faketoken1234567890abcdef'
-         }
-     }, True),
-    # Missing pypi section
-    ({
-         'distutils': {
-             'index-servers': 'pypi'
-         }
-     }, False),
-    # Missing username
-    ({
-         'pypi': {
-             'password': 'pypi-faketoken1234567890abcdef'
-         }
-     }, False),
-    # Missing password
-    ({
-         'pypi': {
-             'username': '__token__'
-         }
-     }, False),
-    # Incorrect username
-    ({
-         'pypi': {
-             'username': 'not_token',
-             'password': 'pypi-faketoken1234567890abcdef'
-         }
-     }, False),
-    # Incorrect password format
-    ({
-         'pypi': {
-             'username': '__token__',
-             'password': 'not-pypi-faketoken1234567890abcdef'
-         }
-     }, False),
-    # Empty file
-    ({}, False)
-])
+@pytest.mark.parametrize(
+    "config, expected_result",
+    [
+        # Valid configuration
+        ({"pypi": {"username": "__token__", "password": "pypi-faketoken1234567890abcdef"}}, True),
+        # Missing pypi section
+        ({"distutils": {"index-servers": "pypi"}}, False),
+        # Missing username
+        ({"pypi": {"password": "pypi-faketoken1234567890abcdef"}}, False),
+        # Missing password
+        ({"pypi": {"username": "__token__"}}, False),
+        # Incorrect username
+        ({"pypi": {"username": "not_token", "password": "pypi-faketoken1234567890abcdef"}}, False),
+        # Incorrect password format
+        ({"pypi": {"username": "__token__", "password": "not-pypi-faketoken1234567890abcdef"}}, False),
+        # Empty file
+        ({}, False),
+    ],
+)
 def test_verify_pypirc(tmp_path, config, expected_result):
     """Verifies the functioning of the verify_pypirc() function across all supported pypirc file layouts.
 
@@ -1002,7 +1010,7 @@ def test_verify_pypirc(tmp_path, config, expected_result):
     pypirc_path = tmp_path / ".pypirc"
     config_parser = ConfigParser()
     config_parser.read_dict(config)
-    with pypirc_path.open('w') as f:
+    with pypirc_path.open("w") as f:
         config_parser.write(f)
 
     # Runs the verify_pypirc function
@@ -1144,21 +1152,21 @@ def test_replace_markers_in_file(tmp_path) -> None:
     # Creates a temporary file with markers
     file_path = tmp_path.joinpath("test_file.txt")
     initial_content = "Hello, {{NAME}}! Welcome to {{PLACE}}. Your ID is {{ID}}."
-    file_path.write_text(initial_content, encoding='utf-8')
+    file_path.write_text(initial_content, encoding="utf-8")
 
     # Defines markers to replace
     markers = {
         "{{NAME}}": "John Doe",
         "{{PLACE}}": "Pythonville",
         "{{ID}}": "12345",
-        "{{UNUSED}}": "This marker is not in the file"
+        "{{UNUSED}}": "This marker is not in the file",
     }
 
     # Runs the replace_markers_in_file function
     modification_count = aa.replace_markers_in_file(file_path, markers)
 
     # Reads the modified file content
-    modified_content = file_path.read_text(encoding='utf-8')
+    modified_content = file_path.read_text(encoding="utf-8")
 
     # Verifies the modified file matches expectations
     assert modification_count == 3
@@ -1174,22 +1182,25 @@ def test_replace_markers_in_file(tmp_path) -> None:
     assert no_change_count == 0
 
     # Verifies file content hasn't changed after no modifications
-    unchanged_content = file_path.read_text(encoding='utf-8')
+    unchanged_content = file_path.read_text(encoding="utf-8")
     assert unchanged_content == modified_content
 
 
-@pytest.mark.parametrize("library_name, is_valid", [
-    ("valid_name", True),
-    ("ValidName123", True),
-    ("VALID_NAME", True),
-    ("_valid_name_", True),
-    ("123valid", True),
-    ("invalid-name", False),
-    ("invalid name", False),
-    ("invalid.name", False),
-    ("invalid@name", False),
-    ("", True),  # Assuming empty string is valid, adjust if not
-])
+@pytest.mark.parametrize(
+    "library_name, is_valid",
+    [
+        ("valid_name", True),
+        ("ValidName123", True),
+        ("VALID_NAME", True),
+        ("_valid_name_", True),
+        ("123valid", True),
+        ("invalid-name", False),
+        ("invalid name", False),
+        ("invalid.name", False),
+        ("invalid@name", False),
+        ("", True),  # Assuming empty string is valid, adjust if not
+    ],
+)
 def test_validate_library_name(library_name, is_valid):
     """Verifies the functioning of the validate_library_name() function for all supported inputs.
 
@@ -1213,17 +1224,20 @@ def test_validate_library_name(library_name, is_valid):
         assert "Library name should contain only letters, numbers, and underscores." in str(excinfo.value)
 
 
-@pytest.mark.parametrize("project_name, is_valid", [
-    ("valid-project", True),
-    ("ValidProject123", True),
-    ("VALID-PROJECT", True),
-    ("123valid", True),
-    ("invalid_project", False),
-    ("invalid project", False),
-    ("invalid.project", False),
-    ("invalid@project", False),
-    ("", False),  # Assuming empty string is invalid
-])
+@pytest.mark.parametrize(
+    "project_name, is_valid",
+    [
+        ("valid-project", True),
+        ("ValidProject123", True),
+        ("VALID-PROJECT", True),
+        ("123valid", True),
+        ("invalid_project", False),
+        ("invalid project", False),
+        ("invalid.project", False),
+        ("invalid@project", False),
+        ("", False),  # Assuming empty string is invalid
+    ],
+)
 def test_validate_project_name(project_name, is_valid):
     """Verifies the functioning of the validate_project_name() function for all supported inputs.
 
@@ -1247,16 +1261,19 @@ def test_validate_project_name(project_name, is_valid):
         assert "Project name should contain only letters, numbers, or dashes." in str(excinfo.value)
 
 
-@pytest.mark.parametrize("author_name, is_valid", [
-    ("John Doe", True),
-    ("John Doe (johndoe)", True),
-    ("Mary-Jane O'Connor", True),
-    ("Alice Bob (alice-bob)", True),
-    ("Invalid Name (invalid@username)", False),
-    ("Invalid.Name", False),
-    ("(InvalidFormat)", False),
-    ("", False),  # Assuming empty string is invalid
-])
+@pytest.mark.parametrize(
+    "author_name, is_valid",
+    [
+        ("John Doe", True),
+        ("John Doe (johndoe)", True),
+        ("Mary-Jane O'Connor", True),
+        ("Alice Bob (alice-bob)", True),
+        ("Invalid Name (invalid@username)", False),
+        ("Invalid.Name", False),
+        ("(InvalidFormat)", False),
+        ("", False),  # Assuming empty string is invalid
+    ],
+)
 def test_validate_author_name(author_name, is_valid):
     """Verifies the functioning of the validate_author_name() function for all supported inputs.
 
@@ -1280,16 +1297,19 @@ def test_validate_author_name(author_name, is_valid):
         assert "Author name should be in the format" in str(excinfo.value)
 
 
-@pytest.mark.parametrize("email, is_valid", [
-    ("valid@example.com", True),
-    ("valid.email@sub.domain.com", True),
-    ("valid_email123@domain.co.uk", True),
-    ("invalid email@example.com", False),
-    ("invalid@domain", False),
-    ("@invalid.com", False),
-    ("invalid.com", False),
-    ("", False),  # Assuming empty string is invalid
-])
+@pytest.mark.parametrize(
+    "email, is_valid",
+    [
+        ("valid@example.com", True),
+        ("valid.email@sub.domain.com", True),
+        ("valid_email123@domain.co.uk", True),
+        ("invalid email@example.com", False),
+        ("invalid@domain", False),
+        ("@invalid.com", False),
+        ("invalid.com", False),
+        ("", False),  # Assuming empty string is invalid
+    ],
+)
 def test_validate_email(email, is_valid):
     """Verifies the functioning of the validate_email() function for all supported inputs.
 
@@ -1313,18 +1333,21 @@ def test_validate_email(email, is_valid):
         assert "Invalid email address." in str(excinfo.value)
 
 
-@pytest.mark.parametrize("env_name, is_valid", [
-    ("valid_env", True),
-    ("ValidEnv123", True),
-    ("VALID_ENV", True),
-    ("_valid_env_", True),
-    ("123valid", True),
-    ("invalid-env", False),
-    ("invalid env", False),
-    ("invalid.env", False),
-    ("invalid@env", False),
-    ("", True),  # Assuming empty string is valid, adjust if not
-])
+@pytest.mark.parametrize(
+    "env_name, is_valid",
+    [
+        ("valid_env", True),
+        ("ValidEnv123", True),
+        ("VALID_ENV", True),
+        ("_valid_env_", True),
+        ("123valid", True),
+        ("invalid-env", False),
+        ("invalid env", False),
+        ("invalid.env", False),
+        ("invalid@env", False),
+        ("", True),  # Assuming empty string is valid, adjust if not
+    ],
+)
 def test_validate_env_name(env_name, is_valid):
     """Verifies the functioning of the validate_env_name() function for all supported inputs.
 
