@@ -107,7 +107,7 @@ noconda = [
     # Tox and Automation
     "tox-uv>=1",
     "build>=1",
-    "ataraxis-automation>=1",
+    "ataraxis-automation>=2",
 ]
 
 # A shorhand specification that installs tox and all packages required for development tasks. This specification can

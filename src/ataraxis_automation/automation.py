@@ -30,47 +30,69 @@ class EnvironmentCommands:
 
     Specifically, after commands are resolved as part of resolve_environment_commands() function runtime, they are
     packaged into an instance of this class to be used by all upstream functions.
-
-    Attributes:
-        activate_command: The command used to activate conda environment.
-        deactivate_command: The command to deactivate any current environment and switch to the base environment. This
-            is not environment-specific, but it is a prerequisite for some operations, such as environment renaming.
-        create_command: The command used to generate a minimally-configured conda environment. This command is
-            specifically designed to have minimal footprint, only installing necessary components for other automation
-            commands to work as expected.
-        create_from_yml_command: Same as above, but creates a new conda environment from an existing .yml file. If
-            valid .yml file does not exist inside /envs directory, this command is set to None.
-        remove_command: The command used to remove (delete) the project-specific conda environment.
-        conda_dependencies_command: The command used to install all dependencies that can be installed from conda. This
-            specifically works with 'conda' and 'condarun' lists in the pyproject.toml. If there are no
-            conda-installable dependencies, this command will be set to None.
-        pip_dependencies_command: The command used to install all dependencies that can be installed from pip. This
-            specifically works with 'noconda' list and any run dependencies not covered by 'condarun'. If there are no
-            pip-installable dependencies, this command will be set to None.
-        update_command: The command used to update an already existing conda environment from the .yml file. If the
-            .yml file for the environment does not exist inside /envs folder, this command is set to None.
-        export_yml_command: The command used to export the os-specific environment to a .yml file.
-        export_spec_command: The command used to export the os-specific environment as a spec.txt file.
-        environment_name: Stores the name of the environment with he appropriate os-extension.
-        install_project_command: The command that builds and installs the project as a library into the currently active
-            environment. For 'uv' engine, does not use cache.
-        uninstall_project_command: THe command that uninstalls the project from the current environment, if it is
-            installed.
     """
 
     activate_command: str
+    """
+    The command used to activate conda environment.
+    """
     deactivate_command: str
+    """
+    The command to deactivate any current environment and switch to the base environment. This is not 
+    environment-specific, but it is a prerequisite for some operations, such as environment removal.
+    """
     create_command: str
+    """
+    The command used to generate a minimally-configured conda environment. This command is specifically designed 
+    to have minimal footprint, only installing necessary components for other automation commands to work as expected.
+    """
     create_from_yml_command: Optional[str]
+    """
+    Same as create_command, but creates a new conda environment from an existing .yml file. If valid .yml file does 
+    not exist inside /envs directory, this command is set to None.
+    """
     remove_command: str
+    """
+    The command used to remove (delete) the project conda environment.
+    """
     conda_dependencies_command: Optional[str]
+    """
+    The command used to install all dependencies that can be installed from conda. This specifically works with 
+    'conda' and 'condarun' lists in the pyproject.toml. If there are no conda-installable dependencies, this command 
+    will be set to None.
+    """
     pip_dependencies_command: Optional[str]
+    """
+    The command used to install all dependencies that can be installed from pip. This specifically works with 
+    'noconda' list and any run dependencies not covered by 'condarun'. If there are no pip-installable dependencies, 
+    this command will be set to None.
+    """
     update_command: Optional[str]
+    """
+    The command used to update an already existing project conda environment using the .yml file. If the .yml file for 
+    the environment does not exist inside /envs folder, this command is set to None.
+    """
     export_yml_command: str
+    """
+    The command used to export the os-specific project conda environment to a .yml file.
+    """
     export_spec_command: str
+    """
+    The command used to export the os-specific project conda environment as a spec.txt file.
+    """
     environment_name: str
+    """
+    Stores the name of the project conda environment with the appended os-suffix.
+    """
     install_project_command: str
+    """
+    The command that builds and installs the project as a library into the project conda environment. 
+    For 'uv' engine, does not use cache.
+    """
     uninstall_project_command: str
+    """
+    The command that uninstalls the project from its' conda environment.
+    """
 
 
 def configure_console(log_dir: Optional[Path] = None, *, verbose: bool = False, enable_logging: bool = False) -> None:
@@ -154,10 +176,10 @@ def resolve_project_directory() -> Path:
     project_dir: str = os.getcwd()
     files_in_dir: list[str] = os.listdir(project_dir)
     if (
-        "src" not in files_in_dir
-        or "envs" not in files_in_dir
-        or "pyproject.toml" not in files_in_dir
-        or "tox.ini" not in files_in_dir
+            "src" not in files_in_dir
+            or "envs" not in files_in_dir
+            or "pyproject.toml" not in files_in_dir
+            or "tox.ini" not in files_in_dir
     ):
         # If the console is enabled, raises the error through the console. Otherwise, raises the error using standard
         # python exception functionality
@@ -385,7 +407,7 @@ def get_base_name(dependency: str) -> str:
 
 
 def add_dependency(
-    dependency: str, dependencies_list: list[str], processed_dependencies: set[str]
+        dependency: str, dependencies_list: list[str], processed_dependencies: set[str]
 ) -> tuple[list[str], set[str]]:
     """Verifies tha dependency base-name is not already added to the input list and, if not, adds it to list.
 
@@ -754,11 +776,11 @@ def verify_pypirc(file_path: Path) -> bool:
     config_validator: ConfigParser = ConfigParser()
     config_validator.read(file_path)
     return (
-        config_validator.has_section("pypi")
-        and config_validator.has_option("pypi", "username")
-        and config_validator.has_option("pypi", "password")
-        and config_validator.get("pypi", "username") == "__token__"
-        and config_validator.get("pypi", "password").startswith("pypi-")
+            config_validator.has_section("pypi")
+            and config_validator.has_option("pypi", "username")
+            and config_validator.has_option("pypi", "password")
+            and config_validator.get("pypi", "username") == "__token__"
+            and config_validator.get("pypi", "password").startswith("pypi-")
     )
 
 
@@ -985,7 +1007,7 @@ def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) 
 
 
 def resolve_environment_commands(
-    project_root: Path, environment_name: str, python_version: str = "3.12"
+        project_root: Path, environment_name: str, python_version: str = "3.12"
 ) -> EnvironmentCommands:
     """Generates the list of conda and pip commands used to manipulate the project- and os-specific conda environment
         and packages it into EnvironmentCommands class.
@@ -1455,7 +1477,7 @@ def acquire_pypi_token(replace_token: bool) -> None:
         try:
             prompt: str = console.format_message(
                 message="Enter your PyPI (API) token. It will be stored inside the .pypirc file for future use. "
-                "Input is hidden:",
+                        "Input is hidden:",
                 loguru=False,
             )
             # Asks the user for the token.
