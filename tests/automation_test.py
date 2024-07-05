@@ -726,7 +726,7 @@ def test_resolve_project_name_errors(project_dir) -> None:
     ],
 )
 def test_resolve_environment_commands(
-        project_dir, monkeypatch, scenario, os_suffix, platform, conda_engine, pip_engine, python_version, dependencies
+    project_dir, monkeypatch, scenario, os_suffix, platform, conda_engine, pip_engine, python_version, dependencies
 ) -> None:
     """Verifies that resolve_environment_commands() function works as expected for all supported system
     configurations.
@@ -796,8 +796,8 @@ def test_resolve_environment_commands(
     assert f"conda activate test_env{os_suffix}" in result.activate_command
     assert f"conda deactivate" in result.deactivate_command
     assert (
-            f"{conda_engine} create -n test_env{os_suffix} python={python_version} tox uv pip --yes"
-            in result.create_command
+        f"{conda_engine} create -n test_env{os_suffix} python={python_version} tox uv pip --yes"
+        in result.create_command
     )
     assert f"{conda_engine} remove -n test_env{os_suffix} --all --yes" in result.remove_command
     assert result.environment_name == f"test_env{os_suffix}"
@@ -805,8 +805,8 @@ def test_resolve_environment_commands(
     # When there are no conda or pip dependencies, the corresponding command is actually set to None
     if len(dependencies[0]) != 0:
         assert (
-                f"{conda_engine} install -n test_env{os_suffix} {' '.join(dependencies[0])} --yes"
-                in result.conda_dependencies_command
+            f"{conda_engine} install -n test_env{os_suffix} {' '.join(dependencies[0])} --yes"
+            in result.conda_dependencies_command
         )
     else:
         assert result.conda_dependencies_command is None
