@@ -18,10 +18,7 @@ import click
 import tomli
 import yaml
 from appdirs import AppDirs  # type: ignore
-from ataraxis_base_utilities import Console, LogBackends, LogLevel
-
-# Instantiates the global variable to store the local Console class instance
-console: Console
+from ataraxis_base_utilities import console, Console, LogBackends, LogLevel
 
 
 @dataclass
@@ -111,7 +108,7 @@ def configure_console(log_dir: Optional[Path] = None, *, verbose: bool = False, 
             error log files are automatically cleaned up after a few days, while message logs are maintained
             indefinitely.
     """
-    # Connects to the global console variable
+    # noinspection PyGlobalUndefined
     global console
 
     # Handles the case where log_dir is not provided
@@ -170,9 +167,6 @@ def resolve_project_directory() -> Path:
     Raises:
         RuntimeError: If the current working directory does not point to a valid Python project.
     """
-    # Connects to the global console instance
-    global console
-
     project_dir: str = os.getcwd()
     files_in_dir: list[str] = os.listdir(project_dir)
     if (
@@ -214,9 +208,6 @@ def resolve_library_root(project_root: Path) -> Path:
     Raises:
         RuntimeError: If the valid root directory candidate cannot be found based on the determination heuristics.
     """
-    # Connects to the global console instance
-    global console
-
     # Resolves the target directory
     src_path: Path = project_root.joinpath("src")
 
@@ -276,9 +267,6 @@ def resolve_environment_files(project_root: Path, environment_base_name: str) ->
     Raises:
         RuntimeError: If the host OS does not match any of the supported operating systems.
     """
-    # Connects to the global console instance
-    global console
-
     # Stores supported platform names together with their suffixes
     supported_platforms: dict[str, str] = {"win32": "_win", "linux": "_lin", "darwin": "_osx"}
     os_name: str = sys.platform  # Obtains host os name
@@ -318,9 +306,6 @@ def resolve_conda_engine() -> str:
     Raises:
         RuntimeError: If neither conda nor mamba is accessible via subprocess call through the shell.
     """
-    # Connects to the global console instance
-    global console
-
     command: str
     commands: tuple[str, str] = ("mamba", "conda")
     for command in commands:
@@ -360,9 +345,6 @@ def resolve_pip_engine() -> str:
     Raises:
         RuntimeError: If neither pip nor uv is accessible via subprocess call through the shell.
     """
-    # Connects to the global console instance
-    global console
-
     command: str
     commands: tuple[str, str] = ("uv pip", "pip")
     for command in commands:
@@ -429,9 +411,6 @@ def add_dependency(
         ValueError: If the extracted dependency is found in multiple major pyproject.toml dependency lists
             (conda, noconda and condarun).
     """
-    # Connects to the global console instance
-    global console
-
     # Strips version and extras from dependencies to verify they are not duplicates
     stripped_dependency: str = get_base_name(dependency=dependency)
     if stripped_dependency in processed_dependencies:
@@ -472,9 +451,6 @@ def resolve_dependencies(project_root: Path) -> tuple[list[str], list[str]]:
             or if tox.ini contains dependencies (disregarding version and optional specifications) not in
             pyproject.toml.
     """
-    # Connects to the global console instance
-    global console
-
     # Resolves the paths to the .toml and tox.ini files. The function that generates the project root path checks for
     # the presence of these files as part of its runtime, so it is assumed that they always exist.
     pyproject_path: Path = project_root.joinpath("pyproject.toml")
@@ -575,9 +551,6 @@ def resolve_project_name(project_root: Path) -> str:
         ValueError: If the project name is not defined in the pyproject.toml file. Also, if the pyproject.toml file is
             corrupted or otherwise malformed.
     """
-    # Connects to the global console instance
-    global console
-
     # Resolves the path to the pyproject.toml file
     pyproject_path: Path = project_root.joinpath("pyproject.toml")
 
@@ -653,9 +626,6 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         stubs_dir: The absolute path to the "stubs" directory, expected to be found under the project root directory.
         library_root: The absolute path to the library root directory.
     """
-    # Connects to the Console instance.
-    global console
-
     # Verifies the stubs directory structure and finds the library name. To do so, first generates a set of all
     # subdirectories under /stubs that also have an __init__.pyi file.
     valid_sub_dirs: set[Path] = {
@@ -751,9 +721,6 @@ def delete_stubs(library_root: Path) -> None:
     Args:
         library_root: The absolute path to the library root directory.
     """
-    # Connects to the local Console instance.
-    global console
-
     # Iterates over all .pyi files in the directory tree
     pyi_file: Path
     for pyi_file in library_root.rglob("*.pyi"):
@@ -799,9 +766,6 @@ def rename_all_envs(project_root: Path, new_name: str) -> None:
         project_root: The absolute path to the root directory of the processed project.
         new_name: The new base-name to use for all environment files.
     """
-    # Connects to the global console instance
-    global console
-
     # Obtains the path to the /envs directory. Since the function that generates the project_root path checks for the
     # presence of the /envs directory, this function assumes it exists.
     envs_dir: Path = project_root.joinpath("envs")
@@ -878,9 +842,6 @@ def replace_markers_in_file(file_path: Path, markers: dict[str, str]) -> int:
         The number of placeholder values modified during this method's runtime. Minimum number is 0 for no
         modifications.
     """
-    # Connects to the global Console instance
-    global console
-
     # Reads the file contents using utf-8 decoding.
     content: str = file_path.read_text(encoding="utf-8")
 
@@ -914,7 +875,6 @@ def validate_library_name(_ctx: click.Context, _param: click.Parameter, value: s
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-    global console
     if not re.match(r"^[a-zA-Z0-9_]*$", value):
         message: str = console.format_message(
             "Library name should contain only letters, numbers, and underscores.", loguru=False
@@ -934,7 +894,6 @@ def validate_project_name(_ctx: click.Context, _param: click.Parameter, value: s
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-    global console
     if not re.match(r"^[a-zA-Z0-9-]+$", value):
         message: str = console.format_message(
             "Project name should contain only letters, numbers, or dashes.", loguru=False
@@ -954,7 +913,6 @@ def validate_author_name(_ctx: click.Context, _param: click.Parameter, value: st
     Raises:
         BadParameter: If the input value does not match the expected format.
     """
-    global console
     pattern = r"^([a-zA-Z\s\-']+)(\s*\([a-zA-Z0-9\-]+\))?$"
     if not re.match(pattern, value):
         message: str = console.format_message(
@@ -978,7 +936,6 @@ def validate_email(_ctx: click.Context, _param: click.Parameter, value: str) -> 
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-    global console
     if not re.match(r"^[\w.-]+@[\w.-]+\.\w+$", value):
         message: str = console.format_message("Invalid email address.", loguru=False)
         raise click.BadParameter(message)
@@ -997,7 +954,6 @@ def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) 
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-    global console
     if not re.match(r"^[a-zA-Z0-9_]*$", value):
         message: str = console.format_message(
             "Environment name should contain only letters, numbers, and underscores.", loguru=False
@@ -1025,9 +981,6 @@ def resolve_environment_commands(
     Returns:
         EnvironmentCommands class instance that includes all resolved commands as class attributes.
     """
-    # Connects to the global console instance
-    global console
-
     # Obtains the environment name with the appropriate os-extension and the paths to the .yml and /spec files.
     extended_environment_name: str
     yml_path: Path
@@ -1200,8 +1153,6 @@ def create_conda_environment(commands: EnvironmentCommands) -> None:
         RuntimeError: If the environment cannot be created or recreated. If environment is created, but conda or
             pip dependencies cannot be installed
     """
-    global console
-
     # Checks if the environment to be created already exists
     exists: bool = environment_exists(commands=commands)
 
@@ -1255,8 +1206,6 @@ def remove_conda_environment(commands: EnvironmentCommands) -> None:
     Raises:
         RuntimeError: If the environment exists (can be activated) and cannot be removed.
     """
-    global console
-
     # Checks if the environment to be removed exists at all and, if not, ends the runtime.
     if not environment_exists(commands=commands):
         return
@@ -1287,6 +1236,7 @@ def cli(verbose: bool, log: bool) -> None:
     # Resolves the path to user log directory (this information is only used if logging is enabled)
     dirs = AppDirs(appname="ataraxis-automation", appauthor="SunLabNBB")
     log_dir: Path = Path(dirs.user_log_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)  # Ensures the log directory exists
 
     # Creates and configures the Console class instance to use for message handling. The instance is written to the
     # global 'console' variable to extend it to all functions of this library.
@@ -1303,9 +1253,6 @@ def process_typed_markers() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1332,9 +1279,6 @@ def process_stubs() -> None:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code. If
             /stubs directory does not exist.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1369,9 +1313,6 @@ def purge_stubs() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_dir: Path = resolve_project_directory()
@@ -1395,9 +1336,6 @@ def generate_recipe_folder() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1448,9 +1386,6 @@ def acquire_pypi_token(replace_token: bool) -> None:
         ValueError: If the token provided by the user is not valid.
         RuntimeError: If the user aborts the token acquisition process without providing a valid token.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1541,9 +1476,6 @@ def install_project(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If project installation fails. If project environment does not exist.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1616,10 +1548,6 @@ def uninstall_project(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If any of the environment-manipulation subprocess calls fail.
     """
-
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1686,9 +1614,6 @@ def create_env(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If any environment creation steps fail for any reason.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1736,9 +1661,6 @@ def remove_env(environment_name: str) -> None:
     Raises:
         RuntimeError: If environment removal fails for any reason.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1788,9 +1710,6 @@ def import_env(environment_name: str) -> None:
         RuntimeError: If there is no .yml file for the desired base-name and OS-extension combination in the 'envs'
             folder. If creation and update commands both fail for any reason.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1863,9 +1782,6 @@ def export_env(environment_name: str) -> None:
         RuntimeError: If environment export process fails for any reason. If the conda environment to export does not
             exist
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1929,9 +1845,6 @@ def rename_environments(new_name: str) -> None:
         new_name: The new 'base' name to use for the .yml / spec.txt files and the 'name' field inside the .yml file.
 
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1991,9 +1904,6 @@ def adopt_project(library_name: str, project_name: str, author_name: str, email:
     Raises:
         RuntimeError: If the adoption process fails for any reason.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
