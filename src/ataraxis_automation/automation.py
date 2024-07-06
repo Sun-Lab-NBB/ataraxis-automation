@@ -116,7 +116,7 @@ def configure_console(log_dir: Optional[Path] = None, *, verbose: bool = False, 
         enable_logging = False
     else:
         # Otherwise, ensures log directory exists
-        log_dir.mkdir(exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
 
     # Obtains the default user log directory and uses it to instantiate log files, if logging is enabled.
     if enable_logging and log_dir is not None:
@@ -1236,7 +1236,6 @@ def cli(verbose: bool, log: bool) -> None:
     # Resolves the path to user log directory (this information is only used if logging is enabled)
     dirs = AppDirs(appname="ataraxis-automation", appauthor="SunLabNBB")
     log_dir: Path = Path(dirs.user_log_dir)
-    log_dir.mkdir(parents=True, exist_ok=True)  # Ensures the log directory exists
 
     # Creates and configures the Console class instance to use for message handling. The instance is written to the
     # global 'console' variable to extend it to all functions of this library.
