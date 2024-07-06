@@ -12,16 +12,13 @@ import sys
 from configparser import ConfigParser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import click
 import tomli
 import yaml
-from appdirs import AppDirs
-from ataraxis_base_utilities import Console, LogBackends, LogLevel
-
-# Instantiates the global variable to store the local Console class instance
-console: Console
+from appdirs import AppDirs  # type: ignore
+from ataraxis_base_utilities import console, Console, LogBackends, LogLevel
 
 
 @dataclass
@@ -30,47 +27,69 @@ class EnvironmentCommands:
 
     Specifically, after commands are resolved as part of resolve_environment_commands() function runtime, they are
     packaged into an instance of this class to be used by all upstream functions.
-
-    Attributes:
-        activate_command: The command used to activate conda environment.
-        deactivate_command: The command to deactivate any current environment and switch to the base environment. This
-            is not environment-specific, but it is a prerequisite for some operations, such as environment renaming.
-        create_command: The command used to generate a minimally-configured conda environment. This command is
-            specifically designed to have minimal footprint, only installing necessary components for other automation
-            commands to work as expected.
-        create_from_yml_command: Same as above, but creates a new conda environment from an existing .yml file. If
-            valid .yml file does not exist inside /envs directory, this command is set to None.
-        remove_command: The command used to remove (delete) the project-specific conda environment.
-        conda_dependencies_command: The command used to install all dependencies that can be installed from conda. This
-            specifically works with 'conda' and 'condarun' lists in the pyproject.toml. If there are no
-            conda-installable dependencies, this command will be set to None.
-        pip_dependencies_command: The command used to install all dependencies that can be installed from pip. This
-            specifically works with 'noconda' list and any run dependencies not covered by 'condarun'. If there are no
-            pip-installable dependencies, this command will be set to None.
-        update_command: The command used to update an already existing conda environment from the .yml file. If the
-            .yml file for the environment does not exist inside /envs folder, this command is set to None.
-        export_yml_command: The command used to export the os-specific environment to a .yml file.
-        export_spec_command: The command used to export the os-specific environment as a spec.txt file.
-        environment_name: Stores the name of the environment with he appropriate os-extension.
-        install_project_command: The command that builds and installs the project as a library into the currently active
-            environment. For 'uv' engine, does not use cache.
-        uninstall_project_command: THe command that uninstalls the project from the current environment, if it is
-            installed.
     """
 
     activate_command: str
+    """
+    The command used to activate conda environment.
+    """
     deactivate_command: str
+    """
+    The command to deactivate any current environment and switch to the base environment. This is not 
+    environment-specific, but it is a prerequisite for some operations, such as environment removal.
+    """
     create_command: str
+    """
+    The command used to generate a minimally-configured conda environment. This command is specifically designed 
+    to have minimal footprint, only installing necessary components for other automation commands to work as expected.
+    """
     create_from_yml_command: Optional[str]
+    """
+    Same as create_command, but creates a new conda environment from an existing .yml file. If valid .yml file does 
+    not exist inside /envs directory, this command is set to None.
+    """
     remove_command: str
+    """
+    The command used to remove (delete) the project conda environment.
+    """
     conda_dependencies_command: Optional[str]
+    """
+    The command used to install all dependencies that can be installed from conda. This specifically works with 
+    'conda' and 'condarun' lists in the pyproject.toml. If there are no conda-installable dependencies, this command 
+    will be set to None.
+    """
     pip_dependencies_command: Optional[str]
+    """
+    The command used to install all dependencies that can be installed from pip. This specifically works with 
+    'noconda' list and any run dependencies not covered by 'condarun'. If there are no pip-installable dependencies, 
+    this command will be set to None.
+    """
     update_command: Optional[str]
+    """
+    The command used to update an already existing project conda environment using the .yml file. If the .yml file for 
+    the environment does not exist inside /envs folder, this command is set to None.
+    """
     export_yml_command: str
+    """
+    The command used to export the os-specific project conda environment to a .yml file.
+    """
     export_spec_command: str
+    """
+    The command used to export the os-specific project conda environment as a spec.txt file.
+    """
     environment_name: str
+    """
+    Stores the name of the project conda environment with the appended os-suffix.
+    """
     install_project_command: str
+    """
+    The command that builds and installs the project as a library into the project conda environment. 
+    For 'uv' engine, does not use cache.
+    """
     uninstall_project_command: str
+    """
+    The command that uninstalls the project from its' conda environment.
+    """
 
 
 def configure_console(log_dir: Optional[Path] = None, *, verbose: bool = False, enable_logging: bool = False) -> None:
@@ -89,7 +108,7 @@ def configure_console(log_dir: Optional[Path] = None, *, verbose: bool = False, 
             error log files are automatically cleaned up after a few days, while message logs are maintained
             indefinitely.
     """
-    # Connects to the global console variable
+    # noinspection PyGlobalUndefined
     global console
 
     # Handles the case where log_dir is not provided
@@ -97,10 +116,10 @@ def configure_console(log_dir: Optional[Path] = None, *, verbose: bool = False, 
         enable_logging = False
     else:
         # Otherwise, ensures log directory exists
-        log_dir.mkdir(exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
 
     # Obtains the default user log directory and uses it to instantiate log files, if logging is enabled.
-    if enable_logging:
+    if enable_logging and log_dir is not None:
         log_file_path = log_dir.joinpath("message_log.txt")
         error_file_path = log_dir.joinpath("error_log.txt")
         console = Console(
@@ -148,9 +167,6 @@ def resolve_project_directory() -> Path:
     Raises:
         RuntimeError: If the current working directory does not point to a valid Python project.
     """
-    # Connects to the global console instance
-    global console
-
     project_dir: str = os.getcwd()
     files_in_dir: list[str] = os.listdir(project_dir)
     if (
@@ -168,8 +184,8 @@ def resolve_project_directory() -> Path:
             f"directory is set to {project_dir}, which does not contain at least one of the required files."
         )
         console.error(message, error=RuntimeError, callback=sys.exit, terminal=True, log=True, reraise=False)
-    else:
-        return Path(project_dir)
+
+    return Path(project_dir)
 
 
 def resolve_library_root(project_root: Path) -> Path:
@@ -192,9 +208,6 @@ def resolve_library_root(project_root: Path) -> Path:
     Raises:
         RuntimeError: If the valid root directory candidate cannot be found based on the determination heuristics.
     """
-    # Connects to the global console instance
-    global console
-
     # Resolves the target directory
     src_path: Path = project_root.joinpath("src")
 
@@ -231,8 +244,7 @@ def resolve_library_root(project_root: Path) -> Path:
         console.error(message, error=RuntimeError, callback=sys.exit, terminal=True, log=True, reraise=False)
 
     # If (as expected), there is only one candidate, returns it as the library root
-    else:
-        return candidates.pop()
+    return candidates.pop()
 
 
 def resolve_environment_files(project_root: Path, environment_base_name: str) -> tuple[str, Path, Path]:
@@ -255,9 +267,6 @@ def resolve_environment_files(project_root: Path, environment_base_name: str) ->
     Raises:
         RuntimeError: If the host OS does not match any of the supported operating systems.
     """
-    # Connects to the global console instance
-    global console
-
     # Stores supported platform names together with their suffixes
     supported_platforms: dict[str, str] = {"win32": "_win", "linux": "_lin", "darwin": "_osx"}
     os_name: str = sys.platform  # Obtains host os name
@@ -297,9 +306,6 @@ def resolve_conda_engine() -> str:
     Raises:
         RuntimeError: If neither conda nor mamba is accessible via subprocess call through the shell.
     """
-    # Connects to the global console instance
-    global console
-
     command: str
     commands: tuple[str, str] = ("mamba", "conda")
     for command in commands:
@@ -323,6 +329,9 @@ def resolve_conda_engine() -> str:
     )
     console.error(message, error=RuntimeError, callback=sys.exit, terminal=True, log=True, reraise=False)
 
+    # This is unreachable and is here to appease mypy
+    return ""
+
 
 def resolve_pip_engine() -> str:
     """Determines whether uv or pip can be accessed from this script by silently calling 'command --version'.
@@ -336,9 +345,6 @@ def resolve_pip_engine() -> str:
     Raises:
         RuntimeError: If neither pip nor uv is accessible via subprocess call through the shell.
     """
-    # Connects to the global console instance
-    global console
-
     command: str
     commands: tuple[str, str] = ("uv pip", "pip")
     for command in commands:
@@ -361,6 +367,9 @@ def resolve_pip_engine() -> str:
         f"virtual / conda environment?"
     )
     console.error(message, error=RuntimeError, callback=sys.exit, terminal=True, log=True, reraise=False)
+
+    # This is unreachable and is here to appease mypy
+    return ""
 
 
 def get_base_name(dependency: str) -> str:
@@ -402,9 +411,6 @@ def add_dependency(
         ValueError: If the extracted dependency is found in multiple major pyproject.toml dependency lists
             (conda, noconda and condarun).
     """
-    # Connects to the global console instance
-    global console
-
     # Strips version and extras from dependencies to verify they are not duplicates
     stripped_dependency: str = get_base_name(dependency=dependency)
     if stripped_dependency in processed_dependencies:
@@ -445,9 +451,6 @@ def resolve_dependencies(project_root: Path) -> tuple[list[str], list[str]]:
             or if tox.ini contains dependencies (disregarding version and optional specifications) not in
             pyproject.toml.
     """
-    # Connects to the global console instance
-    global console
-
     # Resolves the paths to the .toml and tox.ini files. The function that generates the project root path checks for
     # the presence of these files as part of its runtime, so it is assumed that they always exist.
     pyproject_path: Path = project_root.joinpath("pyproject.toml")
@@ -500,7 +503,7 @@ def resolve_dependencies(project_root: Path) -> tuple[list[str], list[str]]:
     # Parses tox.ini and extract dependencies
     config: ConfigParser = ConfigParser()
     config.read(tox_path)
-    tox_dependencies: Set[str] = set()
+    tox_dependencies: set[str] = set()
 
     # Extracts dependencies from 'deps' and 'requires' sections inside tox.ini. This process strips conda version and
     # specialization, since duplicates with different version are expected to be used by tox, but not pyproject.toml.
@@ -548,16 +551,13 @@ def resolve_project_name(project_root: Path) -> str:
         ValueError: If the project name is not defined in the pyproject.toml file. Also, if the pyproject.toml file is
             corrupted or otherwise malformed.
     """
-    # Connects to the global console instance
-    global console
-
     # Resolves the path to the pyproject.toml file
     pyproject_path: Path = project_root.joinpath("pyproject.toml")
 
     # Reads and parses the pyproject.toml file
     try:
         with open(pyproject_path, "rb") as f:
-            pyproject_data = tomli.load(f)
+            pyproject_data: dict[str, Any] = tomli.load(f)
     except tomli.TOMLDecodeError as e:
         message: str = (
             f"Unable to parse the pyproject.toml file. The file may be corrupted or contain invalid TOML syntax. "
@@ -566,8 +566,8 @@ def resolve_project_name(project_root: Path) -> str:
         console.error(message, error=ValueError, callback=sys.exit, terminal=True, log=True, reraise=False)
 
     # Extracts the project name from the [project] section
-    project_data: dict = pyproject_data.get("project", {})
-    project_name: str = project_data.get("name")
+    project_data: dict[str, Any] = pyproject_data.get("project", {})
+    project_name: Optional[str] = project_data.get("name")
 
     # Checks if the project name was successfully extracted
     if not project_name:
@@ -577,7 +577,11 @@ def resolve_project_name(project_root: Path) -> str:
         )
         console.error(message, error=ValueError, callback=sys.exit, terminal=True, log=True, reraise=False)
 
-    return project_name
+    elif project_name is not None:
+        return project_name
+
+    # Unreachable, here to appease mypy
+    return ""
 
 
 def generate_typed_marker(library_root: Path) -> None:
@@ -622,12 +626,9 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         stubs_dir: The absolute path to the "stubs" directory, expected to be found under the project root directory.
         library_root: The absolute path to the library root directory.
     """
-    # Connects to the Console instance.
-    global console
-
     # Verifies the stubs directory structure and finds the library name. To do so, first generates a set of all
     # subdirectories under /stubs that also have an __init__.pyi file.
-    valid_sub_dirs: Set[Path] = {
+    valid_sub_dirs: set[Path] = {
         sub_dir for sub_dir in stubs_dir.iterdir() if sub_dir.is_dir() and (sub_dir / "__init__.pyi").exists()
     }
 
@@ -649,7 +650,7 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         relative_path: Path = stub_path.relative_to(src_dir)
         dst_path: Path = library_root.joinpath(relative_path)
 
-        message: str = f"Moved stub file from /stubs to /src: {dst_path.name}."
+        message = f"Moved stub file from /stubs to /src: {dst_path.name}."
         console.echo(message, level=LogLevel.INFO, terminal=True, log=True)
 
         # Ensures the destination directory exists
@@ -720,9 +721,6 @@ def delete_stubs(library_root: Path) -> None:
     Args:
         library_root: The absolute path to the library root directory.
     """
-    # Connects to the local Console instance.
-    global console
-
     # Iterates over all .pyi files in the directory tree
     pyi_file: Path
     for pyi_file in library_root.rglob("*.pyi"):
@@ -768,9 +766,6 @@ def rename_all_envs(project_root: Path, new_name: str) -> None:
         project_root: The absolute path to the root directory of the processed project.
         new_name: The new base-name to use for all environment files.
     """
-    # Connects to the global console instance
-    global console
-
     # Obtains the path to the /envs directory. Since the function that generates the project_root path checks for the
     # presence of the /envs directory, this function assumes it exists.
     envs_dir: Path = project_root.joinpath("envs")
@@ -795,7 +790,7 @@ def rename_all_envs(project_root: Path, new_name: str) -> None:
             new_file_path: Path = file_path.with_name(new_file_name)
 
             # Reads and updates the YAML file 'name' field
-            yaml_data: Dict[str, Any] = yaml.safe_load(file_path.read_text())
+            yaml_data: dict[str, Any] = yaml.safe_load(file_path.read_text())
 
             if "name" in yaml_data:
                 yaml_data["name"] = new_file_name[:-4]  # Removes the '.yml' extension
@@ -824,7 +819,7 @@ def rename_all_envs(project_root: Path, new_name: str) -> None:
             # Renames the file
             file_path.rename(new_file_path)
 
-            message: str = f"Renamed environment spec.txt file: {file_name} -> {new_file_name}."
+            message = f"Renamed environment spec.txt file: {file_name} -> {new_file_name}."
             console.echo(message, level=LogLevel.INFO, terminal=True, log=True)
 
         else:
@@ -847,9 +842,6 @@ def replace_markers_in_file(file_path: Path, markers: dict[str, str]) -> int:
         The number of placeholder values modified during this method's runtime. Minimum number is 0 for no
         modifications.
     """
-    # Connects to the global Console instance
-    global console
-
     # Reads the file contents using utf-8 decoding.
     content: str = file_path.read_text(encoding="utf-8")
 
@@ -883,7 +875,6 @@ def validate_library_name(_ctx: click.Context, _param: click.Parameter, value: s
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-    global console
     if not re.match(r"^[a-zA-Z0-9_]*$", value):
         message: str = console.format_message(
             "Library name should contain only letters, numbers, and underscores.", loguru=False
@@ -903,7 +894,6 @@ def validate_project_name(_ctx: click.Context, _param: click.Parameter, value: s
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-    global console
     if not re.match(r"^[a-zA-Z0-9-]+$", value):
         message: str = console.format_message(
             "Project name should contain only letters, numbers, or dashes.", loguru=False
@@ -923,7 +913,6 @@ def validate_author_name(_ctx: click.Context, _param: click.Parameter, value: st
     Raises:
         BadParameter: If the input value does not match the expected format.
     """
-    global console
     pattern = r"^([a-zA-Z\s\-']+)(\s*\([a-zA-Z0-9\-]+\))?$"
     if not re.match(pattern, value):
         message: str = console.format_message(
@@ -947,7 +936,6 @@ def validate_email(_ctx: click.Context, _param: click.Parameter, value: str) -> 
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-    global console
     if not re.match(r"^[\w.-]+@[\w.-]+\.\w+$", value):
         message: str = console.format_message("Invalid email address.", loguru=False)
         raise click.BadParameter(message)
@@ -966,7 +954,6 @@ def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) 
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-    global console
     if not re.match(r"^[a-zA-Z0-9_]*$", value):
         message: str = console.format_message(
             "Environment name should contain only letters, numbers, and underscores.", loguru=False
@@ -979,7 +966,7 @@ def resolve_environment_commands(
         project_root: Path, environment_name: str, python_version: str = "3.12"
 ) -> EnvironmentCommands:
     """Generates the list of conda and pip commands used to manipulate the project- and os-specific conda environment
-        and packages it into EnvironmentCommands class.
+    and packages it into EnvironmentCommands class.
 
     This function is a prerequisite for all environment-related cli commands, as it is used to resolve and generate
     all necessary commands in a project-, os- and engine(backend)-specific fashion.
@@ -994,9 +981,6 @@ def resolve_environment_commands(
     Returns:
         EnvironmentCommands class instance that includes all resolved commands as class attributes.
     """
-    # Connects to the global console instance
-    global console
-
     # Obtains the environment name with the appropriate os-extension and the paths to the .yml and /spec files.
     extended_environment_name: str
     yml_path: Path
@@ -1029,24 +1013,24 @@ def resolve_environment_commands(
 
         # Conda environment activation and deactivation commands
         conda_init = "call conda.bat"
-        activate_command: str = f"{conda_init} && conda activate {extended_environment_name}"
-        deactivate_command: str = f"{conda_init} &&conda deactivate"
+        activate_command = f"{conda_init} && conda activate {extended_environment_name}"
+        deactivate_command = f"{conda_init} &&conda deactivate"
     elif "_lin" in extended_environment_name:
         # .yml export
         export_yml_command = f"{conda_command} env export --name {extended_environment_name} | head -n -1 > {yml_path}"
 
         # Conda environment activation command
         conda_init = ". $(conda info --base)/etc/profile.d/conda.sh"
-        activate_command: str = f"{conda_init} && conda activate {extended_environment_name}"
-        deactivate_command: str = f"{conda_init} &&conda deactivate"
+        activate_command = f"{conda_init} && conda activate {extended_environment_name}"
+        deactivate_command = f"{conda_init} &&conda deactivate"
     elif "_osx" in extended_environment_name:
         # .yml export
         export_yml_command = f"{conda_command} env export --name {extended_environment_name} | tail -r | tail -n +2 | tail -r > {yml_path}"
 
         # Conda environment activation command.
         conda_init = ". $(conda info --base)/etc/profile.d/conda.sh"
-        activate_command: str = f"{conda_init} && conda activate {extended_environment_name}"
-        deactivate_command: str = f"{conda_init} &&conda deactivate"
+        activate_command = f"{conda_init} && conda activate {extended_environment_name}"
+        deactivate_command = f"{conda_init} &&conda deactivate"
 
     # Generates the spec.txt export command, which is the same for all OS versions (unlike .yml export)
     export_spec_command: str = f"{conda_command} list -n {extended_environment_name} --explicit -r > {spec_path}"
@@ -1077,19 +1061,19 @@ def resolve_environment_commands(
     # supported engines) use slightly different flags for certain commands.
     if "uv" in pip_command:
         # Forces the command to run in conda if tox 'basepython' != python_version
-        pip_uninstall_command: str = pip_uninstall_command + f" --python={python_version}"
+        pip_uninstall_command = pip_uninstall_command + f" --python={python_version}"
         # Prevents cache interference, compiles to bytecode and forces uv to use conda environment
-        pip_reinstall_command: str = pip_reinstall_command + f" --no-cache --compile-bytecode --python={python_version}"
+        pip_reinstall_command = pip_reinstall_command + f" --no-cache --compile-bytecode --python={python_version}"
         if pip_dependencies_command is not None:
             # Forces compilation and forces uv to use conda environment
-            pip_dependencies_command: str = pip_dependencies_command + f" --compile-bytecode --python={python_version}"
+            pip_dependencies_command = pip_dependencies_command + f" --compile-bytecode --python={python_version}"
     else:
         # Suppresses confirmation dialogs
-        pip_uninstall_command: str = pip_uninstall_command + f" --yes"
+        pip_uninstall_command = pip_uninstall_command + f" --yes"
         # Compiles to bytecode
-        pip_reinstall_command: str = pip_reinstall_command + f" --compile"
+        pip_reinstall_command = pip_reinstall_command + f" --compile"
         if pip_dependencies_command is not None:
-            pip_dependencies_command: str = pip_dependencies_command + f" --compile"  # Forces compilation
+            pip_dependencies_command = pip_dependencies_command + f" --compile"  # Forces compilation
 
     # Generates conda environment manipulation commands.
     # Creation (base) generates a minimal conda environment. It is expected that conda and pip dependencies are added
@@ -1104,10 +1088,8 @@ def resolve_environment_commands(
     yml_create_command: Optional[str]
     update_command: Optional[str]
     if yml_path.exists():
-        yml_create_command = (
-            f"{conda_command} env create -f {yml_path} --yes"
-        )
-        update_command: str = f"{conda_command} env update -n {extended_environment_name} -f {yml_path} --prune"
+        yml_create_command = f"{conda_command} env create -f {yml_path} --yes"
+        update_command = f"{conda_command} env update -n {extended_environment_name} -f {yml_path} --prune"
     else:
         yml_create_command = None
         update_command = None
@@ -1159,7 +1141,7 @@ def create_conda_environment(commands: EnvironmentCommands) -> None:
     If the environment to be created already exists, this function will first remove the environment and then create
     it from scratch. The creation process includes installing conda and pip dependencies, if any are provided.
 
-    Note:
+    Notes:
         This function DOES NOT install the project. This is intentional. Use the dedicated cli command to install and
         uninstall the project as needed.
 
@@ -1171,8 +1153,6 @@ def create_conda_environment(commands: EnvironmentCommands) -> None:
         RuntimeError: If the environment cannot be created or recreated. If environment is created, but conda or
             pip dependencies cannot be installed
     """
-    global console
-
     # Checks if the environment to be created already exists
     exists: bool = environment_exists(commands=commands)
 
@@ -1184,9 +1164,7 @@ def create_conda_environment(commands: EnvironmentCommands) -> None:
             subprocess.run(command, shell=True, check=True)
 
         except subprocess.CalledProcessError:
-            message: str = (
-                f"Unable to recreate an existing conda environment '{commands.environment_name}'."
-            )
+            message: str = f"Unable to recreate an existing conda environment '{commands.environment_name}'."
             console.error(message, error=RuntimeError, callback=sys.exit, terminal=True, log=True, reraise=False)
 
     # If the environment does not exist, creates it.
@@ -1194,9 +1172,7 @@ def create_conda_environment(commands: EnvironmentCommands) -> None:
         try:
             subprocess.run(commands.create_command, shell=True, check=True)
         except subprocess.CalledProcessError:
-            message: str = (
-                f"Unable to create a new conda environment '{commands.environment_name}'."
-            )
+            message = f"Unable to create a new conda environment '{commands.environment_name}'."
             console.error(message, error=RuntimeError, callback=sys.exit, terminal=True, log=True, reraise=False)
 
     # If environment was successfully (re)created, installs conda and pip dependencies, if any are provided.
@@ -1207,11 +1183,11 @@ def create_conda_environment(commands: EnvironmentCommands) -> None:
 
         # Activation is required for pip, as pip dependencies are installed into whatever environment is active.
         if commands.pip_dependencies_command is not None:
-            command: str = f"{commands.activate_command} && {commands.pip_dependencies_command}"
+            command = f"{commands.activate_command} && {commands.pip_dependencies_command}"
             subprocess.run(command, shell=True, check=True)
 
     except subprocess.CalledProcessError:
-        message: str = (
+        message = (
             f"Unable to install project-dependencies into the created conda environment '{commands.environment_name}'."
         )
         console.error(message, error=RuntimeError, callback=sys.exit, terminal=True, log=True, reraise=False)
@@ -1230,8 +1206,6 @@ def remove_conda_environment(commands: EnvironmentCommands) -> None:
     Raises:
         RuntimeError: If the environment exists (can be activated) and cannot be removed.
     """
-    global console
-
     # Checks if the environment to be removed exists at all and, if not, ends the runtime.
     if not environment_exists(commands=commands):
         return
@@ -1242,16 +1216,14 @@ def remove_conda_environment(commands: EnvironmentCommands) -> None:
         subprocess.run(command, shell=True, check=True)
 
     except subprocess.CalledProcessError:
-        message: str = (
-            f"Unable to remove the conda environment '{commands.environment_name}'."
-        )
+        message: str = f"Unable to remove the conda environment '{commands.environment_name}'."
         console.error(message, error=RuntimeError, callback=sys.exit, terminal=True, log=True, reraise=False)
 
 
 @click.group()
 @click.option("--verbose", is_flag=True, help="Enables terminal output.")
 @click.option("--log", is_flag=True, help="Enables logging messages to file.")
-def cli(verbose: bool, log: bool):
+def cli(verbose: bool, log: bool) -> None:
     """This CLI exposes helper commands used to automate various project development and building steps.
 
     In addition to being the main API interface, it provides a centralized logging system that can be configured using
@@ -1280,9 +1252,6 @@ def process_typed_markers() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1299,7 +1268,7 @@ def process_typed_markers() -> None:
 @cli.command()
 def process_stubs() -> None:
     """Distributes the stub files from the '/stubs' directory to the appropriate level of the '/src' or
-     'src/library' directory (depending on the type of the processed project).
+    'src/library' directory (depending on the type of the processed project).
 
     Notes:
         This command is intended to be called after the /stubs directory has been generated using the appropriate tox
@@ -1309,9 +1278,6 @@ def process_stubs() -> None:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code. If
             /stubs directory does not exist.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1331,7 +1297,7 @@ def process_stubs() -> None:
     # Moves the stubs to the appropriate source code directories
     move_stubs(stubs_dir=stubs_path, library_root=library_root)
     shutil.rmtree(stubs_path)  # Removes the /stubs directory once all stubs are moved
-    message: str = "Stubs successfully distributed to appropriate source directories."
+    message = "Stubs successfully distributed to appropriate source directories."
     console.echo(message, level=LogLevel.SUCCESS, terminal=True, log=True)
 
 
@@ -1346,9 +1312,6 @@ def purge_stubs() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_dir: Path = resolve_project_directory()
@@ -1372,9 +1335,6 @@ def generate_recipe_folder() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1403,7 +1363,7 @@ def generate_recipe_folder() -> None:
 )
 def acquire_pypi_token(replace_token: bool) -> None:
     """Ensures that a validly-formatted PyPI API token is available from the .pypirc file stored in the root directory
-        of the project.
+    of the project.
 
     This method is intended to be used before tox 'upload' task to ensure that twine is able to access the PyPI API
     token. If the toke is available from the '.pypirc' file and appears valid, it is used. If the token or file are
@@ -1425,9 +1385,6 @@ def acquire_pypi_token(replace_token: bool) -> None:
         ValueError: If the token provided by the user is not valid.
         RuntimeError: If the user aborts the token acquisition process without providing a valid token.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1470,7 +1427,7 @@ def acquire_pypi_token(replace_token: bool) -> None:
             # Generates the new .pypirc file and saves the valid token data to the file.
             config = ConfigParser()
             config["pypi"] = {"username": "__token__", "password": token}
-            pypirc_path.write_text(config.dumps())
+            pypirc_path.write_text(config.dumps())  # type: ignore
 
             # Notifies the user and breaks out of the while loop
             message = f"Valid PyPI token acquired and added to '.pypirc' for future uses."
@@ -1518,9 +1475,6 @@ def install_project(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If project installation fails. If project environment does not exist.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1543,8 +1497,9 @@ def install_project(environment_name: str, python_version: str) -> None:
     try:
         command: str = f"{commands.activate_command} && {commands.install_project_command}"
         subprocess.run(command, shell=True, check=True)
-        message: str = (f"Project successfully installed into the requested conda environment "
-                        f"'{commands.environment_name}'.")
+        message = (
+            f"Project successfully installed into the requested conda environment " f"'{commands.environment_name}'."
+        )
         console.echo(message, level=LogLevel.SUCCESS, terminal=True, log=True)
     except subprocess.CalledProcessError:
         message = (
@@ -1592,10 +1547,6 @@ def uninstall_project(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If any of the environment-manipulation subprocess calls fail.
     """
-
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1618,11 +1569,12 @@ def uninstall_project(environment_name: str, python_version: str) -> None:
     try:
         command: str = f"{commands.activate_command} && {commands.uninstall_project_command}"
         subprocess.run(command, shell=True, check=True)
-        message: str = (f"Project successfully uninstalled from the requested conda environment "
-                        f"'{commands.environment_name}'.")
+        message = (
+            f"Project successfully uninstalled from the requested conda environment " f"'{commands.environment_name}'."
+        )
         console.echo(message, level=LogLevel.SUCCESS, terminal=True, log=True)
     except subprocess.CalledProcessError:
-        message: str = (
+        message = (
             f"Unable to uninstall the project from the conda environment '{commands.environment_name}'. See "
             f"uv/pip-generated error messages for specific details about the failed operation. "
         )
@@ -1661,9 +1613,6 @@ def create_env(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If any environment creation steps fail for any reason.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1711,9 +1660,6 @@ def remove_env(environment_name: str) -> None:
     Raises:
         RuntimeError: If environment removal fails for any reason.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1735,9 +1681,7 @@ def remove_env(environment_name: str) -> None:
     # Otherwise, removes the environment and notifies the user
     else:
         remove_conda_environment(commands=commands)
-        message = (
-            f"Removed conda environment '{commands.environment_name}'."
-        )
+        message = f"Removed conda environment '{commands.environment_name}'."
         console.echo(message, level=LogLevel.SUCCESS, terminal=True, log=True)
 
 
@@ -1765,9 +1709,6 @@ def import_env(environment_name: str) -> None:
         RuntimeError: If there is no .yml file for the desired base-name and OS-extension combination in the 'envs'
             folder. If creation and update commands both fail for any reason.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1785,7 +1726,8 @@ def import_env(environment_name: str) -> None:
             subprocess.run(commands.create_from_yml_command, shell=True, check=True)
             message: str = (
                 f"Conda environment '{commands.environment_name}' successfully imported (created) from existing .yml "
-                f"file.")
+                f"file."
+            )
             console.echo(message, level=LogLevel.SUCCESS, terminal=True, log=True)
         except subprocess.CalledProcessError:
             message = (
@@ -1796,11 +1738,9 @@ def import_env(environment_name: str) -> None:
 
     # If conda environment already exists and .yml file exists, updates the environment using the .yml file.
     elif commands.update_command is not None:
-
         try:
             subprocess.run(commands.update_command, shell=True, check=True)
-            message = (
-                f"Existing conda environment '{commands.environment_name}' successfully updated from .yml file.")
+            message = f"Existing conda environment '{commands.environment_name}' successfully updated from .yml file."
             console.echo(message, level=LogLevel.SUCCESS, terminal=True, log=True)
         except subprocess.CalledProcessError:
             message = (
@@ -1811,7 +1751,7 @@ def import_env(environment_name: str) -> None:
 
     # If the .yml file does not exist, aborts with error.
     else:
-        message: str = (
+        message = (
             f"Unable to import or update conda environment '{commands.environment_name}' as there is no valid .yml "
             f"file inside the /envs directory for the given project and host-OS combination. Try creating the "
             f"environment using pyproject.toml dependencies by using 'create-env' ('tox -e create')."
@@ -1841,9 +1781,6 @@ def export_env(environment_name: str) -> None:
         RuntimeError: If environment export process fails for any reason. If the conda environment to export does not
             exist
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1864,7 +1801,7 @@ def export_env(environment_name: str) -> None:
     # Handles environment export using the commands obtained above
     try:
         subprocess.run(commands.export_yml_command, shell=True, check=True)
-        message: str = f"Conda environment '{commands.environment_name}' exported to /envs as a .yml file."
+        message = f"Conda environment '{commands.environment_name}' exported to /envs as a .yml file."
         console.echo(message, level=LogLevel.SUCCESS, terminal=True, log=True)
 
     except subprocess.CalledProcessError:
@@ -1876,7 +1813,7 @@ def export_env(environment_name: str) -> None:
 
     try:
         subprocess.run(commands.export_spec_command, shell=True, check=True)
-        message: str = f"Conda environment '{commands.environment_name}' exported to /envs as a spec.txt file."
+        message = f"Conda environment '{commands.environment_name}' exported to /envs as a spec.txt file."
         console.echo(message, level=LogLevel.SUCCESS, terminal=True, log=True)
 
     except subprocess.CalledProcessError:
@@ -1897,19 +1834,16 @@ def export_env(environment_name: str) -> None:
 def rename_environments(new_name: str) -> None:
     """Iteratively renames environment files inside the 'envs' directory to use the provided name as the base-name.
 
-    Args:
-        new_name: The new 'base' name to use for the .yml / spec.txt files and the 'name' field inside the .yml file.
-
     Notes:
         This function does not rename any existing conda environments. This behavior is intentional. It is advised to
         first export the environment via 'export-env' ('tox -e export'). Then to use 'remove-env' ('tox -e remove') to
         remove the existing environment, followed by this function to rename the .yml and spec.txt files. Finally,
         re-import the environment via 'import-env' ('tox -e import').
 
-    """
-    # Connects to the Console instance.
-    global console
+    Args:
+        new_name: The new 'base' name to use for the .yml / spec.txt files and the 'name' field inside the .yml file.
 
+    """
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -1969,9 +1903,6 @@ def adopt_project(library_name: str, project_name: str, author_name: str, email:
     Raises:
         RuntimeError: If the adoption process fails for any reason.
     """
-    # Connects to the Console instance.
-    global console
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -2012,7 +1943,7 @@ def adopt_project(library_name: str, project_name: str, author_name: str, email:
     root: Path
     dirs: list[str]
     files: list[str]
-    for root, dirs, files in project_root.walk():
+    for root, dirs, files in project_root.walk():  # type: ignore
         for file in files:
             # Gets the absolute path to each scanned file.
             file_path: Path = root.joinpath(file)
@@ -2045,7 +1976,7 @@ def adopt_project(library_name: str, project_name: str, author_name: str, email:
                 dirs[dirs.index(directory)] = new_dir_name
 
     # Provides the final reminder
-    message: str = format_message(
+    message = (
         f"Project Adoption: Complete. Be sure to manually verify critical files such as pyproject.toml before "
         f"proceeding to the next step. Overall, found and replaced {total_markers} markers in scanned file "
         f"contents."

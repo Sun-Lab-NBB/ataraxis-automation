@@ -111,7 +111,6 @@ def test_resolve_project_directory(project_dir) -> None:
         tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
         capsys: Internal pytest fixture that captures and redirects messages from stderr and stdout.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
     os.chdir(project_dir)
     result = aa.resolve_project_directory()
     assert result == project_dir
@@ -123,7 +122,7 @@ def test_resolve_project_directory_error(tmp_path) -> None:
     Args:
         tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     os.chdir(tmp_path)
     message: str = (
         f"Unable to confirm that ataraxis automation module has been called from the root directory of a valid "
@@ -152,7 +151,7 @@ def test_resolve_library_root(project_dir, init_location, expected) -> None:
             folder.
         expected: The expected result of processing the project root structure given the __init__.py location.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     init_dir = project_dir.joinpath(init_location)
     init_dir.mkdir(parents=True, exist_ok=True)
     init_dir.joinpath("__init__.py").touch()
@@ -170,7 +169,7 @@ def test_resolve_library_root_error(project_dir) -> None:
 
     # Verifies the method correctly fails when __init__.py is not found under /src or any subdirectory directly under
     # src
-    aa.configure_console(verbose=False, enable_logging=False)
+
     message: str = (
         f"Unable to resolve the path to the library root directory from the project root path {project_dir}. "
         f"Specifically, did not find an __init__.py inside the /src directory and found {0} "
@@ -205,7 +204,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
             to the root directory of the generated project.
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     os.chdir(project_dir)  # Ensures working directory is set to the project directory
     environment_base_name: str = "test_env"
 
@@ -247,7 +246,7 @@ def test_resolve_environment_files_error(project_dir, monkeypatch) -> None:
             to the root directory of the generated project.
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     supported_platforms: dict[str, str] = {"win32": "_win", "linux": "_lin", "darwin": "_osx"}
     monkeypatch.setattr(sys, "platform", "unsupported")
     environment_base_name: str = "text_env"
@@ -267,7 +266,6 @@ def test_resolve_conda_engine(monkeypatch) -> None:
     Args:
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
@@ -288,7 +286,6 @@ def test_resolve_conda_engine_fallback(monkeypatch) -> None:
     Args:
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
@@ -309,7 +306,6 @@ def test_resolve_conda_engine_error(monkeypatch) -> None:
     Args:
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # noinspection PyUnusedLocal
     def mock_run(*args, **kwargs):
@@ -336,7 +332,6 @@ def test_resolve_pip_engine(monkeypatch) -> None:
     Args:
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
@@ -357,7 +352,6 @@ def test_resolve_pip_engine_fallback(monkeypatch) -> None:
     Args:
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
@@ -378,7 +372,6 @@ def test_resolve_pip_engine_error(monkeypatch) -> None:
     Args:
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # noinspection PyUnusedLocal
     def mock_run(*args, **kwargs):
@@ -419,13 +412,13 @@ def test_get_base_name(dependency, expected) -> None:
         dependency: Tested dependency name.
         expected: Expected processing outcome.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     assert aa.get_base_name(dependency) == expected
 
 
 def test_add_dependency() -> None:
     """Verifies the functioning and duplicate handling of the add_dependency() minor method."""
-    aa.configure_console(verbose=False, enable_logging=False)
+
     # Setup
     processed_dependencies = set()
     dependencies_list = []
@@ -497,7 +490,7 @@ def test_resolve_dependencies(project_dir: Path) -> None:
     Args:
         project_dir: The path to the processed project root directory.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     pyproject_content = """
 [project]
 dependencies = ["dep1==1.0", "dep2>=2.0"]
@@ -533,7 +526,7 @@ def test_resolve_dependencies_missing_tox_dep(project_dir: Path) -> None:
     Args:
         project_dir: The path to the processed project root directory.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     pyproject_content = """
 [project]
 dependencies = ["dep1==1.0", "dep2>=2.0"]
@@ -573,7 +566,7 @@ def test_resolve_dependencies_duplicate_dep(project_dir: Path) -> None:
     Args:
         project_dir: The path to the processed project root directory.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     pyproject_content = """
 [project]
 dependencies = ["dep1==1.0", "dep2>=2.0"]
@@ -613,7 +606,7 @@ def test_resolve_dependencies_priority(project_dir, section: Path) -> None:
     Args:
         project_dir: The path to the processed project root directory.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     pyproject_content = f"""
     [project]
     dependencies = ["dep1==1.0", "dep2>=2.0"]
@@ -650,7 +643,7 @@ def test_resolve_project_name(project_dir) -> None:
     Args:
         project_dir: The path to the processed project root directory.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     pyproject_content = """
     [project]
     name = "test-project"
@@ -670,7 +663,7 @@ def test_resolve_project_name_errors(project_dir) -> None:
     """
 
     # Verifies that malformed pyproject.toml files are not processed.
-    aa.configure_console(verbose=False, enable_logging=False)
+
     pyproject_content = """
         [project
         name = "test-project"
@@ -749,7 +742,7 @@ def test_resolve_environment_commands(
     """
 
     # Setup
-    aa.configure_console(verbose=False, enable_logging=False)
+
     pyproject_content = """
     [project]
     name = "test-project"
@@ -896,7 +889,6 @@ def test_move_stubs(project_dir) -> None:
     Args:
         project_dir: The path to the processed project root directory.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # Sets up mock directories
     stubs_dir = project_dir / "stubs"
@@ -945,7 +937,6 @@ def test_move_stubs_error(project_dir) -> None:
     Args:
         project_dir: The path to the processed project root directory.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # Set up mock directories
     stubs_dir = project_dir.joinpath("stubs")
@@ -1018,7 +1009,6 @@ def test_verify_pypirc(tmp_path, config, expected_result):
     Note:
         This tests both valid success and valid failure runtimes.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # Creates a mock .pypirc file with the given configuration
     pypirc_path = tmp_path / ".pypirc"
@@ -1050,7 +1040,6 @@ def test_verify_pypirc_nonexistent_file(tmp_path) -> None:
     Args:
         tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # Creates a path to a nonexistent file
     nonexistent_path = tmp_path / "nonexistent.pypirc"
@@ -1068,7 +1057,6 @@ def test_delete_stubs(tmp_path) -> None:
     Args:
         tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # Creates a mock library directory structure with .pyi files
     library_root = tmp_path.joinpath("library")
@@ -1108,7 +1096,6 @@ def test_rename_all_envs(tmp_path) -> None:
     """
 
     # Configure console to suppress output
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # Creates a mock project directory structure
     project_root = tmp_path.joinpath("project")
@@ -1161,7 +1148,6 @@ def test_replace_markers_in_file(tmp_path) -> None:
     Args:
         tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
 
     # Creates a temporary file with markers
     file_path = tmp_path.joinpath("test_file.txt")
@@ -1226,7 +1212,7 @@ def test_validate_library_name(library_name, is_valid):
         All click validators use click, rather than console, as the messaging backend to specifically integrate
         with the broader cli interface. Only the validator functions use this backend.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     if is_valid:
         # noinspection PyTypeChecker
         result = aa.validate_library_name(None, None, library_name)
@@ -1263,7 +1249,7 @@ def test_validate_project_name(project_name, is_valid):
         All click validators use click, rather than console, as the messaging backend to specifically integrate
         with the broader cli interface. Only the validator functions use this backend.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     if is_valid:
         # noinspection PyTypeChecker
         result = aa.validate_project_name(None, None, project_name)
@@ -1299,7 +1285,7 @@ def test_validate_author_name(author_name, is_valid):
         All click validators use click, rather than console, as the messaging backend to specifically integrate
         with the broader cli interface. Only the validator functions use this backend.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     if is_valid:
         # noinspection PyTypeChecker
         result = aa.validate_author_name(None, None, author_name)
@@ -1335,7 +1321,7 @@ def test_validate_email(email, is_valid):
         All click validators use click, rather than console, as the messaging backend to specifically integrate
         with the broader cli interface. Only the validator functions use this backend.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     if is_valid:
         # noinspection PyTypeChecker
         result = aa.validate_email(None, None, email)
@@ -1373,7 +1359,7 @@ def test_validate_env_name(env_name, is_valid):
         All click validators use click, rather than console, as the messaging backend to specifically integrate
         with the broader cli interface. Only the validator functions use this backend.
     """
-    aa.configure_console(verbose=False, enable_logging=False)
+
     if is_valid:
         # noinspection PyTypeChecker
         result = aa.validate_env_name(None, None, env_name)
