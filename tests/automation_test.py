@@ -1,19 +1,18 @@
-"""This module stores the tests for all classes and functions available from the automation.py module."""
+"""This module stores the tests for all non-cli functions available from the automation.py module."""
 
 import os
 import re
-import shutil as sh
-import subprocess
 import sys
+from pathlib import Path
 import tempfile
 import textwrap
+import subprocess
 from configparser import ConfigParser
-from pathlib import Path
 from unittest.mock import Mock
 
+import yaml
 import click
 import pytest
-import yaml
 
 import ataraxis_automation.automation as aa
 from ataraxis_automation.automation import EnvironmentCommands
@@ -42,10 +41,10 @@ def error_format(message: str) -> str:
     """Formats the input message to match the default Console format and escapes it using re, so that it can be used to
     verify raised exceptions.
 
-    This method is used to setup pytest 'match' clauses to verify raised exceptions.
+    This method is used to set up pytest 'match' clauses to verify raised exceptions.
 
     Args:
-        message: The message to format and escape according to standard Ataraxis testing parameters.
+        message: The message to format and escape, according to standard Ataraxis testing parameters.
 
     Returns:
         Formatted and escape message that can be used as the 'match' argument of pytest.raises() method.
@@ -53,12 +52,11 @@ def error_format(message: str) -> str:
     return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
 
 
-def test_configure_console(tmp_path, capsys) -> None:
+def test_configure_console(tmp_path) -> None:
     """Verifies that aa.configure_console method functions as expected under different input configurations.
 
     Args:
         tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-        capsys: Internal pytest fixture that captures and redirects messages from stderr and stdout.
     """
     # Setup
     log_dir = tmp_path.joinpath("logs")
@@ -71,9 +69,12 @@ def test_configure_console(tmp_path, capsys) -> None:
     assert message_log.exists()
     assert error_log.exists()
 
-    # Resets the log directory
-    sh.rmtree(log_dir)
+    # Replaces the log directory. Uses replacement instead of reset due to a permission clash on Windows platforms
+    # where 'pytest' prevents the log directory from being cleared.
+    log_dir = tmp_path.joinpath("logs2")
     log_dir.mkdir()
+    message_log = log_dir.joinpath("message_log.txt")
+    error_log = log_dir.joinpath("error_log.txt")
 
     # Verifies that disabling logging does not create log files
     aa.configure_console(log_dir, verbose=True, enable_logging=False)
@@ -81,22 +82,21 @@ def test_configure_console(tmp_path, capsys) -> None:
     assert not error_log.exists()
 
     # Changes the working directory to the general temporary directory to fail the tests below
-    os.chdir(tempfile.gettempdir())
+    new_project_directory = tempfile.gettempdir()
+    os.chdir(new_project_directory)
 
     # This should do two things: print a formatted message with traceback to the console and (evaluated here) call a
-    # SystemExit. This is the expected 'verbose' console behavior.
+    # SystemExit (through default callback). This is the expected 'verbose' console behavior.
     # noinspection PyTypeChecker
-    with pytest.raises((SystemExit, RuntimeError)):
+    with pytest.raises((SystemExit, RuntimeError), match="Runtime aborted."):
         aa.resolve_project_directory()
-    captured = capsys.readouterr()
-    assert "Unable to confirm that ataraxis automation module has been called" in captured.err
 
-    # Reconfigures console to not print or log anything
+    # Reconfigures console to not print or log anything. This also disables() the shared console variable.
     aa.configure_console(log_dir, verbose=False, enable_logging=False)
     assert not message_log.exists()
     assert not error_log.exists()
 
-    # When console is disabled, errors are raised using standard python 'raise' system, which should be caught by
+    # When console is disabled, errors are raised using the standard python 'raise' system, which should be caught by
     # pytest.
     with pytest.raises(RuntimeError):
         aa.resolve_project_directory()
@@ -108,8 +108,6 @@ def test_resolve_project_directory(project_dir) -> None:
     Args:
         project_dir: Local fixture that generates the project structure expected by many tests and returns the path
             to the root directory of the generated project.
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-        capsys: Internal pytest fixture that captures and redirects messages from stderr and stdout.
     """
     os.chdir(project_dir)
     result = aa.resolve_project_directory()
@@ -130,7 +128,8 @@ def test_resolve_project_directory_error(tmp_path) -> None:
         f"the project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
         f"directory is set to {os.getcwd()}, which does not contain at least one of the required files."
     )
-    with pytest.raises(RuntimeError, match=error_format(message)):
+    # noinspection PyTypeChecker
+    with pytest.raises((SystemExit, RuntimeError), match=error_format(message)):
         aa.resolve_project_directory()
 
 
@@ -210,7 +209,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
 
     project_dir: Path = aa.resolve_project_directory()
 
-    # Verifies environment resolution works as expected for linux platform
+    # Verifies environment resolution works as expected for the linux platform
     monkeypatch.setattr(sys, "platform", "linux")
     env_name, yml_path, spec_path = aa.resolve_environment_files(
         project_root=project_dir, environment_base_name=environment_base_name
@@ -219,7 +218,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
     assert yml_path == project_dir / "envs" / f"{environment_base_name}_lin.yml"
     assert spec_path == project_dir / "envs" / f"{environment_base_name}_lin_spec.txt"
 
-    # Verifies environment resolution works as expected for windows platform
+    # Verifies environment resolution works as expected for the windows platform
     monkeypatch.setattr(sys, "platform", "win32")
     env_name, yml_path, spec_path = aa.resolve_environment_files(
         project_root=project_dir, environment_base_name=environment_base_name
@@ -228,7 +227,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
     assert yml_path == project_dir / "envs" / f"{environment_base_name}_win.yml"
     assert spec_path == project_dir / "envs" / f"{environment_base_name}_win_spec.txt"
 
-    # Verifies environment resolution works as expected for darwin (OSx ARM64) platform
+    # Verifies environment resolution works as expected for the darwin (OSx ARM64) platform
     monkeypatch.setattr(sys, "platform", "darwin")
     env_name, yml_path, spec_path = aa.resolve_environment_files(
         project_root=project_dir, environment_base_name=environment_base_name
@@ -301,7 +300,7 @@ def test_resolve_conda_engine_fallback(monkeypatch) -> None:
 
 
 def test_resolve_conda_engine_error(monkeypatch) -> None:
-    """Verifies that aa.resolve_conda_engine() function fails when neither conda nor mamba are available.
+    """Verifies that aa.resolve_conda_engine() function fails when neither conda nor mamba is available.
 
     Args:
         monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
@@ -719,7 +718,7 @@ def test_resolve_project_name_errors(project_dir) -> None:
     ],
 )
 def test_resolve_environment_commands(
-        project_dir, monkeypatch, scenario, os_suffix, platform, conda_engine, pip_engine, python_version, dependencies
+    project_dir, monkeypatch, scenario, os_suffix, platform, conda_engine, pip_engine, python_version, dependencies
 ) -> None:
     """Verifies that resolve_environment_commands() function works as expected for all supported system
     configurations.
@@ -750,7 +749,7 @@ def test_resolve_environment_commands(
     pyproject_path = project_dir.joinpath("pyproject.toml")
     pyproject_path.write_text(pyproject_content)
 
-    # Mocks the outcome of resolve_environment_files sub-function uses by the resolve_environment_commands. This command
+    # Mocks the outcome of resolve_environment_files function used by the resolve_environment_commands. This command
     # is tested separately.
     # noinspection PyUnusedLocal
     def mock_resolve_environment_files(*args, **kwargs):
@@ -776,7 +775,7 @@ def test_resolve_environment_commands(
     result = aa.resolve_environment_commands(project_dir, "test_env", python_version=python_version)
 
     # Verifies the returned EnvironmentCommands class instance contains the fields expected given the mocked parameters
-    # and sub-function returned data.
+    # and function returned data.
     assert isinstance(result, EnvironmentCommands)
 
     # Check conda initialization and activation
@@ -789,8 +788,8 @@ def test_resolve_environment_commands(
     assert f"conda activate test_env{os_suffix}" in result.activate_command
     assert f"conda deactivate" in result.deactivate_command
     assert (
-            f"{conda_engine} create -n test_env{os_suffix} python={python_version} tox uv pip --yes"
-            in result.create_command
+        f"{conda_engine} create -n test_env{os_suffix} python={python_version} tox uv pip --yes"
+        in result.create_command
     )
     assert f"{conda_engine} remove -n test_env{os_suffix} --all --yes" in result.remove_command
     assert result.environment_name == f"test_env{os_suffix}"
@@ -798,8 +797,8 @@ def test_resolve_environment_commands(
     # When there are no conda or pip dependencies, the corresponding command is actually set to None
     if len(dependencies[0]) != 0:
         assert (
-                f"{conda_engine} install -n test_env{os_suffix} {' '.join(dependencies[0])} --yes"
-                in result.conda_dependencies_command
+            f"{conda_engine} install -n test_env{os_suffix} {' '.join(dependencies[0])} --yes"
+            in result.conda_dependencies_command
         )
     else:
         assert result.conda_dependencies_command is None
@@ -825,7 +824,8 @@ def test_resolve_environment_commands(
     # Verifies that pip-engine-dependent additional parameters match expectation.
     if pip_engine == "uv pip":
         assert f"--python={python_version}" in result.uninstall_project_command
-        assert f"--no-cache --compile-bytecode --python={python_version}" in result.install_project_command
+        command_string = f"--reinstall-package test-project --compile-bytecode --python={python_version}"
+        assert command_string in result.install_project_command
         if len(dependencies[1]) != 0:
             assert f"--compile-bytecode --python={python_version}" in result.pip_dependencies_command
     else:
@@ -848,7 +848,7 @@ def test_generate_typed_marker(tmp_path) -> None:
         tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
 
     Notes:
-        Similar to  some other tested functions, this function only tests 'success' functionality as it is not expected
+        Similar to some other tested functions, this function only tests 'success' functionality as it is not expected
         to fail.
     """
     # Sets up a mock library directory structure
@@ -1181,7 +1181,7 @@ def test_replace_markers_in_file(tmp_path) -> None:
     no_change_count = aa.replace_markers_in_file(file_path, no_change_markers)
     assert no_change_count == 0
 
-    # Verifies file content hasn't changed after no modifications
+    # Verifies file content hasn't changed after any modifications
     unchanged_content = file_path.read_text(encoding="utf-8")
     assert unchanged_content == modified_content
 
