@@ -1430,7 +1430,8 @@ def acquire_pypi_token(replace_token: bool) -> None:
             # Generates the new .pypirc file and saves the valid token data to the file.
             config = ConfigParser()
             config["pypi"] = {"username": "__token__", "password": token}
-            pypirc_path.write_text(config.dumps())  # type: ignore
+            with pypirc_path.open("w") as config_file:
+                config.write(config_file)
 
             # Notifies the user and breaks out of the while loop
             message = f"Valid PyPI token acquired and added to '.pypirc' for future uses."
