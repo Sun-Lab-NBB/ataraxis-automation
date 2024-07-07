@@ -1,4 +1,4 @@
-"""This module stores the tests for all classes and functions available from the automation.py module."""
+"""This module stores the tests for all non-cli functions available from the automation.py module."""
 
 import os
 import re
@@ -52,12 +52,11 @@ def error_format(message: str) -> str:
     return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
 
 
-def test_configure_console(tmp_path, capsys) -> None:
+def test_configure_console(tmp_path) -> None:
     """Verifies that aa.configure_console method functions as expected under different input configurations.
 
     Args:
         tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-        capsys: Internal pytest fixture that captures and redirects messages from stderr and stdout.
     """
     # Setup
     log_dir = tmp_path.joinpath("logs")
@@ -83,24 +82,31 @@ def test_configure_console(tmp_path, capsys) -> None:
     assert not error_log.exists()
 
     # Changes the working directory to the general temporary directory to fail the tests below
-    os.chdir(tempfile.gettempdir())
+    new_project_directory = tempfile.gettempdir()
+    os.chdir(new_project_directory)
 
     # This should do two things: print a formatted message with traceback to the console and (evaluated here) call a
-    # SystemExit. This is the expected 'verbose' console behavior.
+    # SystemExit (through default callback). This is the expected 'verbose' console behavior.
     # noinspection PyTypeChecker
     with pytest.raises(
-        (SystemExit, RuntimeError), match="Unable to confirm that ataraxis automation module has been called"
+        (SystemExit, RuntimeError), match="Runtime aborted."
     ):
         aa.resolve_project_directory()
 
-    # Reconfigures console to not print or log anything
+    # Reconfigures console to not print or log anything. This also disables() the shared console variable.
     aa.configure_console(log_dir, verbose=False, enable_logging=False)
     assert not message_log.exists()
     assert not error_log.exists()
 
     # When console is disabled, errors are raised using the standard python 'raise' system, which should be caught by
     # pytest.
-    with pytest.raises(RuntimeError):
+    message: str = (
+        f"Unable to confirm that ataraxis automation module has been called from the root directory of a valid "
+        f"Python project. This function expects that the current working directory is set to the root directory of "
+        f"the project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
+        f"directory is set to {new_project_directory}, which does not contain at least one of the required files."
+    )
+    with pytest.raises(RuntimeError, match=error_format(message)):
         aa.resolve_project_directory()
 
 
@@ -130,7 +136,8 @@ def test_resolve_project_directory_error(tmp_path) -> None:
         f"the project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
         f"directory is set to {os.getcwd()}, which does not contain at least one of the required files."
     )
-    with pytest.raises(RuntimeError, match=error_format(message)):
+    # noinspection PyTypeChecker
+    with pytest.raises((SystemExit, RuntimeError), match=error_format(message)):
         aa.resolve_project_directory()
 
 
@@ -825,7 +832,8 @@ def test_resolve_environment_commands(
     # Verifies that pip-engine-dependent additional parameters match expectation.
     if pip_engine == "uv pip":
         assert f"--python={python_version}" in result.uninstall_project_command
-        assert f"--no-cache --compile-bytecode --python={python_version}" in result.install_project_command
+        command_string = f"--reinstall-package test-project --compile-bytecode --python={python_version}"
+        assert command_string in result.install_project_command
         if len(dependencies[1]) != 0:
             assert f"--compile-bytecode --python={python_version}" in result.pip_dependencies_command
     else:

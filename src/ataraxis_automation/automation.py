@@ -108,6 +108,15 @@ def configure_console(
     terminal and logging them to log files. All functions of this library are expected to use the same global Console
     instance, and they should use the tools exposed by the console to issue errors and echo messages.
 
+    Notes:
+        Since version 1.1.0 of ataraxis-base-utilities and version 2.0.0 of this library, it uses shared 'console'
+        variable for terminal-printing and file-logging functionality. While effective, this design is potentially
+        dangerous, as it allows multiple modules to access and alter 'console' configuration. Since this function is
+        expected to be called from the highest module of the call hierarchy, it reconfigures and enables / disables the
+        console variable depending on the input arguments. This will interfere with any imported module that also
+        attempts to modify the console configuration. There should always be only one active module allowed to modify
+        console variable for each runtime.
+
     Args:
         log_directory: The absolute path to the user logs directory. The function ensures the directory exists, but
             relies on the main cli group to provide the directory path.
@@ -143,6 +152,12 @@ def configure_console(
     # Enables console if logging or printing is enabled.
     if enable_logging or verbose:
         console.enable()
+    else:
+        # Ensures the console is disabled if neither logging nor terminal-printing is enabled. This is primarily
+        # helpful for testing purposes, but also ensures consistent performance given that console is potentially
+        # shared between many different modules. Some of these modules may transiently enable it without disabling,
+        # which can cause this library to behave unexpectedly with respect to logging.
+        console.disable()
 
 
 def resolve_project_directory() -> Path:
@@ -1057,7 +1072,7 @@ def resolve_environment_commands(
         # Forces the command to run in conda if tox 'basepython' != python_version
         pip_uninstall_command += f" --python={python_version}"
         # Prevents cache interference, compiles to bytecode and forces uv to use conda environment
-        pip_reinstall_command += f" --no-cache --compile-bytecode --python={python_version}"
+        pip_reinstall_command += f" --reinstall-package {project_name} --compile-bytecode --python={python_version}"
         if pip_dependencies_command is not None:
             # Forces compilation and forces uv to use conda environment
             pip_dependencies_command += f" --compile-bytecode --python={python_version}"
