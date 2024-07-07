@@ -193,7 +193,7 @@ To install the development environment for your OS:
        environment with already installed tox and call ```tox -e import-env```.
     2. **_Alternative Method_**: Run ```conda env create -f ENVNAME.yml``` or ```mamba env create -f ENVNAME.yml```.
        Replace 'ENVNAME.yml' with the name of the environment you want to install (axa_dev_osx for OSx,
-       axa_dev_win for Windows and axa_dev_lin for Linux).
+       axa_dev_win for Windows, and axa_dev_lin for Linux).
 
 **Note:** the OSx environment was built against M1 (Apple Silicon) platform and may not work on Intel-based Apple
 devices.

@@ -14,4 +14,4 @@ CLI Commands
 
 .. click:: ataraxis_automation.automation:cli
    :prog: automation-cli
-   :nested: short
+   :nested: full
