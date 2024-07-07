@@ -88,9 +88,7 @@ def test_configure_console(tmp_path) -> None:
     # This should do two things: print a formatted message with traceback to the console and (evaluated here) call a
     # SystemExit (through default callback). This is the expected 'verbose' console behavior.
     # noinspection PyTypeChecker
-    with pytest.raises(
-        (SystemExit, RuntimeError), match="Runtime aborted."
-    ):
+    with pytest.raises((SystemExit, RuntimeError), match="Runtime aborted."):
         aa.resolve_project_directory()
 
     # Reconfigures console to not print or log anything. This also disables() the shared console variable.

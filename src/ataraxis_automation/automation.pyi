@@ -32,6 +32,15 @@ def configure_console(log_directory: Path | None = None, *, verbose: bool = Fals
     terminal and logging them to log files. All functions of this library are expected to use the same global Console
     instance, and they should use the tools exposed by the console to issue errors and echo messages.
 
+    Notes:
+        Since version 1.1.0 of ataraxis-base-utilities and version 2.0.0 of this library, it uses shared 'console'
+        variable for terminal-printing and file-logging functionality. While effective, this design is potentially
+        dangerous, as it allows multiple modules to access and alter 'console' configuration. Since this function is
+        expected to be called from the highest module of the call hierarchy, it reconfigures and enables / disables the
+        console variable depending on the input arguments. This will interfere with any imported module that also
+        attempts to modify the console configuration. There should always be only one active module allowed to modify
+        console variable for each runtime.
+
     Args:
         log_directory: The absolute path to the user logs directory. The function ensures the directory exists, but
             relies on the main cli group to provide the directory path.
