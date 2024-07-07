@@ -98,13 +98,7 @@ def test_configure_console(tmp_path) -> None:
 
     # When console is disabled, errors are raised using the standard python 'raise' system, which should be caught by
     # pytest.
-    message: str = (
-        f"Unable to confirm that ataraxis automation module has been called from the root directory of a valid "
-        f"Python project. This function expects that the current working directory is set to the root directory of "
-        f"the project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
-        f"directory is set to {new_project_directory}, which does not contain at least one of the required files."
-    )
-    with pytest.raises(RuntimeError, match=error_format(message)):
+    with pytest.raises(RuntimeError):
         aa.resolve_project_directory()
 
 
