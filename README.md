@@ -67,7 +67,7 @@ ___
 
 1. Download this repository to your local machine using your preferred method, such as git-cloning. Optionally, use one
    of the stable releases that include precompiled binary wheels in addition to source code.
-2. ```cd``` to the root directory of the project using your CLI of choice.
+2. ```cd``` to the root directory of the project using your command line interface of choice.
 3. Run ```python -m pip install .``` to install the project. Alternatively, if using a distribution with precompiled
    binaries, use ```python -m pip install WHEEL_PATH```, replacing 'WHEEL_PATH' with the path to the wheel file.
 
@@ -144,7 +144,7 @@ that were used during development from the included .yml files.
 ### Installing the library
 
 1. Download this repository to your local machine using your preferred method, such as git-cloning.
-2. ```cd``` to the root directory of the project using your CLI of choice.
+2. ```cd``` to the root directory of the project using your command line interface of choice.
 3. Install development dependencies. You have multiple options of satisfying this requirement:
     1. **_Preferred Method:_** Use conda or pip to install
        [tox](https://tox.wiki/en/latest/user_guide.html) or use an environment that has it installed and
