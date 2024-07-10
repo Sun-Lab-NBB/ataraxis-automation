@@ -15,7 +15,7 @@ dependencies:
   - bzip2=1.0.8=hd590300_5
   - ca-certificates=2024.7.4=hbcca054_0
   - cachetools=5.3.3=pyhd8ed1ab_0
-  - certifi=2024.6.2=pyhd8ed1ab_0
+  - certifi=2024.7.4=pyhd8ed1ab_0
   - cffi=1.16.0=py312hf06ca03_0
   - chardet=5.2.0=py312h7900ff3_1
   - charset-normalizer=3.3.2=pyhd8ed1ab_0
@@ -65,7 +65,7 @@ dependencies:
   - libiconv=1.17=hd590300_2
   - liblapack=3.9.0=22_linux64_openblas
   - libnsl=2.0.1=hd590300_0
-  - libopenblas=0.3.27=pthreads_h413a1c8_0
+  - libopenblas=0.3.27=pthreads_hac2b453_1
   - libsqlite=3.46.0=hde9e2c9_0
   - libstdcxx-ng=14.1.0=hc0a3c3a_0
   - libuuid=2.38.1=h0b41bf4_0
@@ -78,7 +78,7 @@ dependencies:
   - mypy=1.10.1=py312h9a8786e_0
   - mypy_extensions=1.0.0=pyha770c72_0
   - ncurses=6.5=h59595ed_0
-  - nh3=0.2.17=py312h4413252_0
+  - nh3=0.2.18=py312hf008fa9_0
   - numpy=2.0.0=py312h22e1c76_0
   - openssl=3.3.1=h4ab18f5_1
   - packaging=24.1=pyhd8ed1ab_0
@@ -115,7 +115,7 @@ dependencies:
   - ruff=0.5.1=py312hbe4c86d_0
   - secretstorage=3.3.3=py312h7900ff3_2
   - semver=3.0.2=pyhd8ed1ab_0
-  - setuptools=70.1.1=pyhd8ed1ab_0
+  - setuptools=70.2.0=pyhd8ed1ab_0
   - snowballstemmer=2.2.0=pyhd8ed1ab_0
   - soupsieve=2.5=pyhd8ed1ab_1
   - sphinx=7.3.7=pyhd8ed1ab_0
@@ -151,12 +151,12 @@ dependencies:
   - zstd=1.5.6=ha6fb4c9_0
   - pip:
       - annotated-types==0.7.0
-      - ataraxis-automation==2.0.2
-      - ataraxis-base-utilities==1.1.0
+      - ataraxis-automation==2.1.0
+      - ataraxis-base-utilities==1.2.0
       - build==1.2.1
       - loguru==0.7.2
       - pydantic==2.8.2
       - pydantic-core==2.20.1
       - pyproject-hooks==1.1.0
       - tox-uv==1.9.1
-      - uv==0.2.21
+      - uv==0.2.24
