@@ -14,7 +14,7 @@ dependencies:
   - bzip2=1.0.8=hcfcfb64_5
   - ca-certificates=2024.7.4=h56e8100_0
   - cachetools=5.3.3=pyhd8ed1ab_0
-  - certifi=2024.6.2=pyhd8ed1ab_0
+  - certifi=2024.7.4=pyhd8ed1ab_0
   - cffi=1.16.0=py312he70551f_0
   - chardet=5.2.0=py312h2e8e312_1
   - charset-normalizer=3.3.2=pyhd8ed1ab_0
@@ -65,7 +65,7 @@ dependencies:
   - more-itertools=10.3.0=pyhd8ed1ab_0
   - mypy=1.10.1=py312h4389bb4_0
   - mypy_extensions=1.0.0=pyha770c72_0
-  - nh3=0.2.17=py312h68c23d6_0
+  - nh3=0.2.18=py312h68c23d6_0
   - numpy=2.0.0=py312h49bc9c5_0
   - openssl=3.3.1=h2466b09_1
   - packaging=24.1=pyhd8ed1ab_0
@@ -99,9 +99,9 @@ dependencies:
   - ruamel.yaml=0.18.6=py312he70551f_0
   - ruamel.yaml.clib=0.2.8=py312he70551f_0
   - ruamel.yaml.jinja2=0.2.4=py_1
-  - ruff=0.5.0=py312h7a6832a_0
+  - ruff=0.5.1=py312h7a6832a_0
   - semver=3.0.2=pyhd8ed1ab_0
-  - setuptools=70.1.1=pyhd8ed1ab_0
+  - setuptools=70.2.0=pyhd8ed1ab_0
   - snowballstemmer=2.2.0=pyhd8ed1ab_0
   - soupsieve=2.5=pyhd8ed1ab_1
   - sphinx=7.3.7=pyhd8ed1ab_0
@@ -143,13 +143,13 @@ dependencies:
   - zstd=1.5.6=h0ea2cb4_0
   - pip:
       - annotated-types==0.7.0
-      - ataraxis-automation==2.0.2
-      - ataraxis-base-utilities==1.1.0
+      - ataraxis-automation==2.1.0
+      - ataraxis-base-utilities==1.2.0
       - build==1.2.1
       - loguru==0.7.2
       - pydantic==2.8.2
       - pydantic-core==2.20.1
       - pyproject-hooks==1.1.0
       - tox-uv==1.9.1
-      - uv==0.2.21
+      - uv==0.2.24
       - win32-setctime==1.1.0
