@@ -13,6 +13,7 @@ from unittest.mock import Mock
 import yaml
 import click
 import pytest
+from click.testing import CliRunner
 
 import ataraxis_automation.automation as aa
 from ataraxis_automation.automation import EnvironmentCommands
@@ -53,11 +54,7 @@ def error_format(message: str) -> str:
 
 
 def test_configure_console(tmp_path) -> None:
-    """Verifies that aa.configure_console method functions as expected under different input configurations.
-
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-    """
+    """Verifies the functionality of the configure_console() function."""
     # Setup
     log_dir = tmp_path.joinpath("logs")
     log_dir.mkdir()
@@ -103,23 +100,14 @@ def test_configure_console(tmp_path) -> None:
 
 
 def test_resolve_project_directory(project_dir) -> None:
-    """Verifies that aa.resolve_project_directory() method works as expected for a well-configured project.
-
-    Args:
-        project_dir: Local fixture that generates the project structure expected by many tests and returns the path
-            to the root directory of the generated project.
-    """
+    """Verifies the functionality of the resolve_project_directory() function."""
     os.chdir(project_dir)
     result = aa.resolve_project_directory()
     assert result == project_dir
 
 
 def test_resolve_project_directory_error(tmp_path) -> None:
-    """Verifies that aa.resolve_project_directory() fails for non-project directories.
-
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-    """
+    """Verifies the error handling behavior of the resolve_project_directory() function."""
 
     os.chdir(tmp_path)
     message: str = (
@@ -141,14 +129,11 @@ def test_resolve_project_directory_error(tmp_path) -> None:
     ],
 )
 def test_resolve_library_root(project_dir, init_location, expected) -> None:
-    """Verifies that aa.resolve_library_root() function works as expected for src-root and library_name-root projects.
+    """Verifies the functionality of the resolve_library_root() function.
 
-    Args:
-        project_dir: Local fixture that generates the project structure expected by many tests and returns the path
-            to the root directory of the generated project.
-        init_location: The path to the directory, to which the __init__.py should be added. Simulates the library root
-            folder.
-        expected: The expected result of processing the project root structure given the __init__.py location.
+    Tests the following scenarios:
+        0 - library root being the /src directory (used by our c-extension projects).
+        1 - library root being a subfolder under the /src directory.
     """
 
     init_dir = project_dir.joinpath(init_location)
@@ -159,12 +144,7 @@ def test_resolve_library_root(project_dir, init_location, expected) -> None:
 
 
 def test_resolve_library_root_error(project_dir) -> None:
-    """Verifies error-handling behavior of aa.resolve_library_root() method.
-
-    Args:
-        project_dir: Local fixture that generates the project structure expected by many tests and returns the path
-            to the root directory of the generated project.
-    """
+    """Verifies error-handling behavior of the resolve_library_root() function."""
 
     # Verifies the method correctly fails when __init__.py is not found under /src or any subdirectory directly under
     # src
@@ -196,13 +176,7 @@ def test_resolve_library_root_error(project_dir) -> None:
 
 
 def test_resolve_environment_files(project_dir, monkeypatch) -> None:
-    """Verifies that aa.resolve_environment_files() function works as expected for supported platforms.
-
-    Args:
-        project_dir: Local fixture that generates the project structure expected by many tests and returns the path
-            to the root directory of the generated project.
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-    """
+    """Verifies the functionality of the resolve_environment_files() function."""
 
     os.chdir(project_dir)  # Ensures working directory is set to the project directory
     environment_base_name: str = "test_env"
@@ -238,13 +212,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
 
 
 def test_resolve_environment_files_error(project_dir, monkeypatch) -> None:
-    """Verifies aa.resolve_environment_files() function fails for unsupported platforms.
-
-    Args:
-        project_dir: Local fixture that generates the project structure expected by many tests and returns the path
-            to the root directory of the generated project.
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-    """
+    """Verifies the functionality of the resolve_environment_files() function."""
 
     supported_platforms: dict[str, str] = {"win32": "_win", "linux": "_lin", "darwin": "_osx"}
     monkeypatch.setattr(sys, "platform", "unsupported")
@@ -259,12 +227,7 @@ def test_resolve_environment_files_error(project_dir, monkeypatch) -> None:
 
 
 def test_resolve_conda_engine(monkeypatch) -> None:
-    """Verifies the functioning of the aa.resolve_conda_engine() function when both mamba and conda engines are
-    available.
-
-    Args:
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-    """
+    """Verifies the functionality of the resolve_conda_engine() function when both mamba and conda are available."""
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
@@ -280,11 +243,7 @@ def test_resolve_conda_engine(monkeypatch) -> None:
 
 
 def test_resolve_conda_engine_fallback(monkeypatch) -> None:
-    """Verifies the functioning of the aa.resolve_conda_engine() function when only conda engine is available.
-
-    Args:
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-    """
+    """Verifies the functionality of the resolve_conda_engine() function when only conda is available."""
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
@@ -300,11 +259,8 @@ def test_resolve_conda_engine_fallback(monkeypatch) -> None:
 
 
 def test_resolve_conda_engine_error(monkeypatch) -> None:
-    """Verifies that aa.resolve_conda_engine() function fails when neither conda nor mamba is available.
-
-    Args:
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-    """
+    """Verifies the error-handling behavior of the resolve_conda_engine() function when neither mamba not conda are
+    available."""
 
     # noinspection PyUnusedLocal
     def mock_run(*args, **kwargs):
@@ -326,11 +282,7 @@ def test_resolve_conda_engine_error(monkeypatch) -> None:
 
 
 def test_resolve_pip_engine(monkeypatch) -> None:
-    """Verifies the functioning of the aa.resolve_pip_engine() function when both uv and pip engines are available.
-
-    Args:
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-    """
+    """Verifies the functionality of the resolve_pip_engine() function when both uv and pip engines are available."""
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
@@ -346,11 +298,7 @@ def test_resolve_pip_engine(monkeypatch) -> None:
 
 
 def test_resolve_pip_engine_fallback(monkeypatch) -> None:
-    """Verifies the functioning of the aa.resolve_pip_engine() function when only pip engine is available.
-
-    Args:
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-    """
+    """Verifies the functionality of the resolve_pip_engine() function when only pip engine is available."""
 
     # noinspection PyUnusedLocal
     def mock_subprocess_run(*args, **kwargs):
@@ -366,11 +314,8 @@ def test_resolve_pip_engine_fallback(monkeypatch) -> None:
 
 
 def test_resolve_pip_engine_error(monkeypatch) -> None:
-    """Verifies that aa.resolve_pip_engine() function fails when neither pip nor uv are available.
-
-    Args:
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-    """
+    """Verifies the error-handling behavior of the resolve_pip_engine() function when neither pip nor uv are
+    available."""
 
     # noinspection PyUnusedLocal
     def mock_run(*args, **kwargs):
@@ -405,18 +350,16 @@ def test_resolve_pip_engine_error(monkeypatch) -> None:
     ],
 )
 def test_get_base_name(dependency, expected) -> None:
-    """Verifies that get_base_name() function correctly strips versions and extras from dependency names.
+    """Verifies the functionality of the get_base_name() function.
 
-    Args:
-        dependency: Tested dependency name.
-        expected: Expected processing outcome.
+    Tests all supported input scenarios.
     """
 
     assert aa.get_base_name(dependency) == expected
 
 
 def test_add_dependency() -> None:
-    """Verifies the functioning and duplicate handling of the add_dependency() minor method."""
+    """Verifies the functionality and duplicate input handling of the add_dependency() function."""
 
     # Setup
     processed_dependencies = set()
@@ -484,11 +427,7 @@ def write_tox_ini(project_dir: Path, content: str) -> None:
 
 
 def test_resolve_dependencies(project_dir: Path) -> None:
-    """Verifies the functioning of the resolve_dependencies() function.
-
-    Args:
-        project_dir: The path to the processed project root directory.
-    """
+    """Verifies the functionality of the resolve_dependencies() function."""
 
     pyproject_content = """
 [project]
@@ -520,11 +459,8 @@ requires =
 
 
 def test_resolve_dependencies_missing_tox_dep(project_dir: Path) -> None:
-    """Verifies that resolve_dependencies() correctly catches when tox dependencies are missing from .toml lists.
-
-    Args:
-        project_dir: The path to the processed project root directory.
-    """
+    """Verifies that the resolve_dependencies() function correctly detects tox dependencies missing from
+    pyproject.toml."""
 
     pyproject_content = """
 [project]
@@ -560,11 +496,7 @@ requires =
 
 def test_resolve_dependencies_duplicate_dep(project_dir: Path) -> None:
     """Verifies that resolve_dependencies() function correctly catches duplicate dependencies in supported .toml
-    lists.
-
-    Args:
-        project_dir: The path to the processed project root directory.
-    """
+    lists."""
 
     pyproject_content = """
 [project]
@@ -600,11 +532,7 @@ requires =
 @pytest.mark.parametrize("section", ["condarun", "conda"])
 def test_resolve_dependencies_priority(project_dir, section: Path) -> None:
     """Verifies that resolve_dependencies() correctly prioritizes resolving run-dependencies as conda dependencies over
-    pip where possible.
-
-    Args:
-        project_dir: The path to the processed project root directory.
-    """
+    pip where possible."""
 
     pyproject_content = f"""
     [project]
@@ -637,11 +565,7 @@ def test_resolve_dependencies_priority(project_dir, section: Path) -> None:
 
 
 def test_resolve_project_name(project_dir) -> None:
-    """Verifies the functioning of the resolve_project_name() function.
-
-    Args:
-        project_dir: The path to the processed project root directory.
-    """
+    """Verifies the functionality of the resolve_project_name() function."""
 
     pyproject_content = """
     [project]
@@ -655,11 +579,7 @@ def test_resolve_project_name(project_dir) -> None:
 
 
 def test_resolve_project_name_errors(project_dir) -> None:
-    """Test resolve_project_name() function error handling.
-
-    Args:
-        project_dir: The path to the processed project root directory.
-    """
+    """Verifies the error-handling behavior of the resolve_project_name() function."""
 
     # Verifies that malformed pyproject.toml files are not processed.
 
@@ -720,24 +640,9 @@ def test_resolve_project_name_errors(project_dir) -> None:
 def test_resolve_environment_commands(
     project_dir, monkeypatch, scenario, os_suffix, platform, conda_engine, pip_engine, python_version, dependencies
 ) -> None:
-    """Verifies that resolve_environment_commands() function works as expected for all supported system
-    configurations.
+    """Verifies the functionality of resolve_environment_commands().
 
-    Args:
-        project_dir: The path to the processed project root directory.
-        monkeypatch: Internal pytest fixture that allows mocking the output of other system package calls.
-        scenario: The descriptive name of the tested configuration scenario. This is exclusively used to make reading
-            test configurations more human-friendly.
-        os_suffix: The os-suffix expected to be used by the test scenario (based on the simulated platform).
-        platform: The platform (OS) to simulate for the test scenario.
-        conda_engine: The 'conda' command to simulate for the test scenario.
-        pip_engine: The 'pip' command to simulate for the test scenario.
-        python_version: The python-version input to the tested function.
-        dependencies: A tuple of conda and pip (in this order) dependency-lists to simulate for the test scenario.
-
-    Notes:
-        There are no error tests for this function as all errors are raised by minor sub-functions. There is no point in
-        testing these in-addition to testing them for the specific sub-functions.
+    Tests all supported platforms and conda / mamba engine combinations.
     """
 
     # Setup
@@ -836,21 +741,19 @@ def test_resolve_environment_commands(
         else:
             assert result.pip_dependencies_command is None
 
-    # Check for new yml-related commands
+    # Checks for new yml-related commands
     assert result.create_from_yml_command == f"{conda_engine} env create -f {yml_path} --yes"
     assert result.update_command == f"{conda_engine} env update -n test_env{os_suffix} -f {yml_path} --prune"
 
+    # Also tests the case where .yaml files are not present in the /envs folder.
+    os.remove(yml_path)
+    result = aa.resolve_environment_commands(project_dir, "test_env", python_version=python_version)
+    assert result.create_from_yml_command is None
+    assert result.update_command is None
+
 
 def test_generate_typed_marker(tmp_path) -> None:
-    """Verifies the functioning of the generate_typed_marker() function.
-
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-
-    Notes:
-        Similar to some other tested functions, this function only tests 'success' functionality as it is not expected
-        to fail.
-    """
+    """Verifies the functionality of the generate_typed_marker() function."""
     # Sets up a mock library directory structure
     library_root = tmp_path / "library"
     library_root.mkdir()
@@ -884,11 +787,7 @@ def test_generate_typed_marker(tmp_path) -> None:
 
 
 def test_move_stubs(project_dir) -> None:
-    """Verifies the functioning of the generate_typed_marker() function.
-
-    Args:
-        project_dir: The path to the processed project root directory.
-    """
+    """Verifies the functionality of the test_move_stubs() function."""
 
     # Sets up mock directories
     stubs_dir = project_dir / "stubs"
@@ -930,21 +829,25 @@ def test_move_stubs(project_dir) -> None:
     assert not (library_root / "osx_file 1.pyi").exists()
     assert not (library_root / "osx_file 2.pyi").exists()
 
+    # Verifies a unique case where there is a single file, but it uses the duplicate name notation. The file should be
+    # renamed to exclude the number suffix.
+    os.remove(library_root / "osx_file.pyi")
+    stub_lib_dir.joinpath("__init__.pyi").touch()
+    (library_root / "osx_file 1.pyi").touch()
+    aa.move_stubs(stubs_dir, library_root)
+    assert (library_root / "osx_file.pyi").exists()
+
 
 def test_move_stubs_error(project_dir) -> None:
-    """Verifies the error-handling behavior of the generate_typed_marker() function.
+    """Verifies the error-handling behavior of the move_stubs() function."""
 
-    Args:
-        project_dir: The path to the processed project root directory.
-    """
-
-    # Set up mock directories
+    # Sets up mock directories
     stubs_dir = project_dir.joinpath("stubs")
     library_root = project_dir / "src" / "library"
     stubs_dir.mkdir()
     library_root.mkdir(parents=True)
 
-    # Create invalid stub directory structure (multiple subdirectories with __init__.pyi)
+    # Creates invalid stub directory structure (multiple subdirectories with __init__.pyi)
     stubs_dir.joinpath("lib1").mkdir()
     init_1_path = Path(stubs_dir / "lib1" / "__init__.pyi")
     init_1_path.touch()
@@ -999,15 +902,9 @@ def test_move_stubs_error(project_dir) -> None:
     ],
 )
 def test_verify_pypirc(tmp_path, config, expected_result):
-    """Verifies the functioning of the verify_pypirc() function across all supported pypirc file layouts.
+    """Verifies the functionality of the verify_pypirc() function.
 
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-        config: The pypirc file (contents) configuration to be used for the test.
-        expected_result: The expected boolean return for the tested configuration.
-
-    Note:
-        This tests both valid success and valid failure runtimes.
+    Tests all supported pypirc layouts.
     """
 
     # Creates a mock .pypirc file with the given configuration
@@ -1035,11 +932,7 @@ def test_verify_pypirc(tmp_path, config, expected_result):
 
 
 def test_verify_pypirc_nonexistent_file(tmp_path) -> None:
-    """Verifies that verify_pypirc() function correctly handles nonexistent pypirc files.
-
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-    """
+    """Verifies teh error-handling behavior of the verify_pypirc() function."""
 
     # Creates a path to a nonexistent file
     nonexistent_path = tmp_path / "nonexistent.pypirc"
@@ -1052,11 +945,7 @@ def test_verify_pypirc_nonexistent_file(tmp_path) -> None:
 
 
 def test_delete_stubs(tmp_path) -> None:
-    """Verifies the functioning of the delete_stubs() function.
-
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-    """
+    """Verifies the functionality of the delete_stubs() function."""
 
     # Creates a mock library directory structure with .pyi files
     library_root = tmp_path.joinpath("library")
@@ -1089,11 +978,7 @@ def test_delete_stubs(tmp_path) -> None:
 
 
 def test_rename_all_envs(tmp_path) -> None:
-    """Verifies the functioning of the rename_all_envs() function.
-
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-    """
+    """Verifies the functionality of the rename_all_envs() function."""
 
     # Configure console to suppress output
 
@@ -1110,7 +995,9 @@ def test_rename_all_envs(tmp_path) -> None:
     envs_dir.joinpath("old_env_win_spec.txt").touch()
     envs_dir.joinpath("old_env_lin_spec.txt").touch()
     envs_dir.joinpath("old_env_osx_spec.txt").touch()
-    envs_dir.joinpath("unrelated_file.txt").touch()  # This file should not be renamed
+    envs_dir.joinpath("old_env_osx_spec.txt").touch()
+    envs_dir.joinpath("unrelated_spec.txt").touch()  # This file should not be renamed
+    envs_dir.joinpath("unrelated.yml").touch()  # This file should not be renamed
 
     new_name = "new_env"
     aa.rename_all_envs(project_root, new_name)
@@ -1135,19 +1022,16 @@ def test_rename_all_envs(tmp_path) -> None:
         assert not old_spec_path.exists(), f"Expected {old_spec_path} to be deleted"
 
     # Verifies that unrelated files are not renamed
-    assert envs_dir.joinpath("unrelated_file.txt").exists(), "Expected unrelated file to remain unchanged"
+    assert envs_dir.joinpath("unrelated_spec.txt").exists(), "Expected unrelated file to remain unchanged"
+    assert envs_dir.joinpath("unrelated.yml").exists(), "Expected unrelated file to remain unchanged"
 
     # Verifies the total number of files in the directory
     all_files = list(envs_dir.iterdir())
-    assert len(all_files) == 7, f"Expected 7 files in total, found {len(all_files)}"
+    assert len(all_files) == 8, f"Expected 8 files in total, found {len(all_files)}"
 
 
 def test_replace_markers_in_file(tmp_path) -> None:
-    """Verifies the functioning of the replace_markers_in_file() function.
-
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-    """
+    """Verifies the functionality of the replace_markers_in_file() function."""
 
     # Creates a temporary file with markers
     file_path = tmp_path.joinpath("test_file.txt")
@@ -1202,15 +1086,9 @@ def test_replace_markers_in_file(tmp_path) -> None:
     ],
 )
 def test_validate_library_name(library_name, is_valid):
-    """Verifies the functioning of the validate_library_name() function for all supported inputs.
+    """Verifies the functionality of the validate_library_name() function.
 
-    Args:
-        library_name: The library name input to be validated.
-        is_valid: The expected outcome of the validation process.
-
-    Notes:
-        All click validators use click, rather than console, as the messaging backend to specifically integrate
-        with the broader cli interface. Only the validator functions use this backend.
+    Tests all supported inputs.
     """
 
     if is_valid:
@@ -1239,15 +1117,9 @@ def test_validate_library_name(library_name, is_valid):
     ],
 )
 def test_validate_project_name(project_name, is_valid):
-    """Verifies the functioning of the validate_project_name() function for all supported inputs.
+    """Verifies the functionality of the validate_project_name() function.
 
-    Args:
-        project_name: The project name input to be validated.
-        is_valid: The expected outcome of the validation process.
-
-    Notes:
-        All click validators use click, rather than console, as the messaging backend to specifically integrate
-        with the broader cli interface. Only the validator functions use this backend.
+    Tests all supported inputs.
     """
 
     if is_valid:
@@ -1275,15 +1147,9 @@ def test_validate_project_name(project_name, is_valid):
     ],
 )
 def test_validate_author_name(author_name, is_valid):
-    """Verifies the functioning of the validate_author_name() function for all supported inputs.
+    """Verifies the functioning of the validate_author_name() function.
 
-    Args:
-        author_name: The author name input to be validated.
-        is_valid: The expected outcome of the validation process.
-
-    Notes:
-        All click validators use click, rather than console, as the messaging backend to specifically integrate
-        with the broader cli interface. Only the validator functions use this backend.
+    Tests all supported inputs.
     """
 
     if is_valid:
@@ -1311,15 +1177,9 @@ def test_validate_author_name(author_name, is_valid):
     ],
 )
 def test_validate_email(email, is_valid):
-    """Verifies the functioning of the validate_email() function for all supported inputs.
+    """Verifies the functioning of the validate_email() function.
 
-    Args:
-        email: The email address input to be validated.
-        is_valid: The expected outcome of the validation process.
-
-    Notes:
-        All click validators use click, rather than console, as the messaging backend to specifically integrate
-        with the broader cli interface. Only the validator functions use this backend.
+    Tests all supported inputs.
     """
 
     if is_valid:
@@ -1349,15 +1209,9 @@ def test_validate_email(email, is_valid):
     ],
 )
 def test_validate_env_name(env_name, is_valid):
-    """Verifies the functioning of the validate_env_name() function for all supported inputs.
+    """Verifies the functioning of the validate_env_name() function.
 
-    Args:
-        env_name: The environment name input to be validated.
-        is_valid: The expected outcome of the validation process.
-
-    Notes:
-        All click validators use click, rather than console, as the messaging backend to specifically integrate
-        with the broader cli interface. Only the validator functions use this backend.
+    Tests all supported inputs.
     """
 
     if is_valid:
@@ -1369,3 +1223,50 @@ def test_validate_env_name(env_name, is_valid):
             # noinspection PyTypeChecker
             aa.validate_env_name(None, None, env_name)
         assert "Environment name should contain only letters, numbers, and underscores." in str(excinfo.value)
+
+
+@pytest.fixture
+def mock_commands():
+    """Creates a mock instance of EnvironmentCommands for testing."""
+    return EnvironmentCommands(
+        activate_command="conda init && conda activate test_env",
+        deactivate_command="conda init && conda deactivate",
+        create_command="conda create -n test_env python=3.8 tox pip uv",
+        create_from_yml_command="conda env create -f env.yml -n test_env",
+        remove_command="conda env remove -n test_env",
+        conda_dependencies_command="conda install -n test_env package1 package2",
+        pip_dependencies_command="pip install package3 package4",
+        update_command="conda env update -f env.yml -n test_env",
+        export_yml_command="conda env export -n test_env > env.yml",
+        export_spec_command="conda list -n test_env --explicit > spec.txt",
+        environment_name="test_env",
+        install_project_command="uv pip install --no-cache-dir .",
+        uninstall_project_command="pip uninstall -y project_name",
+        provision_command="conda install --revision 0 -n test_env",
+    )
+
+
+def test_environment_exists(monkeypatch, mock_commands):
+    """Verifies the functionality of environment_exists() function when environment activation command runs as
+    expected.
+    """
+
+    # noinspection PyUnusedLocal
+    def mock_run(*args, **kwargs):
+        return subprocess.CompletedProcess(args, 0)
+
+    # Runs the command mocking the subprocess call output to be a success code
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    assert aa.environment_exists(mock_commands) is True
+
+
+def test_environment_exists_error(monkeypatch, mock_commands):
+    """Verifies the functionality of environment_exists() function when environment activation command fails."""
+
+    # noinspection PyUnusedLocal
+    def mock_run(*args, **kwargs):
+        raise subprocess.CalledProcessError(1, "cmd")
+
+    # Runs the command mocking the subprocess call output to be a failure code
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    assert aa.environment_exists(mock_commands) is False

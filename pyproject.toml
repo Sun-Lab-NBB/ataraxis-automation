@@ -5,10 +5,10 @@
 requires = ["hatchling>=1,<2"]
 build-backend = "hatchling.build"
 
-# Project metdata section. Provides the genral ID information about the project.
+# Project metadata section. Provides the genral ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "2.1.0"
+version = "2.2.0"
 description = "Provides scripts that support tox-based development automation pipelines used by other Sun Lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -47,7 +47,7 @@ dependencies = [
     "click>=8,<9",
     "pyyaml>=6,<7",
     "appdirs>=1,<2",
-    "ataraxis-base-utilities>=1,<2",
+    "ataraxis-base-utilities>=2,<3",
     "tomli>=2,<3",
 ]
 
@@ -69,7 +69,7 @@ condarun = [
     "tomli>=2,<3",
 ]
 
-# Depepndencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
+# Dependencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
 conda = [
     # Tox
     "tox>=4,<5",
@@ -122,7 +122,7 @@ noconda = [
     "ataraxis-automation>=2,<3",
 ]
 
-# A shorhand specification that installs tox and all packages required for development tasks. This specification can
+# A shorthand specification that installs tox and all packages required for development tasks. This specification can
 # be used by developers to quickly install all necessary compontents for working on this project. Has to be installed
 # from pip.
 dev = [

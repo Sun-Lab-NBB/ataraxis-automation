@@ -22,7 +22,8 @@ class EnvironmentCommands:
     environment_name: str
     install_project_command: str
     uninstall_project_command: str
-    def __init__(self, activate_command, deactivate_command, create_command, create_from_yml_command, remove_command, conda_dependencies_command, pip_dependencies_command, update_command, export_yml_command, export_spec_command, environment_name, install_project_command, uninstall_project_command) -> None: ...
+    provision_command: str
+    def __init__(self, activate_command, deactivate_command, create_command, create_from_yml_command, remove_command, conda_dependencies_command, pip_dependencies_command, update_command, export_yml_command, export_spec_command, environment_name, install_project_command, uninstall_project_command, provision_command) -> None: ...
 
 def configure_console(log_directory: Path | None = None, *, verbose: bool = False, enable_logging: bool = False) -> None:
     """Configures, and, if requested, enables Console class instance exposed by the ataraxis-base-utilities library as
@@ -359,37 +360,6 @@ def environment_exists(commands: EnvironmentCommands) -> bool:
     Returns:
         True if the environment can be activated (and, implicitly, exists) and False if it cannot be activated.
     """
-def create_conda_environment(commands: EnvironmentCommands) -> None:
-    """Creates or recreates the project- and os-specific environment.
-
-    If the environment to be created already exists, this function will first remove the environment and then create
-    it from scratch. The creation process includes installing conda and pip dependencies if any are provided.
-
-    Notes:
-        This function DOES NOT install the project. This is intentional. Use the dedicated cli command to install and
-        uninstall the project as needed.
-
-    Args:
-        commands: The EnvironmentCommands class instance that stores project-specific conda environment commands. The
-            instance is configured by the resolve_environment_commands() function.
-
-    Raises:
-        RuntimeError: If the environment cannot be created or recreated. If environment is created, but conda or
-            pip dependencies cannot be installed.
-    """
-def remove_conda_environment(commands: EnvironmentCommands) -> None:
-    """Removes (deletes) the project- and os-specific environment if it exists.
-
-    If the environment does not exist or cannot be activated, the function will return without attempting to remove the
-    environment.
-
-    Args:
-        commands: The EnvironmentCommands class instance that stores project-specific conda environment commands. The
-            instance is configured by the resolve_environment_commands() function.
-
-    Raises:
-        RuntimeError: If the environment exists (can be activated) and cannot be removed.
-    """
 def cli(verbose: bool, log: bool) -> None:
     """This command-line interface exposes helper commands used to automate various project development and building
     steps.
@@ -484,11 +454,13 @@ def uninstall_project(environment_name: str, python_version: str) -> None:
         RuntimeError: If any of the environment-manipulation subprocess calls fail.
     """
 def create_env(environment_name: str, python_version: str) -> None:
-    """Creates or recreates the project conda environment.
+    """Creates the project conda environment.
 
     This command is intended to be called during initial project setup for new platforms (OSes) or when the environment
-    needs to be reset. For most runtimes, it is advised to import ('tox -e import') an existing .yml file if it is
-    available.
+    needs to be hard-reset. For most runtimes, it is advised to import ('tox -e import') an existing .yml file if it is
+    available. If you need to reset an already existing environment, it is advised to use the provision
+    ('tox -e provision') command instead, which re-installs environment packages without deleting the environment
+    itself.
 
     Raises:
         RuntimeError: If any environment creation steps fail for any reason.
@@ -502,6 +474,17 @@ def remove_env(environment_name: str) -> None:
 
     Raises:
         RuntimeError: If environment removal fails for any reason.
+    """
+def provision_env(environment_name: str, python_version: str) -> None:
+    """Removes all packages from the target conda environment (including python) and then re-installs project
+    dependencies specified in pyproject.toml file.
+
+    This command is intended to be called when the project has a configured environment referenced by IDEs and other
+    tools. Instead of removing the environment, this acts as a 'soft' modification mechanism that actualizes environment
+    contents without breaking any references.
+
+    Raises:
+        RuntimeError: If any environment modification steps fail for any reason.
     """
 def import_env(environment_name: str) -> None:
     """Creates or updates an existing conda environment based on the operating-system-specific .yml file stored in
