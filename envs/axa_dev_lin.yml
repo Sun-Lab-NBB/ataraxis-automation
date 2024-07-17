@@ -12,9 +12,9 @@ dependencies:
   - beautifulsoup4=4.12.3=pyha770c72_0
   - black=24.4.2=py312h7900ff3_0
   - brotli-python=1.1.0=py312h30efb56_1
-  - bzip2=1.0.8=hd590300_5
+  - bzip2=1.0.8=h4bc722e_7
   - ca-certificates=2024.7.4=hbcca054_0
-  - cachetools=5.3.3=pyhd8ed1ab_0
+  - cachetools=5.4.0=pyhd8ed1ab_0
   - certifi=2024.7.4=pyhd8ed1ab_0
   - cffi=1.16.0=py312hf06ca03_0
   - chardet=5.2.0=py312h7900ff3_1
@@ -23,13 +23,13 @@ dependencies:
   - cmarkgfm=0.8.0=py312h98912ed_3
   - colorama=0.4.6=pyhd8ed1ab_0
   - conda-souschef=2.2.3=pyhd8ed1ab_0
-  - coverage=7.5.4=py312h9a8786e_0
+  - coverage=7.6.0=py312h41a817b_0
   - cryptography=42.0.8=py312hbcc2302_0
   - dbus=1.13.6=h5008d03_3
   - distlib=0.3.8=pyhd8ed1ab_0
   - docutils=0.20.1=py312h7900ff3_3
   - editables=0.5=pyhd8ed1ab_0
-  - exceptiongroup=1.2.0=pyhd8ed1ab_2
+  - exceptiongroup=1.2.2=pyhd8ed1ab_0
   - execnet=2.1.1=pyhd8ed1ab_0
   - expat=2.6.2=h59595ed_0
   - filelock=3.15.4=pyhd8ed1ab_0
@@ -112,13 +112,13 @@ dependencies:
   - ruamel.yaml=0.18.6=py312h98912ed_0
   - ruamel.yaml.clib=0.2.8=py312h98912ed_0
   - ruamel.yaml.jinja2=0.2.4=py_1
-  - ruff=0.5.1=py312hbe4c86d_0
+  - ruff=0.5.2=py312hbe4c86d_0
   - secretstorage=3.3.3=py312h7900ff3_2
   - semver=3.0.2=pyhd8ed1ab_0
-  - setuptools=70.2.0=pyhd8ed1ab_0
+  - setuptools=70.3.0=pyhd8ed1ab_0
   - snowballstemmer=2.2.0=pyhd8ed1ab_0
   - soupsieve=2.5=pyhd8ed1ab_1
-  - sphinx=7.3.7=pyhd8ed1ab_0
+  - sphinx=7.4.4=pyhd8ed1ab_0
   - sphinx-autodoc-typehints=2.2.2=pyhd8ed1ab_0
   - sphinx-click=6.0.0=pyhd8ed1ab_0
   - sphinx-rtd-theme=2.0.0=hd8ed1ab_0
@@ -147,16 +147,13 @@ dependencies:
   - xz=5.2.6=h166bdaf_0
   - yaml=0.2.5=h7f98852_2
   - zipp=3.19.2=pyhd8ed1ab_0
-  - zstandard=0.22.0=py312h5b18bf6_1
+  - zstandard=0.23.0=py312h3483029_0
   - zstd=1.5.6=ha6fb4c9_0
   - pip:
-      - annotated-types==0.7.0
-      - ataraxis-automation==2.1.0
-      - ataraxis-base-utilities==1.2.0
+      - ataraxis-automation==3.0.0
+      - ataraxis-base-utilities==2.0.0
       - build==1.2.1
       - loguru==0.7.2
-      - pydantic==2.8.2
-      - pydantic-core==2.20.1
       - pyproject-hooks==1.1.0
       - tox-uv==1.9.1
-      - uv==0.2.24
+      - uv==0.2.25

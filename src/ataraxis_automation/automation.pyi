@@ -454,7 +454,7 @@ def uninstall_project(environment_name: str, python_version: str) -> None:
         RuntimeError: If any of the environment-manipulation subprocess calls fail.
     """
 def create_env(environment_name: str, python_version: str) -> None:
-    """Creates the project conda environment.
+    """Creates the project conda environment and installs project dependencies into the created environment.
 
     This command is intended to be called during initial project setup for new platforms (OSes) or when the environment
     needs to be hard-reset. For most runtimes, it is advised to import ('tox -e import') an existing .yml file if it is
@@ -470,7 +470,9 @@ def remove_env(environment_name: str) -> None:
 
     This command can be used to clean up local conda distribution when conda environment is no longer needed.
     Alternatively, this command can also be used to clear an existing environment before recreating it with create-env
-    ('tox -e create') command.
+    ('tox -e create') command. If your main goal is to reset the environment, however, it is recommended to use the
+    'provision-env' ('tox -e provision') command instead, which removes and reinstalls all packages without altering
+    the environment itself.
 
     Raises:
         RuntimeError: If environment removal fails for any reason.
@@ -480,7 +482,7 @@ def provision_env(environment_name: str, python_version: str) -> None:
     dependencies specified in pyproject.toml file.
 
     This command is intended to be called when the project has a configured environment referenced by IDEs and other
-    tools. Instead of removing the environment, this acts as a 'soft' modification mechanism that actualizes environment
+    tools. Instead of removing the environment, this acts as a 'soft' reset mechanism that actualizes environment
     contents without breaking any references.
 
     Raises:

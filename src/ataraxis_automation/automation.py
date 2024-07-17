@@ -1524,7 +1524,7 @@ def uninstall_project(environment_name: str, python_version: str) -> None:  # pr
     help="The python version of the project conda environment, e.g. '3.12'. Has to be different from tox 'basepython'.",
 )
 def create_env(environment_name: str, python_version: str) -> None:  # pragma: no cover
-    """Creates the project conda environment.
+    """Creates the project conda environment and installs project dependencies into the created environment.
 
     This command is intended to be called during initial project setup for new platforms (OSes) or when the environment
     needs to be hard-reset. For most runtimes, it is advised to import ('tox -e import') an existing .yml file if it is
@@ -1553,6 +1553,7 @@ def create_env(environment_name: str, python_version: str) -> None:  # pragma: n
             f"environment packages, run 'provision-env' ('tox -e provision') command instead."
         )
         console.echo(message, level=LogLevel.WARNING)
+        return
 
     # Creates the new environment
     try:
@@ -1566,25 +1567,25 @@ def create_env(environment_name: str, python_version: str) -> None:  # pragma: n
         )
         console.error(message, error=RuntimeError)
 
-    # If environment was successfully created, installs conda-installable dependencies, if there are any.
+    # If environment was successfully created, installs conda-installable dependencies if there are any.
     try:
         if commands.conda_dependencies_command is not None:
             subprocess.run(commands.conda_dependencies_command, shell=True, check=True)
             message = (
-                f"Installed project dependencies available from conda into '{commands.environment_name}' "
+                f"Installed project dependencies available from conda into created '{commands.environment_name}' "
                 f"conda environment."
             )
             console.echo(message, level=LogLevel.INFO)
         else:
             message = (
-                f"Skipped installing project dependencies available from conda into '{commands.environment_name}' "
-                f"conda environment. Project has no conda-installable dependencies."
+                f"Skipped installing project dependencies available from conda into created "
+                f"'{commands.environment_name}' conda environment. Project has no conda-installable dependencies."
             )
             console.echo(message, level=LogLevel.INFO)
     except subprocess.CalledProcessError:
         message = (
-            f"Unable to install project dependencies available from conda into the created conda environment "
-            f"'{commands.environment_name}'. See conda-generated error message above for more information."
+            f"Unable to install project dependencies available from conda into created '{commands.environment_name}' "
+            f"conda environment. See conda-generated error message above for more information."
         )
         console.error(message, error=RuntimeError)
 
@@ -1594,23 +1595,25 @@ def create_env(environment_name: str, python_version: str) -> None:  # pragma: n
             command = f"{commands.activate_command} && {commands.pip_dependencies_command}"
             subprocess.run(command, shell=True, check=True)
             message = (
-                f"Installed project dependencies available from PyPI (pip) into '{commands.environment_name}' "
+                f"Installed project dependencies available from PyPI (pip) into created '{commands.environment_name}' "
                 f"conda environment."
             )
             console.echo(message, level=LogLevel.INFO)
         else:
             message = (
-                f"Skipped installing project dependencies available from PyPI (pip) into '{commands.environment_name}' "
-                f"conda environment. Project has no pip-installable dependencies."
+                f"Skipped installing project dependencies available from PyPI (pip) into created "
+                f"'{commands.environment_name}' conda environment. Project has no pip-installable dependencies."
             )
             console.echo(message, level=LogLevel.INFO)
     except subprocess.CalledProcessError:
         message = (
-            f"Unable to install project dependencies available from PyPI (pip) into the created conda environment "
-            f"'{commands.environment_name}'. See pip-generated error message above for more information."
+            f"Unable to install project dependencies available from PyPI (pip) into created "
+            f"'{commands.environment_name}' conda environment. See pip-generated error message above for more "
+            f"information."
         )
         console.error(message, error=RuntimeError)
 
+    # Displays the final success message.
     message = (
         f"Created '{commands.environment_name}' conda environment and installed all project dependencies into the "
         f"environment."
@@ -1632,7 +1635,9 @@ def remove_env(environment_name: str) -> None:  # pragma: no cover
 
     This command can be used to clean up local conda distribution when conda environment is no longer needed.
     Alternatively, this command can also be used to clear an existing environment before recreating it with create-env
-    ('tox -e create') command.
+    ('tox -e create') command. If your main goal is to reset the environment, however, it is recommended to use the
+    'provision-env' ('tox -e provision') command instead, which removes and reinstalls all packages without altering
+    the environment itself.
 
     Raises:
         RuntimeError: If environment removal fails for any reason.
@@ -1651,23 +1656,25 @@ def remove_env(environment_name: str) -> None:  # pragma: no cover
     # If the environment cannot be activated, it likely does not exist and, therefore, there is nothing to remove.
     if not environment_exists(commands=commands):
         message: str = (
-            f"Unable to find the '{commands.environment_name}' conda environment. Likely, this indicates that the "
-            f"environment already does not exist."
+            f"Unable to find '{commands.environment_name}' conda environment. Likely, this indicates that the "
+            f"environment already does not exist. Environment removal procedure aborted."
         )
         console.echo(message, level=LogLevel.WARNING)
+        return
 
-    # Otherwise, removes the environment and notifies the user
-    else:
-        # Otherwise, ensures the environment is not active and carries out the removal procedure.
-        try:
-            command: str = f"{commands.deactivate_command} && {commands.remove_command}"
-            subprocess.run(command, shell=True, check=True)
-
-        except subprocess.CalledProcessError:
-            message = f"Unable to remove the conda environment '{commands.environment_name}'."
-            console.error(message, error=RuntimeError)
-        message = f"Removed conda environment '{commands.environment_name}'."
+    # Otherwise, ensures the environment is not active and carries out the removal procedure.
+    try:
+        command: str = f"{commands.deactivate_command} && {commands.remove_command}"
+        subprocess.run(command, shell=True, check=True)
+        message = f"Removed '{commands.environment_name}' conda environment."
         console.echo(message, level=LogLevel.SUCCESS)
+
+    except subprocess.CalledProcessError:
+        message = (
+            f"Unable to remove '{commands.environment_name}' conda environment. See the conda-issued error-message "
+            f"above for more information."
+        )
+        console.error(message, error=RuntimeError)
 
 
 @cli.command()
@@ -1692,7 +1699,7 @@ def provision_env(environment_name: str, python_version: str) -> None:  # pragma
     dependencies specified in pyproject.toml file.
 
     This command is intended to be called when the project has a configured environment referenced by IDEs and other
-    tools. Instead of removing the environment, this acts as a 'soft' modification mechanism that actualizes environment
+    tools. Instead of removing the environment, this acts as a 'soft' reset mechanism that actualizes environment
     contents without breaking any references.
 
     Raises:
@@ -1708,78 +1715,80 @@ def provision_env(environment_name: str, python_version: str) -> None:  # pragma
     )
 
     # Checks if the project-specific environment is accessible via subprocess activation call. If it is not accessible
-    # (does not exist), creates the environment from scratch.
+    # (does not exist), ends runtime with an error message.
     if not environment_exists(commands=commands):
-        try:
-            subprocess.run(commands.create_command, shell=True, check=True)
-        except subprocess.CalledProcessError:
-            message = f"Unable to create a new conda environment '{commands.environment_name}'."
-            console.error(message, error=RuntimeError)
-
-            # If environment was successfully (re)created, installs conda and pip dependencies if any are provided.
-        try:
-            # Activation is not required for conda as conda dependencies are installed using environment name.
-            if commands.conda_dependencies_command is not None:
-                subprocess.run(commands.conda_dependencies_command, shell=True, check=True)
-
-            # Activation is required for pip, as pip dependencies are installed into whatever environment is active.
-            if commands.pip_dependencies_command is not None:
-                command = f"{commands.activate_command} && {commands.pip_dependencies_command}"
-                subprocess.run(command, shell=True, check=True)
-
-        except subprocess.CalledProcessError:
-            message = f"Unable to install project-dependencies into the created conda environment '{commands.environment_name}'."
-            console.error(message, error=RuntimeError)
-        message = f"Requested conda environment '{commands.environment_name}' did not exist and was created."
-        console.echo(message, level=LogLevel.SUCCESS)
+        message = (
+            "Unable to provision '{commands.environment_name}' conda environment, as environment does not exist. If "
+            "you want to create a new environment, use 'create-env' ('tox -e create') command instead."
+        )
+        console.error(message=message, error=RuntimeError)
 
     # Otherwise, uses 'provision' command to remove all packages and re-installs project dependencies.
-    else:
-        try:
-            subprocess.run(commands.deactivate_command, shell=True, check=True)
+    try:
+        command = f"{commands.deactivate_command} && {commands.provision_command}"
+        subprocess.run(command, shell=True, check=True)
+        message = (
+            f"Removed all packages from '{commands.environment_name}' conda environment and "
+            f"reinstalled base dependencies (Python, uv, tox and pip)."
+        )
+        console.echo(message, level=LogLevel.INFO)
+    except subprocess.CalledProcessError:
+        message = (
+            f"Unable to provision '{commands.environment_name}' conda environment. See conda-issued error-message "
+            f"above for more information."
+        )
+        console.error(message, error=RuntimeError)
 
-            subprocess.run(commands.provision_command, shell=True, check=True)
+    # If environment was successfully provisioned (reset), installs conda-installable dependencies if there are any.
+    try:
+        if commands.conda_dependencies_command is not None:
+            subprocess.run(commands.conda_dependencies_command, shell=True, check=True)
             message = (
-                f"Removed all packages from '{commands.environment_name}' conda environment and "
-                f"reinstalled base dependencies (Python, uv, tox and pip)."
+                f"Installed project dependencies available from conda into provisioned '{commands.environment_name}' "
+                f"conda environment."
             )
             console.echo(message, level=LogLevel.INFO)
-
-            subprocess.run(commands.activate_command, shell=True, check=True)
-            message = f"Activated '{commands.environment_name}' conda environment."
-            console.echo(message, level=LogLevel.INFO)
-
-            if commands.conda_dependencies_command is not None:
-                subprocess.run(commands.conda_dependencies_command, shell=True, check=True)
-                message = f"Installed project conda-dependencies into '{commands.environment_name}' conda environment."
-                console.echo(message, level=LogLevel.INFO)
-            else:
-                message = (
-                    f"Skipping installing project conda-dependencies into '{commands.environment_name}' conda "
-                    f"environment. Project has no conda-installable dependencies."
-                )
-                console.echo(message, level=LogLevel.INFO)
-
-            if commands.pip_dependencies_command is not None:
-                subprocess.run(commands.pip_dependencies_command, shell=True, check=True)
-                message = f"Installed project pip-dependencies into '{commands.environment_name}' conda environment."
-                console.echo(message, level=LogLevel.INFO)
-            else:
-                message = (
-                    f"Skipping installing project pip-dependencies into '{commands.environment_name}' conda "
-                    f"environment. Project has no pip-installable dependencies."
-                )
-                console.echo(message, level=LogLevel.INFO)
-
-            message = f"Successfully provisioned '{commands.environment_name}' conda environment."
-            console.echo(message, level=LogLevel.SUCCESS)
-
-        except subprocess.CalledProcessError:
+        else:
             message = (
-                f"Unable to install project-dependencies into the provisioned conda environment "
-                f"'{commands.environment_name}'."
+                f"Skipped installing project dependencies available from conda into provisioned "
+                f"'{commands.environment_name}' conda environment. Project has no conda-installable dependencies."
             )
-            console.error(message, error=RuntimeError)
+            console.echo(message, level=LogLevel.INFO)
+    except subprocess.CalledProcessError:
+        message = (
+            f"Unable to install project dependencies available from conda into provisioned "
+            f"'{commands.environment_name}' conda environment . See conda-generated error message above for more "
+            f"information."
+        )
+        console.error(message, error=RuntimeError)
+
+    # After resolving conda-dependencies, installs pip-installable dependencies, if there are any.
+    try:
+        if commands.pip_dependencies_command is not None:
+            command = f"{commands.activate_command} && {commands.pip_dependencies_command}"
+            subprocess.run(command, shell=True, check=True)
+            message = (
+                f"Installed project dependencies available from PyPI (pip) into provisioned "
+                f"'{commands.environment_name}' conda environment."
+            )
+            console.echo(message, level=LogLevel.INFO)
+        else:
+            message = (
+                f"Skipped installing project dependencies available from PyPI (pip) into provisioned "
+                f"'{commands.environment_name}' conda environment. Project has no pip-installable dependencies."
+            )
+            console.echo(message, level=LogLevel.INFO)
+    except subprocess.CalledProcessError:
+        message = (
+            f"Unable to install project dependencies available from PyPI (pip) into provisioned "
+            f"'{commands.environment_name}'  conda environment. See pip-generated error message above for more "
+            f"information."
+        )
+        console.error(message, error=RuntimeError)
+
+        # Displays the final success message.
+        message = f"Provisioned '{commands.environment_name}' conda environment."
+        console.echo(message, level=LogLevel.SUCCESS)
 
 
 @cli.command()
@@ -1820,14 +1829,13 @@ def import_env(environment_name: str) -> None:  # pragma: no cover
         try:
             subprocess.run(commands.create_from_yml_command, shell=True, check=True)
             message: str = (
-                f"Conda environment '{commands.environment_name}' successfully imported (created) from existing .yml "
-                f"file."
+                f"'{commands.environment_name}' conda environment imported (created) from existing .yml " f"file."
             )
             console.echo(message, level=LogLevel.SUCCESS)
         except subprocess.CalledProcessError:
             message = (
-                f"Unable to import (create) conda environment '{commands.environment_name}' from existing .yml file. "
-                f"See mamba/conda error messages for specific details about failed operation."
+                f"Unable to import (create) '{commands.environment_name}' conda environment from existing .yml file. "
+                f"See conda-issued error-message above for more information."
             )
             console.error(message, error=RuntimeError)
 
@@ -1835,19 +1843,19 @@ def import_env(environment_name: str) -> None:  # pragma: no cover
     elif commands.update_command is not None:
         try:
             subprocess.run(commands.update_command, shell=True, check=True)
-            message = f"Existing conda environment '{commands.environment_name}' successfully updated from .yml file."
+            message = f"Existing '{commands.environment_name}' conda environment updated from .yml file."
             console.echo(message, level=LogLevel.SUCCESS)
         except subprocess.CalledProcessError:
             message = (
-                f"Unable to update the existing conda environment '{commands.environment_name}' from .yml file. See "
-                f"mamba/conda error messages for specific details about failed operation."
+                f"Unable to update existing conda environment '{commands.environment_name}' from .yml file. "
+                f"See conda-issued error-message above for more information."
             )
             console.error(message, error=RuntimeError)
 
     # If the .yml file does not exist, aborts with error.
     else:
         message = (
-            f"Unable to import or update conda environment '{commands.environment_name}' as there is no valid .yml "
+            f"Unable to import or update '{commands.environment_name}' conda environment as there is no valid .yml "
             f"file inside the /envs directory for the given project and host-OS combination. Try creating the "
             f"environment using pyproject.toml dependencies by using 'create-env' ('tox -e create')."
         )
@@ -1886,33 +1894,34 @@ def export_env(environment_name: str) -> None:  # pragma: no cover
 
     if not environment_exists(commands):
         message = (
-            f"Unable to activate conda environment '{commands.environment_name}', which likely indicates that it does "
+            f"Unable to activate '{commands.environment_name}' conda environment, which likely indicates that it does "
             f"not exist. Create the environment with 'create-env' ('tox -e create') before attempting to export it."
         )
         console.error(message, error=RuntimeError)
 
-    # Handles environment export using the commands obtained above
+    # Exports environment as a .yml file
     try:
         subprocess.run(commands.export_yml_command, shell=True, check=True)
-        message = f"Conda environment '{commands.environment_name}' exported to /envs as a .yml file."
+        message = f"'{commands.environment_name}' conda environment exported to /envs as a .yml file."
         console.echo(message, level=LogLevel.SUCCESS)
 
     except subprocess.CalledProcessError:
         message = (
-            f"Unable to export conda environment '{commands.environment_name}' to .yml file. See conda/mamba errors "
-            f"for specific details about the failed operation."
+            f"Unable to export '{commands.environment_name}' conda environment to .yml file. See conda-issued "
+            f"error-message above for more information."
         )
         console.error(message, error=RuntimeError)
 
+    # Exports environment as a spec.txt file
     try:
         subprocess.run(commands.export_spec_command, shell=True, check=True)
-        message = f"Conda environment '{commands.environment_name}' exported to /envs as a spec.txt file."
+        message = f"'{commands.environment_name}' conda environment exported to /envs as a spec.txt file."
         console.echo(message, level=LogLevel.SUCCESS)
 
     except subprocess.CalledProcessError:
         message = (
-            f"Unable to export conda environment '{commands.environment_name}' to spec.txt file. See conda/mamba "
-            f"errors for specific details about the failed operation."
+            f"Unable to export '{commands.environment_name}' conda environment to spec.txt file. See conda-issued "
+            f"error-message above for more information."
         )
         console.error(message, error=RuntimeError)
 
@@ -1941,6 +1950,10 @@ def rename_environments(new_name: str) -> None:  # pragma: no cover
 
     # This method handles the renaming
     rename_all_envs(new_name=new_name, project_root=project_root)
+
+    # Issues a success message
+    message = f"Renamed all supported environment files inside the /envs directory to use the new base name {new_name}."
+    console.echo(message, level=LogLevel.SUCCESS)
 
 
 @cli.command()
