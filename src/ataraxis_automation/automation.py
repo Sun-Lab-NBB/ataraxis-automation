@@ -1786,9 +1786,9 @@ def provision_env(environment_name: str, python_version: str) -> None:  # pragma
         )
         console.error(message, error=RuntimeError)
 
-        # Displays the final success message.
-        message = f"Provisioned '{commands.environment_name}' conda environment."
-        console.echo(message, level=LogLevel.SUCCESS)
+    # Displays the final success message.
+    message = f"Provisioned '{commands.environment_name}' conda environment."
+    console.echo(message, level=LogLevel.SUCCESS)
 
 
 @cli.command()
