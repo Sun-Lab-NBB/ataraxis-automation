@@ -1,6 +1,7 @@
-import click
-from dataclasses import dataclass
 from pathlib import Path
+from dataclasses import dataclass
+
+import click
 
 @dataclass
 class EnvironmentCommands:
@@ -9,6 +10,7 @@ class EnvironmentCommands:
     Specifically, after commands are resolved as part of resolve_environment_commands() function runtime, they are
     packaged into an instance of this class to be used by all upstream functions.
     """
+
     activate_command: str
     deactivate_command: str
     create_command: str
@@ -23,9 +25,27 @@ class EnvironmentCommands:
     install_project_command: str
     uninstall_project_command: str
     provision_command: str
-    def __init__(self, activate_command, deactivate_command, create_command, create_from_yml_command, remove_command, conda_dependencies_command, pip_dependencies_command, update_command, export_yml_command, export_spec_command, environment_name, install_project_command, uninstall_project_command, provision_command) -> None: ...
+    def __init__(
+        self,
+        activate_command,
+        deactivate_command,
+        create_command,
+        create_from_yml_command,
+        remove_command,
+        conda_dependencies_command,
+        pip_dependencies_command,
+        update_command,
+        export_yml_command,
+        export_spec_command,
+        environment_name,
+        install_project_command,
+        uninstall_project_command,
+        provision_command,
+    ) -> None: ...
 
-def configure_console(log_directory: Path | None = None, *, verbose: bool = False, enable_logging: bool = False) -> None:
+def configure_console(
+    log_directory: Path | None = None, *, verbose: bool = False, enable_logging: bool = False
+) -> None:
     """Configures, and, if requested, enables Console class instance exposed by the ataraxis-base-utilities library as
     global 'console' variable.
 
@@ -49,6 +69,7 @@ def configure_console(log_directory: Path | None = None, *, verbose: bool = Fals
         enable_logging: Determines whether to save messages and errors to log files. Note, error log files are
             automatically cleaned up after a few days, while message logs are maintained indefinitely.
     """
+
 def resolve_project_directory() -> Path:
     """Gets the current working directory from the OS and verifies that it points to a valid python project.
 
@@ -61,6 +82,7 @@ def resolve_project_directory() -> Path:
     Raises:
         RuntimeError: If the current working directory does not point to a valid Python project.
     """
+
 def resolve_library_root(project_root: Path) -> Path:
     """Determines the absolute path to the library root directory.
 
@@ -81,6 +103,7 @@ def resolve_library_root(project_root: Path) -> Path:
     Raises:
         RuntimeError: If the valid root directory candidate cannot be found based on the determination heuristics.
     """
+
 def resolve_environment_files(project_root: Path, environment_base_name: str) -> tuple[str, Path, Path]:
     """Determines the OS of the host platform and uses it to generate the absolute paths to os-specific conda
     environment '.yml' and 'spec.txt' files.
@@ -101,6 +124,7 @@ def resolve_environment_files(project_root: Path, environment_base_name: str) ->
     Raises:
         RuntimeError: If the host OS does not match any of the supported operating systems.
     """
+
 def resolve_conda_engine() -> str:
     """Determines whether mamba or conda can be accessed from this script by silently calling 'COMMAND --version'.
 
@@ -113,6 +137,7 @@ def resolve_conda_engine() -> str:
     Raises:
         RuntimeError: If neither conda nor mamba is accessible via subprocess call through the shell.
     """
+
 def resolve_pip_engine() -> str:
     """Determines whether uv or pip can be accessed from this script by silently calling 'command --version'.
 
@@ -125,6 +150,7 @@ def resolve_pip_engine() -> str:
     Raises:
         RuntimeError: If neither pip nor uv is accessible via subprocess call through the shell.
     """
+
 def get_base_name(dependency: str) -> str:
     """Extracts the base name of a dependency, removing versions and extras.
 
@@ -138,7 +164,10 @@ def get_base_name(dependency: str) -> str:
     Returns:
         The base name of the dependency.
     """
-def add_dependency(dependency: str, dependencies_list: list[str], processed_dependencies: set[str]) -> tuple[list[str], set[str]]:
+
+def add_dependency(
+    dependency: str, dependencies_list: list[str], processed_dependencies: set[str]
+) -> tuple[list[str], set[str]]:
     """Verifies that dependency base-name is not already added to the input list and, if not, adds it to list.
 
     Primarily, this method is used to ensure that duplicate dependencies are not stored inside the same
@@ -159,6 +188,7 @@ def add_dependency(dependency: str, dependencies_list: list[str], processed_depe
         ValueError: If the extracted dependency is found in multiple major pyproject.toml dependency lists
             (conda, noconda, and condarun).
     """
+
 def resolve_dependencies(project_root: Path) -> tuple[list[str], list[str]]:
     """Extracts dependencies from pyproject.toml, verifies that they cover all dependencies listed in tox.ini file and
     separates them into conda-installable and pip-installable lists.
@@ -179,6 +209,7 @@ def resolve_dependencies(project_root: Path) -> tuple[list[str], list[str]]:
         ValueError: If duplicate version-less dependencies are found in different pyproject optional dependency lists
             or if tox.ini contains dependencies (disregarding version and extras) not in pyproject.toml.
     """
+
 def resolve_project_name(project_root: Path) -> str:
     """Extracts the project name from the pyproject.toml file.
 
@@ -195,6 +226,7 @@ def resolve_project_name(project_root: Path) -> str:
         ValueError: If the project name is not defined in the pyproject.toml file. Also, if the pyproject.toml file is
             corrupted or otherwise malformed.
     """
+
 def generate_typed_marker(library_root: Path) -> None:
     """Crawls the library directory tree and ensures py.typed marker exists only at the root level of the directory.
 
@@ -209,8 +241,9 @@ def generate_typed_marker(library_root: Path) -> None:
     Args:
         library_root: The path to the root level of the library directory.
     """
+
 def move_stubs(stubs_dir: Path, library_root: Path) -> None:
-    '''Moves typing stubs from the \'stubs\' directory to appropriate level(s) of the library directory tree.
+    """Moves typing stubs from the \'stubs\' directory to appropriate level(s) of the library directory tree.
 
     This function should be called after running stubgen on the built library package. It distributes the stubs
     generated by stubgen to their final destinations.
@@ -222,7 +255,8 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
     Args:
         stubs_dir: The absolute path to the "stubs" directory, expected to be found under the project root directory.
         library_root: The absolute path to the library root directory.
-    '''
+    """
+
 def delete_stubs(library_root: Path) -> None:
     """Removes all .pyi stub files from the library root directory and its subdirectories.
 
@@ -233,6 +267,7 @@ def delete_stubs(library_root: Path) -> None:
     Args:
         library_root: The absolute path to the library root directory.
     """
+
 def verify_pypirc(file_path: Path) -> bool:
     """Verifies that the .pypirc file located at the input path contains valid options to support automatic
     authentication for pip uploads.
@@ -243,6 +278,7 @@ def verify_pypirc(file_path: Path) -> bool:
     Returns:
         True if the .pypirc is well-configured and False otherwise.
     """
+
 def rename_all_envs(project_root: Path, new_name: str) -> None:
     """Loops over the contents of the /envs directory and replaces base environment names with the input name.
 
@@ -258,6 +294,7 @@ def rename_all_envs(project_root: Path, new_name: str) -> None:
         project_root: The absolute path to the root directory of the processed project.
         new_name: The new base-name to use for all environment files.
     """
+
 def replace_markers_in_file(file_path: Path, markers: dict[str, str]) -> int:
     """Replaces all occurrences of every input marker in the contents of the provided file with the appropriate
     replacement value.
@@ -274,6 +311,7 @@ def replace_markers_in_file(file_path: Path, markers: dict[str, str]) -> int:
         The number of placeholder values modified during this method's runtime. Minimum number is 0 for no
         modifications.
     """
+
 def validate_library_name(_ctx: click.Context, _param: click.Parameter, value: str) -> str:
     """Verifies that the input library name contains only letters, numbers, and underscores.
 
@@ -285,6 +323,7 @@ def validate_library_name(_ctx: click.Context, _param: click.Parameter, value: s
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
+
 def validate_project_name(_ctx: click.Context, _param: click.Parameter, value: str) -> str:
     """Verifies that the input project name contains only letters, numbers, and dashes.
 
@@ -296,6 +335,7 @@ def validate_project_name(_ctx: click.Context, _param: click.Parameter, value: s
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
+
 def validate_author_name(_ctx: click.Context, _param: click.Parameter, value: str) -> str:
     """Verifies that the input author name contains a valid human name and an optional GitHub username in parentheses.
 
@@ -307,6 +347,7 @@ def validate_author_name(_ctx: click.Context, _param: click.Parameter, value: st
     Raises:
         BadParameter: If the input value does not match the expected format.
     """
+
 def validate_email(_ctx: click.Context, _param: click.Parameter, value: str) -> str:
     """Verifies that the input email address contains only valid characters.
 
@@ -318,6 +359,7 @@ def validate_email(_ctx: click.Context, _param: click.Parameter, value: str) -> 
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
+
 def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) -> str:
     """Verifies that the input environment name contains only letters, numbers, and underscores.
 
@@ -329,7 +371,10 @@ def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) 
     Raises:
         BadParameter: If the input value contains invalid characters.
     """
-def resolve_environment_commands(project_root: Path, environment_name: str, python_version: str = '3.12') -> EnvironmentCommands:
+
+def resolve_environment_commands(
+    project_root: Path, environment_name: str, python_version: str = "3.12"
+) -> EnvironmentCommands:
     """Generates the list of conda and pip commands used to manipulate the project- and os-specific conda environment
     and packages it into EnvironmentCommands class.
 
@@ -346,6 +391,7 @@ def resolve_environment_commands(project_root: Path, environment_name: str, pyth
     Returns:
         EnvironmentCommands class instance that includes all resolved commands as class attributes.
     """
+
 def environment_exists(commands: EnvironmentCommands) -> bool:
     """Checks whether the project-specific conda environment can be activated.
 
@@ -360,6 +406,7 @@ def environment_exists(commands: EnvironmentCommands) -> bool:
     Returns:
         True if the environment can be activated (and, implicitly, exists) and False if it cannot be activated.
     """
+
 def cli(verbose: bool, log: bool) -> None:
     """This command-line interface exposes helper commands used to automate various project development and building
     steps.
@@ -367,6 +414,7 @@ def cli(verbose: bool, log: bool) -> None:
     In addition to being the main API interface for this library, it configures the logging system used by the library
     based on the --verbose and --log options. These options apply to all subcommands of this CLI.
     """
+
 def process_typed_markers() -> None:
     """Crawls the library root directory and ensures that the 'py.typed' marker is found only at the highest level of
     the library hierarchy (the highest directory with __init__.py in it).
@@ -376,6 +424,7 @@ def process_typed_markers() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code.
     """
+
 def process_stubs() -> None:
     """Distributes the stub files from the /stubs directory to the appropriate level of the /src or
     src/library directory (depending on the type of the processed project).
@@ -388,6 +437,7 @@ def process_stubs() -> None:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code. If
         /stubs directory does not exist.
     """
+
 def purge_stubs() -> None:
     """Removes all existing stub (.pyi) files from the library source code directory.
 
@@ -398,6 +448,7 @@ def purge_stubs() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project or library source code.
     """
+
 def generate_recipe_folder() -> None:
     """Generates the /recipe directory inside project root directory.
 
@@ -408,6 +459,7 @@ def generate_recipe_folder() -> None:
     Raises:
         RuntimeError: If root (highest) directory cannot be resolved for the project.
     """
+
 def acquire_pypi_token(replace_token: bool) -> None:
     """Ensures that a validly formatted PyPI API token is available from the .pypirc file stored in the root directory
     of the project.
@@ -428,6 +480,7 @@ def acquire_pypi_token(replace_token: bool) -> None:
         ValueError: If the token provided by the user is not valid.
         RuntimeError: If the user aborts the token acquisition process without providing a valid token.
     """
+
 def install_project(environment_name: str, python_version: str) -> None:
     """Builds and installs the project into the specified conda environment.
 
@@ -438,6 +491,7 @@ def install_project(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If project installation fails. If project environment does not exist.
     """
+
 def uninstall_project(environment_name: str, python_version: str) -> None:
     """Uninstalls the project library from the specified conda environment.
 
@@ -453,6 +507,7 @@ def uninstall_project(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If any of the environment-manipulation subprocess calls fail.
     """
+
 def create_env(environment_name: str, python_version: str) -> None:
     """Creates the project conda environment and installs project dependencies into the created environment.
 
@@ -465,18 +520,20 @@ def create_env(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If any environment creation steps fail for any reason.
     """
+
 def remove_env(environment_name: str) -> None:
     """Removes (deletes) the specified conda environment if it exists.
 
     This command can be used to clean up local conda distribution when conda environment is no longer needed.
     Alternatively, this command can also be used to clear an existing environment before recreating it with create-env
     ('tox -e create') command. If your main goal is to reset the environment, however, it is recommended to use the
-    'provision-env' ('tox -e provision') command instead, which removes and reinstalls all packages without altering
+    'provision-env' ('tox -e provision') command instead, which removes and (re)installs all packages without altering
     the environment itself.
 
     Raises:
         RuntimeError: If environment removal fails for any reason.
     """
+
 def provision_env(environment_name: str, python_version: str) -> None:
     """Removes all packages from the target conda environment (including python) and then re-installs project
     dependencies specified in pyproject.toml file.
@@ -488,6 +545,7 @@ def provision_env(environment_name: str, python_version: str) -> None:
     Raises:
         RuntimeError: If any environment modification steps fail for any reason.
     """
+
 def import_env(environment_name: str) -> None:
     """Creates or updates an existing conda environment based on the operating-system-specific .yml file stored in
     /envs directory.
@@ -500,6 +558,7 @@ def import_env(environment_name: str) -> None:
         RuntimeError: If there is no .yml file for the desired base-name and OS-extension combination in the /envs/
         directory. If creation and update commands both fail for any reason.
     """
+
 def export_env(environment_name: str) -> None:
     """Exports the requested conda environment as a .yml and as a spec.txt file to the /envs directory.
 
@@ -510,6 +569,7 @@ def export_env(environment_name: str) -> None:
         RuntimeError: If the environment export process fails for any reason. If the conda environment to export does
         not exist.
     """
+
 def rename_environments(new_name: str) -> None:
     """Iteratively renames environment files inside the 'envs' directory to use the provided name as the base-name.
 
@@ -520,6 +580,7 @@ def rename_environments(new_name: str) -> None:
         re-import the environment via 'import-env' ('tox -e import').
 
     """
+
 def adopt_project(library_name: str, project_name: str, author_name: str, email: str, env_name: str) -> None:
     """Adopts a new project initialized from a standard Sun Lab template, by replacing placeholders in metadata and
     automation files with user-defined data.

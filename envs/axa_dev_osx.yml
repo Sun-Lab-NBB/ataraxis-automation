@@ -135,7 +135,7 @@ dependencies:
   - zstandard=0.23.0=py312h721a963_0
   - zstd=1.5.6=hb46c0d2_0
   - pip:
-      - ataraxis-automation==3.0.1
+      - ataraxis-automation==3.0.2
       - ataraxis-base-utilities==2.0.1
       - build==1.2.1
       - loguru==0.7.2

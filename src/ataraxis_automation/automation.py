@@ -671,9 +671,6 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         relative_path: Path = stub_path.relative_to(src_dir)
         dst_path: Path = library_root.joinpath(relative_path)
 
-        message = f"Moved stub file from /stubs to /src: {dst_path.name}."
-        console.echo(message, level=LogLevel.INFO)
-
         # Ensures the destination directory exists
         dst_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -684,53 +681,56 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         # Moves the stub to its destination directory
         shutil.move(str(stub_path), str(dst_path))
 
+        message = f"Moved stub file from /stubs to /src: {dst_path.name}."
+        console.echo(message, level=LogLevel.INFO)
+
     # This loop is designed to solve a (so far) OSX-unique issue, where this function produces multiple copies that
     # have space+copy_number appended to each file name, rather than a single copy of the .pyi file.
 
     # Groups files by their base name (without a space number)
-    # To do so, first generates a dictionary that groups file paths that use the same file base name.
-    file_groups: dict[str, list[Path]] = {}
-    pyi_file: Path
+    # To do so, first generates a dictionary that groups file paths that use the same file base name. Does this within
+    # each library directory to avoid false-positive tagging of __init__ files across directories as global duplicates.
+    file_groups: dict[Path, dict[str, list[Path]]] = {}
     for pyi_file in library_root.rglob("*.pyi"):
-        base_name: str = re.sub(r" \d+\.pyi$", ".pyi", pyi_file.name)
-        file_groups.setdefault(base_name, []).append(pyi_file)
+        dir_path = pyi_file.parent
+        base_name = re.sub(r" \d+\.pyi$", ".pyi", pyi_file.name)
+        file_groups.setdefault(dir_path, {}).setdefault(base_name, []).append(pyi_file)
 
     # For each group, keeps only the file with the highest copy_number and renames it to remove space+copy_number after
     # removing all extra copies.
-    group: list[Path]
-    for base_name, group in file_groups.items():
-        if len(group) > 1:
-            # Sorts files by space number, in descending order
-            sorted_files: list[Path] = sorted(
-                group,
-                key=lambda x: int(re.findall(r" (\d+)\.pyi$", x.name)[0]) if re.findall(r" (\d+)\.pyi$", x.name) else 0,
-                reverse=True,
-            )
+    for dir_path, dir_groups in file_groups.items():
+        for base_name, group in dir_groups.items():
+            if len(group) > 1:
+                # Sorts files by copy number, in descending order
+                sorted_files = sorted(
+                    group,
+                    key=lambda x: int(re.findall(r" (\d+)\.pyi$", x.name)[0])
+                    if re.findall(r" (\d+)\.pyi$", x.name)
+                    else 0,
+                    reverse=True,
+                )
 
-            # Keeps the first file (highest space number), renames it, and removes the rest
-            kept_file_path: Path = sorted_files[0]
-            new_file_path: Path = kept_file_path.with_name(base_name)
+                # Keeps the first file (highest copy number), rename it, and remove the rest
+                kept_file = sorted_files[0]
+                new_file_path = kept_file.with_name(base_name)
 
-            # Removes the rest of the files
-            file_to_remove: Path
-            for file_to_remove in sorted_files[1:]:
-                file_to_remove.unlink()
-                message = f"Removed duplicate .piy file: {file_to_remove.name}."
-                console.echo(message, level=LogLevel.INFO)
+                # Removes duplicate files
+                for file_to_remove in sorted_files[1:]:
+                    file_to_remove.unlink()
+                    console.echo(
+                        f"Removed duplicate .pyi file in {dir_path}: {file_to_remove.name}", level=LogLevel.INFO
+                    )
 
-            # Renames the kept file to remove the space+copy_number
-            kept_file_path.rename(new_file_path)
-            message = f"Renamed stub file: {kept_file_path.name} -> {base_name}."
-            console.echo(message, level=LogLevel.INFO)
+                # Renames the kept file to remove the copy number
+                kept_file.rename(new_file_path)
+                console.echo(f"Renamed stub file in {dir_path}: {kept_file.name} -> {base_name}", level=LogLevel.INFO)
 
-        # If there's only one file in the group, renames it if it has a space number
-        elif len(group) == 1:
-            file: Path = group[0]
-            if file.name != base_name:
+            # If there's only one file, renames it if it has a copy number
+            elif len(group) == 1 and group[0].name != base_name:
+                file = group[0]
                 new_path = file.with_name(base_name)
                 file.rename(new_path)
-                message = f"Renamed stub file: {file.name} -> {base_name}."
-                console.echo(message, level=LogLevel.INFO)
+                console.echo(f"Renamed stub file in {dir_path}: {file.name} -> {base_name}", level=LogLevel.INFO)
 
 
 def delete_stubs(library_root: Path) -> None:
@@ -1079,11 +1079,18 @@ def resolve_environment_commands(
     if "uv" in pip_command:
         # Forces the command to run in conda if tox 'basepython' != python_version
         pip_uninstall_command += f" --python={python_version}"
+
         # Prevents cache interference, compiles to bytecode and forces uv to use conda environment
         pip_reinstall_command += f" --reinstall-package {project_name} --compile-bytecode --python={python_version}"
+        # Ensures that uv cache does not interfere with the installation procedure
+        pip_reinstall_command = f"uv clean && {pip_reinstall_command}"
+
         if pip_dependencies_command is not None:
             # Forces compilation and forces uv to use conda environment
             pip_dependencies_command += f" --compile-bytecode --python={python_version}"
+
+            # Ensures that uv cache does not interfere with the installation procedure
+            pip_dependencies_command = f"uv clean && {pip_dependencies_command}"
     else:
         # Suppresses confirmation dialogs
         pip_uninstall_command += f" --yes"
@@ -1636,7 +1643,7 @@ def remove_env(environment_name: str) -> None:  # pragma: no cover
     This command can be used to clean up local conda distribution when conda environment is no longer needed.
     Alternatively, this command can also be used to clear an existing environment before recreating it with create-env
     ('tox -e create') command. If your main goal is to reset the environment, however, it is recommended to use the
-    'provision-env' ('tox -e provision') command instead, which removes and reinstalls all packages without altering
+    'provision-env' ('tox -e provision') command instead, which removes and (re)installs all packages without altering
     the environment itself.
 
     Raises:

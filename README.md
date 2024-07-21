@@ -772,3 +772,13 @@ ___
 
 - All Sun Lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration and comments during the
   development of this library.
+- [click](https://github.com/pallets/click/) project for providing the low-level command-line-interface functionality 
+  for this project.
+- [pyyaml](https://github.com/yaml/pyyaml.org), [appdirs](https://github.com/ActiveState/appdirs), 
+  and [tomli](https://github.com/hukkin/tomli) for providing low-level functionality for some of the automation 
+  functions.
+- The teams behind [pip](https://github.com/pypa/pip), [uv](https://github.com/astral-sh/uv), 
+  [conda](https://conda.org/), [mamba](https://github.com/mamba-org/mamba) and [tox](https://github.com/tox-dev/tox), 
+  which form the backbone of our code distribution and management pipeline.
+- The creators of all other projects listed in out [pyproject.toml](pyproject.toml) file and used in automation 
+  pipelines across all Sun Lab projects.
