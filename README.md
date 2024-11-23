@@ -74,13 +74,6 @@ ___
 ### PIP
 
 Use the following command to install the library using PIP: ```pip install ataraxis-automation```
-
-### Conda / Mamba
-
-**_Note. Due to conda-forge contributing process being more nuanced than pip uploads, conda versions may lag behind
-pip and source code distributions._**
-
-Use the following command to install the library using Conda or Mamba: ```conda install ataraxis-automation```
 ___
 
 ## Usage
@@ -117,29 +110,18 @@ This library is intended to be used to augment 'tox' runtimes, and this is alway
 To use any of the commands as part of a tox 'task,' add it to the 'commands' section of the tox.ini:
 ```
 [testenv:create]
-basepython = py310
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Creates a minimally-configured conda environment using the requested python version and installs conda- and pip-
     dependencies extracted from pyproject.toml file into the environment. Does not install the project!
 commands =
-    automation-cli --verbose create-env --environment-name axa_dev --python-version 3.12
+    automation-cli create-env --environment-name axa_dev --python-version 3.13
 ```
-#### Logging and Printing
-All cli commands come with two parameters exposed through the main cli group:
-1. ```--verbose```: Determines whether to display Information, Warning and Success messages to inform the user about
-   the ongoing runtime.
-2. ```--log```: Determines whether to save messages and errors to log files (located in automatically generated folder
-   inside user log directory).
 
 #### Command-specific flags
 *__Note!__* Many sub-commands of the cli have additional flags and arguments that can be used to further customize
 their runtime. Consult the API documentation to see these options with detailed descriptions.
-
-*__Warning!__* When using any cli command that uses ```--python-version``` flag from tox, you __have__ to include 
-```basepython=``` line in the environment configuration __and__ set it to a python version __different__ from the 
-one provided after ```--python-version``` argument. See the 'testenv:create' example above.
 
 ### Intended cli use pattern
 All cli commands are intended to be used through tox pipelines. The most recent version of Sun Lab tox configuration
@@ -186,12 +168,12 @@ deps =
     mypy>=1,<2
     ruff>=0,<1
     types-pyyaml>=6,<7
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 depends = uninstall
 # Note! Basepython has to be set to the 'lowest' version supported by your project
-basepython = py310
+basepython = py311
 commands =
-    automation-cli --verbose purge-stubs
+    automation-cli purge-stubs
     ruff check --select I --fix
     ruff format
     mypy . --strict --extra-checks --warn-redundant-cast
@@ -215,29 +197,29 @@ description =
 deps =
     mypy>=1,<2
     ruff>=0,<1
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 depends = lint
 commands =
-    automation-cli --verbose process-typed-markers
+    automation-cli process-typed-markers
     stubgen -o stubs --include-private --include-docstrings -p ataraxis_automation -v
     ruff check --select I --fix
     ruff format
-    automation-cli --verbose process-stubs
+    automation-cli  process-stubs
 ```
 
 #### Test
 Shell command: ```tox -e pyXXX-test``` 
 
 This task is available for all python versions supported by each project. For example, automation supports versions 
-3.10, 3.11, and 3.12. Therefore, it will have ```tox -e py310-test```, ```tox -e py311-test``` and 
-```tox -e py312-test``` as valid 'test' tasks. These tasks are used to build the project in an isolated environment and 
+3.11 3.12, and 3.13. Therefore, it will have ```tox -e py311-test```, ```tox -e py312-test``` and 
+```tox -e py313-test``` as valid 'test' tasks. These tasks are used to build the project in an isolated environment and 
 run the tests expected to be located inside the project_root/tests directory to verify the project works as expected 
 for each python version. This is especially relevant for c-extension projects that compile code for specific python 
 versions and platforms.
 
 Example tox.ini section:
 ```
-[testenv: {py310, py311, py312}-test]
+[testenv: {py311, py312, py313}-test]
 package = wheel
 description =
     Runs unit and integration tests for each of the python versions listed in the task name. Uses 'loadgroup' balancing
@@ -245,7 +227,7 @@ description =
     pytest-xdist documentation).
 deps =
     pytest>=8,<9
-    pytest-cov>=5,<6
+    pytest-cov>=6,<7
     pytest-xdist>=3,<4
     coverage[toml]>=7,<8
 depends = uninstall
@@ -274,7 +256,7 @@ description =
     Combines test-coverage data from multiple test runs (for different python versions) into a single html file. The
     file can be viewed by loading the 'reports/coverage_html/index.html'.
 setenv = COVERAGE_FILE = reports/.coverage
-depends = {py310, py311, py312}-test
+depends = {py311, py312, py313}-test
 deps =
     junitparser>=3,<4
     coverage[toml]>=7,<8
@@ -312,7 +294,7 @@ Shell command: ```tox -e docs```
 
 Uses [sphinx](https://www.sphinx-doc.org/en/master/) to automatically parse docstrings from source code and use them 
 to build API documentation for the project. C-extension projects use a slightly modified version of this task that uses
-[breathe](https://breathe.readthedocs.io/en/latest/) to convert doxygen-generated xml files for c-code into a format 
+[breathe](https://breathe.readthedocs.io/en/latest/) to convert doxygen-generated XML files for c-code into a format 
 that sphinx can parse. This way, c-extension projects can include both Python and C/C++ API documentation as part of 
 the same file. This task relies on the configuration files stored inside /project_root/docs/source folder to define 
 the generated documentation format. Built documentation can be viewed by opening 
@@ -326,9 +308,9 @@ description =
     'docs/build/html/index.html'.
 depends = uninstall
 deps =
-    sphinx>=7,<8
+    sphinx>=8,<9
     importlib_metadata>=8,<9
-    sphinx-rtd-theme>=2,<3
+    sphinx-rtd-theme>=3,<4
     sphinx-click>=6,<7
     sphinx-autodoc-typehints>=2,<3
 commands =
@@ -416,11 +398,11 @@ description =
     Uses API token stored in '.pypirc' file or provided by user to authenticate the upload.
 deps =
     twine>=5,<6
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 allowlist_externals =
     distutils
 commands =
-    automation-cli --verbose acquire-pypi-token {posargs:}
+    automation-cli acquire-pypi-token {posargs:}
     twine upload dist/* --skip-existing --config-file .pypirc
 ```
 
@@ -445,9 +427,9 @@ description =
     https://conda-forge.org/docs/maintainer/adding_pkgs/ for more details.
 deps =
     grayskull>=2,<3
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 commands =
-    automation-cli --verbose generate-recipe-folder
+    automation-cli generate-recipe-folder
     grayskull pypi ataraxis_automation -o recipe --strict-conda-forge --list-missing-deps -m Inkaros
 ```
 
@@ -466,47 +448,40 @@ project development environment. This is a prerequisite for manually running and
 actively developed. During general 'tox' runtime, this task is used to (re)install the project into the
 project environment as necessary to avoid collisions with 'tox.'
 
-*__Note!__* The 'basepython' argument should always be set to a version different from '--python-version.'
-
 Example tox.ini section:
 ```
 [testenv:install]
-basepython = py310
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 depends =
-    uninstall
     lint
     stubs
-    {py310, py311, py312}-test
+    {py311, py311, py312}-test
     coverage
     docs
 description =
     Builds and installs the project into the specified conda environment. If the environment does not exist, creates
     it before installing the project.
 commands =
-    automation-cli --verbose install-project --environment-name axa_dev --python-version 3.12
+    automation-cli install-project --environment-name axa_dev
 ```
 
 #### Uninstall
 Shell command: ```tox -e uninstall```
 
-Removes the project from the requested environment. This task is used in-conjunction with the 'install' task to 
-avoid version collisions when running general 'tox' tasks.
-
-*__Note!__* The 'basepython' argument should always be set to a version different from '--python-version.'
+Removes the project from the requested environment. This task is no longer used in most automation pipelines, but is
+kept for backward-compatibility.
 
 Example tox.ini section:
 ```
 [testenv:uninstall]
-basepython = py310
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Uninstalls the project from the specified conda environment. If the environment does not exist
     this task silently succeeds.
 commands =
-    automation-cli --verbose uninstall-project --environment-name axa_dev --python-version 3.12
+    automation-cli uninstall-project --environment-name axa_dev
 ```
 
 #### Create
@@ -518,19 +493,16 @@ To work as intended, it uses automation-cli to parse the contents of tox.ini and
 list of project dependencies. It assumes that dependencies are stored using Sun Lab format: inside 'conda,' 'noconda,'
 'condarun,' and general 'dependencies' section.
 
-*__Note!__* The 'basepython' argument should always be set to a version different from '--python-version.'
-
 Example tox.ini section:
 ```
 [testenv:create]
-basepython = py310
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Creates a minimally-configured conda environment using the requested python version and installs conda- and pip-
     dependencies extracted from pyproject.toml file into the environment. Does not install the project!
 commands =
-    automation-cli --verbose create-env --environment-name axa_dev --python-version 3.12
+    automation-cli create-env --environment-name axa_dev --python-version 3.13
 ```
 
 #### Remove
@@ -542,13 +514,12 @@ after finishing development and to hard-reset the environment (this use is disco
 Example tox.ini section:
 ```
 [testenv:remove]
-basepython = py310
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Removes the requested conda environment, if it is installed locally.
 commands =
-    automation-cli --verbose remove-env --environment-name axa_dev
+    automation-cli remove-env --environment-name axa_dev
 ```
 
 #### Provision
@@ -559,27 +530,24 @@ them. It first uninstalls all packages in the environment and then re-installs p
 file. This is the same procedure as used by the 'create' task. Since this task does not remove the environment, it 
 preserves all references used by tools such as IDEs, but completely resets all packages in the environment. This can
 be used to both reset and actualize project development environments to match the latest version of the 
-.toml specification.
-
-*__Note!__* The 'basepython' argument should always be set to a version different from '--python-version.'
+.toml specification. ion.'
 
 Example tox.ini section:
 ```
 [testenv:provision]
-basepython = py310
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Provisions an already existing environment by uninstalling all packages from the environment and then installing the
     project dependencies using pyproject.toml specifications.
 commands =
-    automation-cli --verbose provision-env --environment-name axa_dev --python-version 3.12
+    automation-cli provision-env --environment-name axa_dev --python-version 3.13
 ```
 
 #### Export
 Shell command: ```tox -e export```
 
-Exports the target development environment as a .yml and spec.txt files. This task is used before distributing new 
+Exports the target development environment as a .yml and spec.txt file. This task is used before distributing new 
 versions of the project. This allows end-users to generate an identical copy of the development environment, which is 
 a highly encouraged feature for most projects. While our 'create' and 'provision' tasks make this largely obsolete, we 
 still include exported environments in all our project distributions.
@@ -588,11 +556,11 @@ Example tox.ini section:
 ```
 [testenv:export]
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Exports the requested conda environment to the 'envs' folder as a .yml file and as a spec.txt with revision history.
 commands =
-    automation-cli --verbose export-env --environment-name axa_dev
+    automation-cli export-env --environment-name axa_dev
 ```
 
 #### Import
@@ -608,12 +576,12 @@ Example tox.ini section:
 ```
 [testenv:import]
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Discovers and imports (installs) a new or updates an already existing environment using the .yml file
     stored in the 'envs' directory.
 commands =
-    automation-cli --verbose import-env --environment-name axa_dev
+    automation-cli import-env --environment-name axa_dev
 ```
 
 #### Rename
@@ -629,11 +597,11 @@ Example tox.ini section:
 ```
 [testenv:rename]
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Replaces the base environment name used by all files inside the 'envs' directory with the user-input name.
 commands =
-    automation-cli --verbose rename-environments
+    automation-cli rename-environments
 ```
 
 #### Adopt
@@ -648,11 +616,11 @@ Example tox.ini section:
 ```
 [testenv:adopt]
 deps =
-    ataraxis-automation>=3,<4
+    ataraxis-automation>=4,<5
 description =
     Adopts a Sun Lab template-generated project by replacing default placeholders with user-provided information.
 commands =
-    automation-cli --verbose adopt-project
+    automation-cli adopt-project
 ```
 ___
 

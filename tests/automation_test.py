@@ -225,7 +225,7 @@ def test_resolve_conda_engine_error(monkeypatch) -> None:
     # When neither conda nor mamba is available, expects a RuntimeError
     monkeypatch.setattr(subprocess, "run", mock_run)
     message: str = (
-        f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable"
+        f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable "
         f"to interface with either conda or mamba. Is conda or supported equivalent installed, initialized "
         f"and added to Path?"
     )
@@ -642,21 +642,15 @@ def test_resolve_environment_commands(
     else:
         assert ". $(conda info --base)/etc/profile.d/conda.sh" in result.activate_command
         assert ". $(conda info --base)/etc/profile.d/conda.sh" in result.deactivate_command
-    assert f"conda activate test_env{os_suffix}" in result.activate_command
+    assert f"test_env{os_suffix}" in result.activate_command
     assert f"conda deactivate" in result.deactivate_command
-    assert (
-        f"{conda_engine} create -n test_env{os_suffix} python={python_version} tox uv pip --yes"
-        in result.create_command
-    )
-    assert f"{conda_engine} remove -n test_env{os_suffix} --all --yes" in result.remove_command
+    assert f"python={python_version} pip tox uv --yes" in result.create_command
+    assert f"test_env{os_suffix} --all --yes" in result.remove_command
     assert result.environment_name == f"test_env{os_suffix}"
 
     # When there are no conda or pip dependencies, the corresponding command is actually set to None
     if len(dependencies[0]) != 0:
-        assert (
-            f"{conda_engine} install -n test_env{os_suffix} {' '.join(dependencies[0])} --yes"
-            in result.conda_dependencies_command
-        )
+        assert f"test_env{os_suffix} {' '.join(dependencies[0])} --yes" in result.conda_dependencies_command
     else:
         assert result.conda_dependencies_command is None
     if len(dependencies[1]) != 0:
@@ -680,11 +674,11 @@ def test_resolve_environment_commands(
 
     # Verifies that pip-engine-dependent additional parameters match expectation.
     if pip_engine == "uv pip":
-        assert f"--python={python_version}" in result.uninstall_project_command
-        command_string = f"--reinstall-package test-project --compile-bytecode --python={python_version}"
+        assert f"test_env{os_suffix}" in result.uninstall_project_command
+        command_string = f"--resolution highest --refresh --compile-bytecode"
         assert command_string in result.install_project_command
         if len(dependencies[1]) != 0:
-            assert f"--compile-bytecode --python={python_version}" in result.pip_dependencies_command
+            assert f"--compile-bytecode --python=" in result.pip_dependencies_command
     else:
         assert "--yes" in result.uninstall_project_command
         assert "--compile" in result.install_project_command
@@ -1196,6 +1190,7 @@ def mock_commands():
         install_project_command="uv pip install --no-cache-dir .",
         uninstall_project_command="pip uninstall -y project_name",
         provision_command="conda install --revision 0 -n test_env",
+        environment_directory="mock_dir",
     )
 
 

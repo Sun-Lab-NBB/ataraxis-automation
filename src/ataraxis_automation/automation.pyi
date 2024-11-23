@@ -56,6 +56,7 @@ class EnvironmentCommands:
     install_project_command: str
     uninstall_project_command: str
     provision_command: str
+    environment_directory: Path
     def __init__(
         self,
         activate_command,
@@ -72,6 +73,7 @@ class EnvironmentCommands:
         install_project_command,
         uninstall_project_command,
         provision_command,
+        environment_directory,
     ) -> None: ...
 
 def resolve_project_directory() -> Path:
@@ -376,8 +378,15 @@ def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) 
         BadParameter: If the input value contains invalid characters.
     """
 
+def resolve_conda_environments_directory() -> Path:
+    """Returns the path to the conda / mamba environments directory.
+
+    Raises:
+        RuntimeError: If conda is not installed and / or not initialized.
+    """
+
 def resolve_environment_commands(
-    project_root: Path, environment_name: str, python_version: str = "3.12"
+    project_root: Path, environment_name: str, python_version: str = "3.13"
 ) -> EnvironmentCommands:
     """Generates the list of conda and pip commands used to manipulate the project- and os-specific conda environment
     and packages it into EnvironmentCommands class.
@@ -388,9 +397,8 @@ def resolve_environment_commands(
     Args:
         project_root: The absolute path to the root directory of the processed project.
         environment_name: The base-name of the (project) conda environment.
-        python_version: The Python version to use as part of the new environment creation process. Also, this is used
-            to 'bias' uv to run in the conda environment instead of the virtualenv created by tox. For this reason, this
-            has to be different from tox 'basepython' requirement used in any task that uses uv through this library.
+        python_version: The Python version to use as part of the new environment creation process. This is also
+            used during environment provisioning to modify the python version in the environment.
 
     Returns:
         EnvironmentCommands class instance that includes all resolved commands as class attributes.
@@ -481,24 +489,24 @@ def acquire_pypi_token(replace_token: bool) -> None:
         RuntimeError: If the user aborts the token acquisition process without providing a valid token.
     """
 
-def install_project(environment_name: str, python_version: str) -> None:
+def install_project(environment_name: str) -> None:
     """Builds and installs the project into the specified conda environment.
 
-    This command is intended to be used between tox runtimes to (re)install the project into the development
-    environment. Removing the project before running tox tasks avoids (rare) tox runtime errors and reinstalling
-    the project after tox tasks is required for some development-related procedures (e.g: manual testing).
+    This command is primarily used to support project developing by compiling and installing the developed project into
+    the environment to allow manual project testing. Since tests have to be written to use compiled package, rather than
+    the source code to support tox testing, the project has to be rebuilt each time source code is changed, which is
+    conveniently performed by this command.
 
     Raises:
         RuntimeError: If project installation fails. If project environment does not exist.
     """
 
-def uninstall_project(environment_name: str, python_version: str) -> None:
+def uninstall_project(environment_name: str) -> None:
     """Uninstalls the project library from the specified conda environment.
 
-    This command is intended to be used between tox runtimes to uninstall the project from the development
-    environment before running tox. Removing the project before running tox tasks avoids (rare) tox runtime errors
-    and reinstalling the project after tox tasks is required for some development-related procedures
-    (e.g: manual testing).
+    This command is not used in most modern automation pipelines, but is kept for backward compatibility with legacy
+    projects. Previously, it was used to remove the project from its conda environment before running tests, as
+    installed projects used to interfere with tox re-building the wheels for testing.
 
     Notes:
         If the environment does not exist or is otherwise not accessible, the function returns without attempting to

@@ -147,6 +147,11 @@ class EnvironmentCommands:
     dependencies. Overall, this 'actualizes' the local environment to exactly match th pyproject.toml without altering
     any environment references.
     """
+    environment_directory: Path
+    """ The path to the directory that stores the target conda environment. This path is used to force uv to target the 
+    desired conda environment and to ensure the environment directory is removed when the environment is deleted. 
+    This avoids problems with certain OSes where removing and environment does not remove teh directory, which, in
+    turn, interferes with environment re-creation."""
 
 
 def resolve_project_directory() -> Path:
@@ -321,7 +326,7 @@ def resolve_conda_engine() -> str:
 
     # If this point in the runtime is reached, this means neither conda nor mamba is installed or accessible.
     message: str = (
-        f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable"
+        f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable "
         f"to interface with either conda or mamba. Is conda or supported equivalent installed, initialized "
         f"and added to Path?"
     )
@@ -689,12 +694,12 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
                 # Removes duplicate files
                 for file_to_remove in sorted_files[1:]:
                     file_to_remove.unlink()
-                    message = f"Removed duplicate .pyi file in {dir_path}: {file_to_remove.name}"
+                    message = f"Removed duplicate .pyi file in {dir_path}: {file_to_remove.name}."
                     click.echo(_colorize_message(message, color="white"), color=True)
 
                 # Renames the kept file to remove the copy number
                 kept_file.rename(new_file_path)
-                message = f"Renamed stub file in {dir_path}: {kept_file.name} -> {base_name}"
+                message = f"Renamed stub file in {dir_path}: {kept_file.name} -> {base_name}."
                 click.echo(_colorize_message(message, color="white"), color=True)
 
             # If there's only one file, renames it if it has a copy number
@@ -702,7 +707,7 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
                 file = group[0]
                 new_path = file.with_name(base_name)
                 file.rename(new_path)
-                message = f"Renamed stub file in {dir_path}: {file.name} -> {base_name}"
+                message = f"Renamed stub file in {dir_path}: {file.name} -> {base_name}."
                 click.echo(_colorize_message(message, color="white"), color=True)
 
 
@@ -942,8 +947,90 @@ def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) 
     return value
 
 
+def resolve_conda_environments_directory() -> Path:
+    """Returns the path to the conda / mamba environments directory.
+
+    Raises:
+        RuntimeError: If conda is not installed and / or not initialized.
+    """
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+
+    # The call above will not resolve Conda environment when this method runs in a tox environment, which is the
+    # intended runtime scenario. Therefore, attempts to find the conda environments directory manually if the prefix is
+    # None.
+    if not conda_prefix:
+        # Method 1: Checks whether this script is executed from a conda-based python.
+        python_exe = Path(sys.executable)
+
+        # This assumes that conda is provided by one of the major managers: miniforge, mambaforge or conda.
+        if any(name in str(python_exe).lower() for name in ("conda", "miniforge", "mambaforge")):
+            # Navigates up until it finds the conda root.
+            current = python_exe.parent
+            while current.parent != current:  # Stops at root
+                if (current / "conda-meta").exists():
+                    # Found conda root. Then, the /envs folder will be found directly under root
+                    return current / "envs"
+
+                if current.name == "envs":
+                    # Found envs directory directly
+                    return current
+
+                current = current.parent
+
+        # Method 2: Tries to find conda by locating conda executable. This would work if conda executable is in PATH.
+        conda_exe = os.environ.get("CONDA_EXE")
+        if conda_exe:
+            conda_root = Path(conda_exe).parent.parent
+            envs_dir = conda_root / "envs"
+            if envs_dir.exists():
+                return envs_dir
+
+        # Method 3: Checks common installation locations for the presence of conda manager and environments. This is
+        # pretty evil and will fail if multiple managers are installed at the same time. It is written in a way to
+        # prefer miniforge though.
+        possible_locations = [
+            Path.home() / "miniforge3" / "envs",
+            Path.home() / "mambaforge" / "envs",
+            Path.home() / "miniconda3" / "envs",
+            Path.home() / "anaconda3" / "envs",
+        ]
+
+        # On Windows, also checks the AppData location
+        if sys.platform == "win32":
+            possible_locations.extend(
+                [
+                    Path(os.environ.get("LOCALAPPDATA", "")) / "miniforge3" / "envs",
+                    Path(os.environ.get("LOCALAPPDATA", "")) / "mambaforge" / "envs",
+                    Path(os.environ.get("LOCALAPPDATA", "")) / "miniconda3" / "envs",
+                    Path(os.environ.get("LOCALAPPDATA", "")) / "anaconda3" / "envs",
+                ]
+            )
+
+        for location in possible_locations:
+            if location.exists():
+                return location
+
+    # If conda is not installed and (or) initialized, conda prefix will be None.
+    if not conda_prefix:
+        message: str = (
+            f"Unable to resolve the path to the conda / mamba environments directory. Usually, this error is seen "
+            f"when conda is not activated or installed. Make sure conda is installed and initialized before "
+            f"using ataraxis-automation cli."
+        )
+        raise RuntimeError(_format_message(message))
+
+    # If the 'base' environment is active, the prefix points to the root conda manager folder and needs to be
+    # extended with 'envs'.
+    if os.environ.get("CONDA_DEFAULT_ENV") == "base":
+        return Path(os.path.join(conda_prefix, "envs"))
+
+    # Otherwise, for named environments, the root /envs directory is one level below the named directory:
+    # e.g., /path/to/conda/envs/myenv -> /path/to/conda/envs
+    return Path(os.path.dirname(os.path.dirname(conda_prefix)))
+
+
 def resolve_environment_commands(
-    project_root: Path, environment_name: str, python_version: str = "3.12"
+    project_root: Path, environment_name: str, python_version: str = "3.13"
 ) -> EnvironmentCommands:
     """Generates the list of conda and pip commands used to manipulate the project- and os-specific conda environment
     and packages it into EnvironmentCommands class.
@@ -954,9 +1041,8 @@ def resolve_environment_commands(
     Args:
         project_root: The absolute path to the root directory of the processed project.
         environment_name: The base-name of the (project) conda environment.
-        python_version: The Python version to use as part of the new environment creation process. Also, this is used
-            to 'bias' uv to run in the conda environment instead of the virtualenv created by tox. For this reason, this
-            has to be different from tox 'basepython' requirement used in any task that uses uv through this library.
+        python_version: The Python version to use as part of the new environment creation process. This is also
+            used during environment provisioning to modify the python version in the environment.
 
     Returns:
         EnvironmentCommands class instance that includes all resolved commands as class attributes.
@@ -978,6 +1064,10 @@ def resolve_environment_commands(
     conda_command: str = resolve_conda_engine()
     pip_command: str = resolve_pip_engine()
 
+    # Resolves the physical path to the target conda environment directory.
+    environment_directory = resolve_conda_environments_directory()
+    target_environment_directory = environment_directory.joinpath(extended_environment_name)
+
     # Generates commands that depend on the host OS type. Relies on resolve_environment_files() method to err if the
     # host is running an unsupported OS, as the OS versions evaluated below are the same as used by
     # resolve_environment_files().
@@ -992,17 +1082,17 @@ def resolve_environment_commands(
         )
 
         # Conda environment activation and deactivation commands
-        conda_init = "call conda.bat"
-        activate_command = f"{conda_init} && conda activate {extended_environment_name}"
-        deactivate_command = f"{conda_init} &&conda deactivate"
+        conda_init = "call conda.bat >NUL 2>&1"  # Redirects stdout and stderr to null to remove unnecessary text
+        activate_command = f"{conda_init} && conda activate {target_environment_directory}"
+        deactivate_command = f"{conda_init} && conda deactivate"
     elif "_lin" in extended_environment_name:
         # .yml export
         export_yml_command = f"{conda_command} env export --name {extended_environment_name} | head -n -1 > {yml_path}"
 
         # Conda environment activation command
         conda_init = ". $(conda info --base)/etc/profile.d/conda.sh"
-        activate_command = f"{conda_init} && conda activate {extended_environment_name}"
-        deactivate_command = f"{conda_init} &&conda deactivate"
+        activate_command = f"{conda_init} && conda activate {target_environment_directory}"
+        deactivate_command = f"{conda_init} && conda deactivate"
     elif "_osx" in extended_environment_name:
         # .yml export
         export_yml_command = (
@@ -1012,8 +1102,8 @@ def resolve_environment_commands(
 
         # Conda environment activation command.
         conda_init = ". $(conda info --base)/etc/profile.d/conda.sh"
-        activate_command = f"{conda_init} && conda activate {extended_environment_name}"
-        deactivate_command = f"{conda_init} &&conda deactivate"
+        activate_command = f"{conda_init} && conda activate {target_environment_directory}"
+        deactivate_command = f"{conda_init} && conda deactivate"
 
     # Generates the spec.txt export command, which is the same for all OS versions (unlike .yml export)
     export_spec_command: str = f"{conda_command} list -n {extended_environment_name} --explicit -r > {spec_path}"
@@ -1043,20 +1133,20 @@ def resolve_environment_commands(
     # Modifies some pip commands with additional, engine-specific flags. This is needed because pip and uv pip (the two
     # supported engines) use slightly different flags for certain commands.
     if "uv" in pip_command:
-        # Forces the command to run in conda if tox 'basepython' != python_version
-        pip_uninstall_command += f" --python={python_version}"
+        # Forces the command to run in the target conda environment instead of the virtual environment created by tox
+        pip_uninstall_command += f" --python={target_environment_directory}"
 
-        # Prevents cache interference, compiles to bytecode and forces uv to use conda environment
-        pip_reinstall_command += f" --reinstall-package {project_name} --compile-bytecode --python={python_version}"
-        # Ensures that uv cache does not interfere with the installation procedure
-        pip_reinstall_command = f"uv clean && {pip_reinstall_command}"
+        # Refreshes cache to ensure latest compatible versions are installed, compiles to bytecode and forces uv to
+        # use conda environment
+        pip_reinstall_command += (
+            f" --resolution highest --refresh --compile-bytecode --python={target_environment_directory} --strict"
+        )
 
         if pip_dependencies_command is not None:
             # Forces compilation and forces uv to use conda environment
-            pip_dependencies_command += f" --compile-bytecode --python={python_version}"
-
-            # Ensures that uv cache does not interfere with the installation procedure
-            pip_dependencies_command = f"uv clean && {pip_dependencies_command}"
+            pip_dependencies_command += (
+                f" --resolution highest --refresh --compile-bytecode --python={target_environment_directory} --strict"
+            )
     else:
         # Suppresses confirmation dialogs
         pip_uninstall_command += f" --yes"
@@ -1067,10 +1157,13 @@ def resolve_environment_commands(
 
     # Generates conda environment manipulation commands.
     # Creation (base) generates a minimal conda environment. It is expected that conda and pip dependencies are added
-    # via separate dependency commands generated above
+    # via separate dependency commands generated above. Note, installs the latest versions of tox, uv and pip with the
+    # expectation that dependency installation command use --reinstall to override the versions of these packages as
+    # necessary.
     create_command: str = (
-        f"{conda_command} create -n {extended_environment_name} python={python_version} tox uv pip --yes"
+        f"{conda_command} create -n {extended_environment_name} python={python_version} pip tox uv --yes"
     )
+
     remove_command: str = f"{conda_command} remove -n {extended_environment_name} --all --yes"
 
     # A special command that removes all packages and then re-installs base dependencies to 'reset' the environment to
@@ -1107,6 +1200,7 @@ def resolve_environment_commands(
         install_project_command=pip_reinstall_command,
         uninstall_project_command=pip_uninstall_command,
         provision_command=provision_command,
+        environment_directory=target_environment_directory,
     )
     return command_class
 
@@ -1353,20 +1447,13 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
     type=str,
     help="The 'base' name of the project conda environment, e.g: 'project_dev'.",
 )
-@click.option(
-    "-pv",
-    "--python-version",
-    prompt="Enter the python version of the project conda environment. Has to be different from tox 'basepython':",
-    required=True,
-    type=str,
-    help="The python version of the project conda environment, e.g. '3.12'. Has to be different from tox 'basepython'.",
-)
-def install_project(environment_name: str, python_version: str) -> None:  # pragma: no cover
+def install_project(environment_name: str) -> None:  # pragma: no cover
     """Builds and installs the project into the specified conda environment.
 
-    This command is intended to be used between tox runtimes to (re)install the project into the development
-    environment. Removing the project before running tox tasks avoids (rare) tox runtime errors and reinstalling
-    the project after tox tasks is required for some development-related procedures (e.g: manual testing).
+    This command is primarily used to support project developing by compiling and installing the developed project into
+    the environment to allow manual project testing. Since tests have to be written to use compiled package, rather than
+    the source code to support tox testing, the project has to be rebuilt each time source code is changed, which is
+    conveniently performed by this command.
 
     Raises:
         RuntimeError: If project installation fails. If project environment does not exist.
@@ -1379,13 +1466,12 @@ def install_project(environment_name: str, python_version: str) -> None:  # prag
     commands: EnvironmentCommands = resolve_environment_commands(
         project_root=project_root,
         environment_name=environment_name,
-        python_version=python_version,
     )
 
     # Checks if project conda environment is accessible via subprocess activation call. If not, raises an error.
     if not environment_exists(commands=commands):
         message = (
-            f"Unable to activate the target conda environment '{commands.environment_name}', which likely means"
+            f"Unable to activate the target conda environment '{commands.environment_name}', which likely means "
             f"that it does not exist. If you need to create the environment, run 'create-env' ('tox -e create')."
         )
         raise RuntimeError(_format_message(message))
@@ -1414,21 +1500,12 @@ def install_project(environment_name: str, python_version: str) -> None:  # prag
     type=str,
     help="The 'base' name of the project conda environment, e.g: 'project_dev'.",
 )
-@click.option(
-    "-pv",
-    "--python-version",
-    prompt="Enter the python version of the project conda environment. Has to be different from tox 'basepython':",
-    required=True,
-    type=str,
-    help="The python version of the project conda environment, e.g. '3.12'. Has to be different from tox 'basepython'.",
-)
-def uninstall_project(environment_name: str, python_version: str) -> None:  # pragma: no cover
+def uninstall_project(environment_name: str) -> None:  # pragma: no cover
     """Uninstalls the project library from the specified conda environment.
 
-    This command is intended to be used between tox runtimes to uninstall the project from the development
-    environment before running tox. Removing the project before running tox tasks avoids (rare) tox runtime errors
-    and reinstalling the project after tox tasks is required for some development-related procedures
-    (e.g: manual testing).
+    This command is not used in most modern automation pipelines, but is kept for backward compatibility with legacy
+    projects. Previously, it was used to remove the project from its conda environment before running tests, as
+    installed projects used to interfere with tox re-building the wheels for testing.
 
     Notes:
         If the environment does not exist or is otherwise not accessible, the function returns without attempting to
@@ -1445,7 +1522,6 @@ def uninstall_project(environment_name: str, python_version: str) -> None:  # pr
     commands: EnvironmentCommands = resolve_environment_commands(
         project_root=project_root,
         environment_name=environment_name,
-        python_version=python_version,
     )
 
     # Attempts to activate the input conda environment. If activation fails, concludes that environment does not exist
@@ -1456,7 +1532,7 @@ def uninstall_project(environment_name: str, python_version: str) -> None:  # pr
             f"Uninstallation process aborted. If you need to create the environment, run 'create-env' "
             f"('tox -e create')."
         )
-        click.echo(_colorize_message(message, color="orange"))
+        click.echo(_colorize_message(message, color="yellow"))
         return
 
     try:
@@ -1469,7 +1545,7 @@ def uninstall_project(environment_name: str, python_version: str) -> None:  # pr
     except subprocess.CalledProcessError:
         message = (
             f"Unable to uninstall the project from the conda environment '{commands.environment_name}'. See "
-            f"uv/pip-generated error messages for specific details about the failed operation. "
+            f"uv/pip-generated error messages for specific details about the failed operation."
         )
         raise RuntimeError(_format_message(message))
 
@@ -1522,7 +1598,7 @@ def create_env(environment_name: str, python_version: str) -> None:  # pragma: n
             f"environment, run 'remove-env' ('tox -e remove') command and try again. If you need to reinstall "
             f"environment packages, run 'provision-env' ('tox -e provision') command instead."
         )
-        click.echo(_colorize_message(message, color="orange"))
+        click.echo(_colorize_message(message, color="yellow"))
         return
 
     # Creates the new environment
@@ -1624,18 +1700,19 @@ def remove_env(environment_name: str) -> None:  # pragma: no cover
     )
 
     # If the environment cannot be activated, it likely does not exist and, therefore, there is nothing to remove.
-    if not environment_exists(commands=commands):
+    if not environment_exists(commands=commands) and not commands.environment_directory.exists():
         message: str = (
             f"Unable to find '{commands.environment_name}' conda environment. Likely, this indicates that the "
             f"environment already does not exist. Environment removal procedure aborted."
         )
-        click.echo(_colorize_message(message, color="orange"))
+        click.echo(_colorize_message(message, color="yellow"))
         return
 
     # Otherwise, ensures the environment is not active and carries out the removal procedure.
     try:
         command: str = f"{commands.deactivate_command} && {commands.remove_command}"
         subprocess.run(command, shell=True, check=True)
+        commands.environment_directory.unlink(missing_ok=True)  # Ensures the environment directory is deleted.
         message = f"Removed '{commands.environment_name}' conda environment."
         click.echo(_colorize_message(message, color="green"))
 
@@ -1801,7 +1878,7 @@ def import_env(environment_name: str) -> None:  # pragma: no cover
         try:
             subprocess.run(commands.create_from_yml_command, shell=True, check=True)
             message: str = (
-                f"'{commands.environment_name}' conda environment imported (created) from existing .yml " f"file."
+                f"'{commands.environment_name}' conda environment imported (created) from existing .yml file."
             )
             click.echo(_colorize_message(message, color="green"))
         except subprocess.CalledProcessError:
@@ -2006,7 +2083,6 @@ def adopt_project(
         "README.md",
         "api.rst",
         "welcome.rst",
-        "utilities_test.py",
     )
 
     # Uses the input environment name to rename all environment files inside the 'envs' folder. This renames both file

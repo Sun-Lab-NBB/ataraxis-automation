@@ -70,10 +70,6 @@ condarun = [
 
 # Dependencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
 conda = [
-    # Tox
-    "tox>=4,<5",
-    "tox-uv>=1,<2",
-
     # Testing
     "pytest>=8,<9",
     "pytest-cov>=6,<7",
@@ -106,7 +102,6 @@ conda = [
 
     # Miscellaneous helpers
     "black>=24,<25",
-    "uv>=0,<1"
 ]
 
 # Dependencies known to not be installable with conda for at least one supported development platform
@@ -114,6 +109,11 @@ conda = [
 noconda = [
     # Building
     "build>=1,<2",
+
+    # Tox
+    "tox>=4,<5",
+    "uv>=0,<1",
+    "tox-uv>=1,<2",
 ]
 
 # A shorthand specification that installs tox and all packages required for development tasks. This specification can
