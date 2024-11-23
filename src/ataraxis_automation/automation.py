@@ -9,10 +9,10 @@ with other tox configurations.
 import os
 import re
 import sys
-import time as tm
 import shutil
 from typing import Any, Optional
 from pathlib import Path
+import textwrap
 import subprocess
 from dataclasses import dataclass
 from configparser import ConfigParser
@@ -20,8 +20,51 @@ from configparser import ConfigParser
 import yaml
 import click
 import tomli
-from appdirs import AppDirs  # type: ignore
-from ataraxis_base_utilities import LogLevel, console
+
+
+def _format_message(message: str) -> str:
+    """Formats input message strings to follow the general Ataraxis style.
+
+    This function uses the same parameters as the default Console class implementation available through
+    the ataraxis-base-utilities library. This function is used to decouple the ataraxis-automation library from
+    the ataraxis-base-utilities library, removing the circular dependency introduced for these libraries in versions 2
+    and 3 and allows mimicking the output of console.error() method.
+
+    Args:
+        message: The input message string to format.
+
+    Returns:
+        Formatted message string with appropriate line breaks.
+    """
+    return textwrap.fill(
+        text=message,
+        width=120,
+        break_long_words=False,
+        break_on_hyphens=False,
+    )
+
+
+def _colorize_message(message: str, color: str, format_message: bool = True) -> str:
+    """Modifies the input string to include an ANSI color code and, if necessary, formats the message by wrapping it
+    at 120 lines.
+
+    This function uses the same parameters as the default Console class implementation available through
+    the ataraxis-base-utilities library. This function is used to decouple the ataraxis-automation library from
+    ataraxis-base-utilities and, together with click.echo, allows mimicking the output of console.echo() method.
+
+    Args:
+        message: The input message string to format and colorize.
+        color: The ANSI color code to use for coloring the message.
+        format_message: If True, the message will be formatted by wrapping it at 120 lines.
+
+    Returns:
+        Colorized and formatted (if requested) message string.
+    """
+
+    if format_message:
+        message = _format_message(message)
+
+    return click.style(message, fg=color)
 
 
 @dataclass
@@ -106,77 +149,6 @@ class EnvironmentCommands:
     """
 
 
-def configure_console(
-    log_directory: Optional[Path] = None, *, verbose: bool = False, enable_logging: bool = False
-) -> None:
-    """Configures, and, if requested, enables Console class instance exposed by the ataraxis-base-utilities library as
-    global 'console' variable.
-
-    This function is designed to be called by the main cli group setup code to (optionally) enable sending messages to
-    terminal and logging them to log files. All functions of this library are expected to use the same global Console
-    instance, and they should use the tools exposed by the console to issue errors and echo messages.
-
-    Notes:
-        Since version 1.1.0 of ataraxis-base-utilities and version 2.0.0 of this library, it uses shared 'console'
-        variable for terminal-printing and file-logging functionality. While effective, this design is potentially
-        dangerous, as it allows multiple modules to access and alter 'console' configuration. Since this function is
-        expected to be called from the highest module of the call hierarchy, it reconfigures and enables / disables the
-        console variable depending on the input arguments. This will interfere with any imported module that also
-        attempts to modify the console configuration. There should always be only one active module allowed to modify
-        console variable for each runtime.
-
-    Args:
-        log_directory: The absolute path to the user logs directory. The function ensures the directory exists, but
-            relies on the main cli group to provide the directory path.
-        verbose: Determines whether to print messages and errors to the terminal.
-        enable_logging: Determines whether to save messages and errors to log files. Note, error log files are
-            automatically cleaned up after a few days, while message logs are maintained indefinitely.
-    """
-
-    # If logging is enabled and a valid log directory path is provided, provides console with log file paths.
-    if enable_logging and log_directory is not None:
-        log_file_path = log_directory.joinpath("message_log.txt")
-        error_file_path = log_directory.joinpath("error_log.txt")
-        console.set_message_log_path(log_file_path)
-        console.set_error_log_path(error_file_path)
-
-        # Also enables logging to supported files.
-        console.set_error_file(True)
-        console.set_message_file(True)
-        console.set_debug_file(False)
-        console.enable()  # Also ensures that console is enabled
-
-        # Regardless of the verbose settings below, the console will notify the user about the location of log files
-        # if logging is enabled:
-        console.set_message_terminal(True)
-        console.echo(f"File logging: enabled. Log files can be found inside the following directory: {log_directory}")
-        tm.sleep(1)  # Waits for 1 second to ensure the user sees the message.
-    else:
-        # Otherwise, ensures logging to file is disabled.
-        console.set_error_file(False)
-        console.set_message_file(False)
-        console.set_debug_file(False)
-
-    # If console is used in verbose mode, enables terminal-printing.
-    if verbose:
-        console.set_message_terminal(True)
-        console.set_error_terminal(True)
-        console.set_debug_terminal(False)
-        console.enable()  # Also ensures that console is enabled
-    else:
-        # Otherwise, ensures terminal-printing is disabled.
-        console.set_message_terminal(False)
-        console.set_error_terminal(False)
-        console.set_debug_terminal(False)
-
-    # Ensures the console is disabled if neither logging nor terminal-printing is enabled. This is primarily
-    # helpful for testing purposes, but also ensures consistent performance given that console is potentially
-    # shared between many different modules. Some of these modules may transiently enable it without disabling,
-    # which can cause this library to behave unexpectedly with respect to logging.
-    if not enable_logging and not verbose:
-        console.disable()
-
-
 def resolve_project_directory() -> Path:
     """Gets the current working directory from the OS and verifies that it points to a valid python project.
 
@@ -205,7 +177,7 @@ def resolve_project_directory() -> Path:
             f"the project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
             f"directory is set to {project_dir}, which does not contain at least one of the required files."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     return Path(project_dir)
 
@@ -263,7 +235,7 @@ def resolve_library_root(project_root: Path) -> Path:
             f"sub-directories with __init__.py inside the /src directory. Make sure there is an __init__.py "
             f"inside /src or ONE of the sub-directories under /src."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # If (as expected), there is only one candidate, returns it as the library root
     return candidates.pop()
@@ -290,7 +262,11 @@ def resolve_environment_files(project_root: Path, environment_base_name: str) ->
         RuntimeError: If the host OS does not match any of the supported operating systems.
     """
     # Stores supported platform names together with their suffixes
-    supported_platforms: dict[str, str] = {"win32": "_win", "linux": "_lin", "darwin": "_osx"}
+    supported_platforms: dict[str, str] = {
+        "win32": "_win",
+        "linux": "_lin",
+        "darwin": "_osx",
+    }
     os_name: str = sys.platform  # Obtains host os name
 
     # If the os name is not one of the supported names, issues an error
@@ -299,7 +275,7 @@ def resolve_environment_files(project_root: Path, environment_base_name: str) ->
             f"Unable to resolve the os-specific suffix to use for conda environment file(s). Unsupported host OS "
             f"detected: {os_name}. Currently, supported OS options are are: {', '.join(supported_platforms.keys())}."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Resolves the absolute path to the 'envs' directory. The function that generates the project root path checks for
     # the presence of this directory as part of its runtime, so it is assumed that it always exists.
@@ -349,10 +325,7 @@ def resolve_conda_engine() -> str:
         f"to interface with either conda or mamba. Is conda or supported equivalent installed, initialized "
         f"and added to Path?"
     )
-    console.error(message, error=RuntimeError)
-
-    # Fallback to appease mypy, not reachable.
-    raise RuntimeError(message)  # pragma: no cover
+    raise RuntimeError(_format_message(message))
 
 
 def resolve_pip_engine() -> str:
@@ -388,10 +361,7 @@ def resolve_pip_engine() -> str:
         f"the supported pip-engines. Is pip, uv or supported equivalent installed in the currently active "
         f"virtual / conda environment?"
     )
-    console.error(message, error=RuntimeError)
-
-    # Fallback to appease mypy, not reachable.
-    raise RuntimeError(message)  # pragma: no cover
+    raise RuntimeError(_format_message(message))
 
 
 def get_base_name(dependency: str) -> str:
@@ -441,7 +411,8 @@ def add_dependency(
             f"dependency for '{dependency}', listed in pyproject.toml. A dependency should only "
             f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun."
         )
-        console.error(message, error=ValueError)
+        raise ValueError(_format_message(message))
+
     # Wraps dependency in "" to properly handle version specifiers when dependencies are installed via mamba or pip.
     # Technically, this is only needed for 'special' version specifications that use < or > and similar notations. It
     # is assumed that most of the projects that use this library will be specifying dependencies using at least '>='
@@ -504,19 +475,23 @@ def resolve_dependencies(project_root: Path) -> tuple[list[str], list[str]]:
                 )
 
     # Processes project run dependencies. Adds extracted dependencies that are not already processed as part of the
-    # condarun list to pip_dependencies list.
+    # 'condarun' list to the pip_dependencies list.
     for dependency in dependencies:
         # Adds dependency to the pip list if it has not been processed as part of conda dependencies
         if get_base_name(dependency=dependency) not in processed_dependencies:
             add_dependency(
-                dependency=dependency, dependencies_list=pip_dependencies, processed_dependencies=processed_dependencies
+                dependency=dependency,
+                dependencies_list=pip_dependencies,
+                processed_dependencies=processed_dependencies,
             )
 
     # Adds any missing noconda dependencies to the pip_dependencies list.
     if "noconda" in optional_dependencies:
         for dependency in optional_dependencies["noconda"]:
             add_dependency(
-                dependency=dependency, dependencies_list=pip_dependencies, processed_dependencies=processed_dependencies
+                dependency=dependency,
+                dependencies_list=pip_dependencies,
+                processed_dependencies=processed_dependencies,
             )
 
     # Ignores any other optional dependencies
@@ -550,7 +525,7 @@ def resolve_dependencies(project_root: Path) -> tuple[list[str], list[str]]:
             f"dependencies in tox.ini are not found in pyproject.toml: {', '.join(missing_dependencies)}. Add them to "
             f"one of the pyproject.toml dependency lists: condarun, conda or noconda."
         )
-        console.error(message, error=ValueError)
+        raise ValueError(_format_message(message))
 
     return conda_dependencies, pip_dependencies
 
@@ -583,7 +558,7 @@ def resolve_project_name(project_root: Path) -> str:
             f"Unable to parse the pyproject.toml file. The file may be corrupted or contain invalid TOML syntax. "
             f"Error details: {e}."
         )
-        console.error(message, error=ValueError)
+        raise ValueError(_format_message(message))
 
     # Extracts the project name from the [project] section
     project_data: dict[str, Any] = pyproject_data.get("project", {})
@@ -595,10 +570,7 @@ def resolve_project_name(project_root: Path) -> str:
             f"Unable to resolve the project name from the pyproject.toml file. The 'name' field is missing or empty in "
             f"the [project] section of the file. Ensure that the project name is correctly defined."
         )
-        console.error(message, error=ValueError)
-
-        # Fallback to appease mypy, not reachable.
-        raise ValueError(message)  # pragma: no cover
+        raise ValueError(_format_message(message))
 
     elif project_name is not None:
         return project_name
@@ -623,14 +595,14 @@ def generate_typed_marker(library_root: Path) -> None:
     if not root_py_typed.exists():
         root_py_typed.touch()
         message: str = f"Added py.typed marker to library root ({library_root})."
-        console.echo(message, level=LogLevel.INFO)
+        click.echo(_colorize_message(message, color="white"), color=True)
 
     # Removes py.typed from all subdirectories
     for path in library_root.rglob("py.typed"):
         if path != root_py_typed:
             path.unlink()
             message = f"Removed no longer needed py.typed marker file {path}."
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"), color=True)
 
 
 def move_stubs(stubs_dir: Path, library_root: Path) -> None:
@@ -659,7 +631,7 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
             f"Unable to move the generated stub files to appropriate levels of the library directory. Expected exactly "
             f"one subdirectory with __init__.pyi in '{stubs_dir}', but found {len(valid_sub_dirs)}."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Gets the single valid directory and uses it as the source for .piy files.
     src_dir: Path = valid_sub_dirs.pop()
@@ -674,7 +646,7 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         # Ensures the destination directory exists
         dst_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Removes old .pyi file if it already exists
+        # Removes the old .pyi file if it already exists
         if dst_path.exists():
             dst_path.unlink()
 
@@ -682,9 +654,9 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         shutil.move(str(stub_path), str(dst_path))
 
         message = f"Moved stub file from /stubs to /src: {dst_path.name}."
-        console.echo(message, level=LogLevel.INFO)
+        click.echo(_colorize_message(message, color="white"), color=True)
 
-    # This loop is designed to solve a (so far) OSX-unique issue, where this function produces multiple copies that
+    # This loop is designed to solve an OSX-unique issue, where this function produces multiple copies that
     # have space+copy_number appended to each file name, rather than a single copy of the .pyi file.
 
     # Groups files by their base name (without a space number)
@@ -704,9 +676,9 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
                 # Sorts files by copy number, in descending order
                 sorted_files = sorted(
                     group,
-                    key=lambda x: int(re.findall(r" (\d+)\.pyi$", x.name)[0])
-                    if re.findall(r" (\d+)\.pyi$", x.name)
-                    else 0,
+                    key=lambda x: (
+                        int(re.findall(r" (\d+)\.pyi$", x.name)[0]) if re.findall(r" (\d+)\.pyi$", x.name) else 0
+                    ),
                     reverse=True,
                 )
 
@@ -717,20 +689,21 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
                 # Removes duplicate files
                 for file_to_remove in sorted_files[1:]:
                     file_to_remove.unlink()
-                    console.echo(
-                        f"Removed duplicate .pyi file in {dir_path}: {file_to_remove.name}", level=LogLevel.INFO
-                    )
+                    message = f"Removed duplicate .pyi file in {dir_path}: {file_to_remove.name}"
+                    click.echo(_colorize_message(message, color="white"), color=True)
 
                 # Renames the kept file to remove the copy number
                 kept_file.rename(new_file_path)
-                console.echo(f"Renamed stub file in {dir_path}: {kept_file.name} -> {base_name}", level=LogLevel.INFO)
+                message = f"Renamed stub file in {dir_path}: {kept_file.name} -> {base_name}"
+                click.echo(_colorize_message(message, color="white"), color=True)
 
             # If there's only one file, renames it if it has a copy number
             elif len(group) == 1 and group[0].name != base_name:
                 file = group[0]
                 new_path = file.with_name(base_name)
                 file.rename(new_path)
-                console.echo(f"Renamed stub file in {dir_path}: {file.name} -> {base_name}", level=LogLevel.INFO)
+                message = f"Renamed stub file in {dir_path}: {file.name} -> {base_name}"
+                click.echo(_colorize_message(message, color="white"), color=True)
 
 
 def delete_stubs(library_root: Path) -> None:
@@ -749,7 +722,7 @@ def delete_stubs(library_root: Path) -> None:
         # Removes the .pyi files
         pyi_file.unlink()
         message: str = f"Removed stub file: {pyi_file.name}."
-        console.echo(message, level=LogLevel.INFO)
+        click.echo(_colorize_message(message, color="white"), color=True)
 
 
 def verify_pypirc(file_path: Path) -> bool:
@@ -819,7 +792,7 @@ def rename_all_envs(project_root: Path, new_name: str) -> None:
             file_path.unlink()
 
             message: str = f"Renamed environment .yml file: {file_name} -> {new_file_name}."
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"), color=True)
 
         # if the file is a _spec.txt file, just renames the file. Spec files to not include environment names.
         elif file_name.endswith("_spec.txt") and ("_lin" in file_name or "_win" in file_name or "_osx" in file_name):
@@ -833,7 +806,7 @@ def rename_all_envs(project_root: Path, new_name: str) -> None:
             file_path.rename(new_file_path)
 
             message = f"Renamed environment spec.txt file: {file_name} -> {new_file_name}."
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"), color=True)
 
         else:
             # Skips files that don't match either pattern
@@ -872,7 +845,7 @@ def replace_markers_in_file(file_path: Path, markers: dict[str, str]) -> int:
     if modification_count != 0:
         file_path.write_text(content, encoding="utf-8")
         message: str = f"Replaced markers in {file_path}."
-        console.echo(message, level=LogLevel.INFO)
+        click.echo(_colorize_message(message, color="white"), color=True)
 
     # Returns the total number of modifications (0 if no modifications were made)
     return modification_count
@@ -890,10 +863,8 @@ def validate_library_name(_ctx: click.Context, _param: click.Parameter, value: s
         BadParameter: If the input value contains invalid characters.
     """
     if not re.match(r"^[a-zA-Z0-9_]*$", value):
-        message: str = console.format_message(
-            "Library name should contain only letters, numbers, and underscores.", loguru=False
-        )
-        raise click.BadParameter(message)
+        message: str = "Library name should contain only letters, numbers, and underscores."
+        raise click.BadParameter(_format_message(message))
     return value
 
 
@@ -909,9 +880,7 @@ def validate_project_name(_ctx: click.Context, _param: click.Parameter, value: s
         BadParameter: If the input value contains invalid characters.
     """
     if not re.match(r"^[a-zA-Z0-9-]+$", value):
-        message: str = console.format_message(
-            "Project name should contain only letters, numbers, or dashes.", loguru=False
-        )
+        message: str = _format_message("Project name should contain only letters, numbers, or dashes.")
         raise click.BadParameter(message)
     return value
 
@@ -929,11 +898,10 @@ def validate_author_name(_ctx: click.Context, _param: click.Parameter, value: st
     """
     pattern = r"^([a-zA-Z\s\-']+)(\s*\([a-zA-Z0-9\-]+\))?$"
     if not re.match(pattern, value):
-        message: str = console.format_message(
+        message: str = _format_message(
             f"Author name should be in the format 'Human Name' or 'Human Name (GitHubUsername)'. "
             f"The name can contain letters, spaces, hyphens, and apostrophes. The GitHub username "
-            f"(if provided) should be in parentheses and can contain letters, numbers, and hyphens.",
-            loguru=False,
+            f"(if provided) should be in parentheses and can contain letters, numbers, and hyphens."
         )
         raise click.BadParameter(message)
     return value
@@ -951,7 +919,7 @@ def validate_email(_ctx: click.Context, _param: click.Parameter, value: str) -> 
         BadParameter: If the input value contains invalid characters.
     """
     if not re.match(r"^[\w.-]+@[\w.-]+\.\w+$", value):
-        message: str = console.format_message("Invalid email address.", loguru=False)
+        message: str = _format_message("Invalid email address.")
         raise click.BadParameter(message)
 
     return value
@@ -969,9 +937,7 @@ def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) 
         BadParameter: If the input value contains invalid characters.
     """
     if not re.match(r"^[a-zA-Z0-9_]*$", value):
-        message: str = console.format_message(
-            "Environment name should contain only letters, numbers, and underscores.", loguru=False
-        )
+        message: str = _format_message("Environment name should contain only letters, numbers, and underscores.")
         raise click.BadParameter(message)
     return value
 
@@ -1163,7 +1129,11 @@ def environment_exists(commands: EnvironmentCommands) -> bool:
     # Verifies that the project- and os-specific conda environment can be activated.
     try:
         subprocess.run(
-            commands.activate_command, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            commands.activate_command,
+            shell=True,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         return True
     except subprocess.CalledProcessError:
@@ -1171,22 +1141,9 @@ def environment_exists(commands: EnvironmentCommands) -> bool:
 
 
 @click.group()
-@click.option("--verbose", is_flag=True, help="If provided, enables printing messages and errors to terminal.")
-@click.option("--log", is_flag=True, help="If provided, enables saving messages and errors to log files.")
-def cli(verbose: bool, log: bool) -> None:  # pragma: no cover
+def cli() -> None:  # pragma: no cover
     """This command-line interface exposes helper commands used to automate various project development and building
-    steps.
-
-    In addition to being the main API interface for this library, it configures the logging system used by the library
-    based on the --verbose and --log options. These options apply to all subcommands of this CLI.
-    """
-    # Resolves the path to user log directory (this information is only used if logging is enabled)
-    dirs = AppDirs(appname="ataraxis-automation", appauthor="SunLabNBB")
-    log_dir: Path = Path(dirs.user_log_dir)
-
-    # Creates and configures the Console class instance to use for message handling. The instance is written to the
-    # global 'console' variable to extend it to all functions of this library.
-    configure_console(log_directory=log_dir, verbose=verbose, enable_logging=log)
+    steps."""
 
 
 @cli.command()
@@ -1209,7 +1166,7 @@ def process_typed_markers() -> None:  # pragma: no cover
     # Resolves typed markers.
     generate_typed_marker(library_root=library_root)
     message: str = "Typed (py.typed) marker(s) successfully processed."
-    console.echo(message, level=LogLevel.SUCCESS)
+    click.echo(_colorize_message(message, color="green"))
 
 
 @cli.command()
@@ -1239,13 +1196,13 @@ def process_stubs() -> None:  # pragma: no cover
         message: str = (
             f"Unable to move generated stub files from {stubs_path} to {library_root}. Stubs directory does not exist."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Moves the stubs to the appropriate source code directories
     move_stubs(stubs_dir=stubs_path, library_root=library_root)
     shutil.rmtree(stubs_path)  # Removes the /stubs directory once all stubs are moved
     message = "Stubs successfully distributed to appropriate source directories."
-    console.echo(message, level=LogLevel.SUCCESS)
+    click.echo(_colorize_message(message, color="green"))
 
 
 @cli.command()
@@ -1269,7 +1226,7 @@ def purge_stubs() -> None:  # pragma: no cover
     # Removes all stub files from the library source code folder.
     delete_stubs(library_root=library_root)
     message: str = "Existing stub files purged."
-    console.echo(message, level=LogLevel.SUCCESS)
+    click.echo(_colorize_message(message, color="green"))
 
 
 @cli.command()
@@ -1294,12 +1251,12 @@ def generate_recipe_folder() -> None:  # pragma: no cover
     if recipe_path.exists():
         shutil.rmtree(recipe_path)
         message: str = "Existing recipe folder removed."
-        console.echo(message, level=LogLevel.INFO)
+        click.echo(_colorize_message(message, color="white"))
 
     # Creates the recipe directory
     os.makedirs(recipe_path)
     message = "Recipe folder created."
-    console.echo(message, level=LogLevel.SUCCESS)
+    click.echo(_colorize_message(message, color="green"))
 
 
 @cli.command()
@@ -1339,7 +1296,7 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
     # If file exists, recreating the file is not requested and the file appears well-formed, ends the runtime.
     if verify_pypirc(pypirc_path) and not replace_token:
         message: str = f"Existing PyPI token found inside the '.pypirc' file."
-        console.echo(message, level=LogLevel.SUCCESS)
+        click.echo(_colorize_message(message, color="green"))
         return
 
     # Otherwise, proceeds to generating a new file and token entry.
@@ -1348,15 +1305,14 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
             f"Unable to use the existing PyPI token: '.pypirc' file does not exist, is invalid or doesn't contain a "
             f"valid token. Proceeding to new token acquisition."
         )
-        console.echo(message, level=LogLevel.INFO)
+        click.echo(_colorize_message(message, color="white"))
 
     # Enters the while loop to iteratively ask for the token until a valid token entry is provided.
     while True:
         try:
-            prompt: str = console.format_message(
+            prompt: str = _format_message(
                 message="Enter your PyPI (API) token. It will be stored inside the .pypirc file for future use. "
-                "Input is hidden:",
-                loguru=False,
+                "Input is hidden:"
             )
             # Asks the user for the token.
             token: str = click.prompt(text=prompt, hide_input=True, type=str)
@@ -1366,17 +1322,18 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
                 message = "Acquired invalidly-formatted PyPI token. PyPI tokens should start with 'pypi-'."
                 # This both logs and re-raises the error. Relies on the error being caught below and converted to a
                 # prompt instead.
-                console.error(message, error=ValueError)
+                raise ValueError(_format_message(message))
 
             # Generates the new .pypirc file and saves the valid token data to the file.
             config = ConfigParser()
             config["pypi"] = {"username": "__token__", "password": token}
             with pypirc_path.open("w") as config_file:
+                # noinspection PyTypeChecker
                 config.write(config_file)
 
             # Notifies the user and breaks out of the while loop
             message = f"Valid PyPI token acquired and added to '.pypirc' for future uses."
-            console.echo(message, level=LogLevel.SUCCESS)
+            click.echo(_colorize_message(message, color="green"))
             break
 
         # This block allows rerunning the token acquisition if an invalid token was provided, and the user has elected
@@ -1384,7 +1341,7 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
         except Exception:
             if not click.confirm("Do you want to try again?"):
                 message = "PyPI token acquisition: aborted by user."
-                console.error(message, error=RuntimeError)
+                raise RuntimeError(_format_message(message))
 
 
 @cli.command()
@@ -1420,7 +1377,9 @@ def install_project(environment_name: str, python_version: str) -> None:  # prag
 
     # Gets the list of commands that can be used to carry out conda environment operations.
     commands: EnvironmentCommands = resolve_environment_commands(
-        project_root=project_root, environment_name=environment_name, python_version=python_version
+        project_root=project_root,
+        environment_name=environment_name,
+        python_version=python_version,
     )
 
     # Checks if project conda environment is accessible via subprocess activation call. If not, raises an error.
@@ -1429,7 +1388,7 @@ def install_project(environment_name: str, python_version: str) -> None:  # prag
             f"Unable to activate the target conda environment '{commands.environment_name}', which likely means"
             f"that it does not exist. If you need to create the environment, run 'create-env' ('tox -e create')."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Installs the project into the activated conda environment by combining environment activation and project
     # installation commands.
@@ -1437,13 +1396,13 @@ def install_project(environment_name: str, python_version: str) -> None:  # prag
         command: str = f"{commands.activate_command} && {commands.install_project_command}"
         subprocess.run(command, shell=True, check=True)
         message = f"Project successfully installed into the requested conda environment '{commands.environment_name}'."
-        console.echo(message, level=LogLevel.SUCCESS)
+        click.echo(_colorize_message(message, color="green"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to build and install the project into the conda environment '{commands.environment_name}'. See "
             f"uv/pip-generated error messages for specific details about the failed operation."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
 
 @cli.command()
@@ -1484,7 +1443,9 @@ def uninstall_project(environment_name: str, python_version: str) -> None:  # pr
 
     # Gets the list of commands that can be used to carry out conda environment operations.
     commands: EnvironmentCommands = resolve_environment_commands(
-        project_root=project_root, environment_name=environment_name, python_version=python_version
+        project_root=project_root,
+        environment_name=environment_name,
+        python_version=python_version,
     )
 
     # Attempts to activate the input conda environment. If activation fails, concludes that environment does not exist
@@ -1495,7 +1456,7 @@ def uninstall_project(environment_name: str, python_version: str) -> None:  # pr
             f"Uninstallation process aborted. If you need to create the environment, run 'create-env' "
             f"('tox -e create')."
         )
-        console.echo(message, level=LogLevel.WARNING)
+        click.echo(_colorize_message(message, color="orange"))
         return
 
     try:
@@ -1504,13 +1465,13 @@ def uninstall_project(environment_name: str, python_version: str) -> None:  # pr
         message = (
             f"Project successfully uninstalled from the requested conda environment '{commands.environment_name}'."
         )
-        console.echo(message, level=LogLevel.SUCCESS)
+        click.echo(_colorize_message(message, color="green"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to uninstall the project from the conda environment '{commands.environment_name}'. See "
             f"uv/pip-generated error messages for specific details about the failed operation. "
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
 
 @cli.command()
@@ -1548,7 +1509,9 @@ def create_env(environment_name: str, python_version: str) -> None:  # pragma: n
 
     # Gets the list of commands that can be used to carry out conda environment operations.
     commands: EnvironmentCommands = resolve_environment_commands(
-        project_root=project_root, environment_name=environment_name, python_version=python_version
+        project_root=project_root,
+        environment_name=environment_name,
+        python_version=python_version,
     )
 
     # Checks if the project-specific environment is accessible via subprocess activation call. If it is accessible
@@ -1559,20 +1522,20 @@ def create_env(environment_name: str, python_version: str) -> None:  # pragma: n
             f"environment, run 'remove-env' ('tox -e remove') command and try again. If you need to reinstall "
             f"environment packages, run 'provision-env' ('tox -e provision') command instead."
         )
-        console.echo(message, level=LogLevel.WARNING)
+        click.echo(_colorize_message(message, color="orange"))
         return
 
     # Creates the new environment
     try:
         subprocess.run(commands.create_command, shell=True, check=True)
         message = f"Created '{commands.environment_name}' conda environment."
-        console.echo(message, level=LogLevel.INFO)
+        click.echo(_colorize_message(message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to create a new conda environment '{commands.environment_name}'. See the conda-issued "
             f"error-message above for more information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # If environment was successfully created, installs conda-installable dependencies if there are any.
     try:
@@ -1582,19 +1545,19 @@ def create_env(environment_name: str, python_version: str) -> None:  # pragma: n
                 f"Installed project dependencies available from conda into created '{commands.environment_name}' "
                 f"conda environment."
             )
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"))
         else:
             message = (
                 f"Skipped installing project dependencies available from conda into created "
                 f"'{commands.environment_name}' conda environment. Project has no conda-installable dependencies."
             )
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to install project dependencies available from conda into created '{commands.environment_name}' "
             f"conda environment. See conda-generated error message above for more information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # After resolving conda-dependencies, installs pip-installable dependencies, if there are any.
     try:
@@ -1605,27 +1568,27 @@ def create_env(environment_name: str, python_version: str) -> None:  # pragma: n
                 f"Installed project dependencies available from PyPI (pip) into created '{commands.environment_name}' "
                 f"conda environment."
             )
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"))
         else:
             message = (
                 f"Skipped installing project dependencies available from PyPI (pip) into created "
                 f"'{commands.environment_name}' conda environment. Project has no pip-installable dependencies."
             )
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to install project dependencies available from PyPI (pip) into created "
             f"'{commands.environment_name}' conda environment. See pip-generated error message above for more "
             f"information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Displays the final success message.
     message = (
         f"Created '{commands.environment_name}' conda environment and installed all project dependencies into the "
         f"environment."
     )
-    console.echo(message, level=LogLevel.SUCCESS)
+    click.echo(_colorize_message(message, color="green"))
 
 
 @cli.command()
@@ -1666,7 +1629,7 @@ def remove_env(environment_name: str) -> None:  # pragma: no cover
             f"Unable to find '{commands.environment_name}' conda environment. Likely, this indicates that the "
             f"environment already does not exist. Environment removal procedure aborted."
         )
-        console.echo(message, level=LogLevel.WARNING)
+        click.echo(_colorize_message(message, color="orange"))
         return
 
     # Otherwise, ensures the environment is not active and carries out the removal procedure.
@@ -1674,14 +1637,14 @@ def remove_env(environment_name: str) -> None:  # pragma: no cover
         command: str = f"{commands.deactivate_command} && {commands.remove_command}"
         subprocess.run(command, shell=True, check=True)
         message = f"Removed '{commands.environment_name}' conda environment."
-        console.echo(message, level=LogLevel.SUCCESS)
+        click.echo(_colorize_message(message, color="green"))
 
     except subprocess.CalledProcessError:
         message = (
             f"Unable to remove '{commands.environment_name}' conda environment. See the conda-issued error-message "
             f"above for more information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
 
 @cli.command()
@@ -1718,7 +1681,9 @@ def provision_env(environment_name: str, python_version: str) -> None:  # pragma
 
     # Gets the list of commands that can be used to carry out conda environment operations.
     commands: EnvironmentCommands = resolve_environment_commands(
-        project_root=project_root, environment_name=environment_name, python_version=python_version
+        project_root=project_root,
+        environment_name=environment_name,
+        python_version=python_version,
     )
 
     # Checks if the project-specific environment is accessible via subprocess activation call. If it is not accessible
@@ -1728,7 +1693,7 @@ def provision_env(environment_name: str, python_version: str) -> None:  # pragma
             "Unable to provision '{commands.environment_name}' conda environment, as environment does not exist. If "
             "you want to create a new environment, use 'create-env' ('tox -e create') command instead."
         )
-        console.error(message=message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Otherwise, uses 'provision' command to remove all packages and re-installs project dependencies.
     try:
@@ -1738,13 +1703,13 @@ def provision_env(environment_name: str, python_version: str) -> None:  # pragma
             f"Removed all packages from '{commands.environment_name}' conda environment and "
             f"reinstalled base dependencies (Python, uv, tox and pip)."
         )
-        console.echo(message, level=LogLevel.INFO)
+        click.echo(_colorize_message(message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to provision '{commands.environment_name}' conda environment. See conda-issued error-message "
             f"above for more information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # If environment was successfully provisioned (reset), installs conda-installable dependencies if there are any.
     try:
@@ -1754,20 +1719,20 @@ def provision_env(environment_name: str, python_version: str) -> None:  # pragma
                 f"Installed project dependencies available from conda into provisioned '{commands.environment_name}' "
                 f"conda environment."
             )
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"))
         else:
             message = (
                 f"Skipped installing project dependencies available from conda into provisioned "
                 f"'{commands.environment_name}' conda environment. Project has no conda-installable dependencies."
             )
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to install project dependencies available from conda into provisioned "
             f"'{commands.environment_name}' conda environment . See conda-generated error message above for more "
             f"information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # After resolving conda-dependencies, installs pip-installable dependencies, if there are any.
     try:
@@ -1778,24 +1743,24 @@ def provision_env(environment_name: str, python_version: str) -> None:  # pragma
                 f"Installed project dependencies available from PyPI (pip) into provisioned "
                 f"'{commands.environment_name}' conda environment."
             )
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"))
         else:
             message = (
                 f"Skipped installing project dependencies available from PyPI (pip) into provisioned "
                 f"'{commands.environment_name}' conda environment. Project has no pip-installable dependencies."
             )
-            console.echo(message, level=LogLevel.INFO)
+            click.echo(_colorize_message(message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to install project dependencies available from PyPI (pip) into provisioned "
             f"'{commands.environment_name}'  conda environment. See pip-generated error message above for more "
             f"information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Displays the final success message.
     message = f"Provisioned '{commands.environment_name}' conda environment."
-    console.echo(message, level=LogLevel.SUCCESS)
+    click.echo(_colorize_message(message, color="green"))
 
 
 @cli.command()
@@ -1830,7 +1795,7 @@ def import_env(environment_name: str) -> None:  # pragma: no cover
         project_root=project_root, environment_name=environment_name
     )
 
-    # If environment cannot be activated (likely does not exist) and environment .yml file is found inside /envs
+    # If environment cannot be activated (likely does not exist) and the environment .yml file is found inside /envs
     # directory, uses .yml file to create a new environment.
     if not environment_exists(commands=commands) and commands.create_from_yml_command is not None:
         try:
@@ -1838,27 +1803,26 @@ def import_env(environment_name: str) -> None:  # pragma: no cover
             message: str = (
                 f"'{commands.environment_name}' conda environment imported (created) from existing .yml " f"file."
             )
-            console.echo(message, level=LogLevel.SUCCESS)
+            click.echo(_colorize_message(message, color="green"))
         except subprocess.CalledProcessError:
             message = (
                 f"Unable to import (create) '{commands.environment_name}' conda environment from existing .yml file. "
                 f"See conda-issued error-message above for more information."
             )
-            console.error(message, error=RuntimeError)
+            raise RuntimeError(_format_message(message))
 
     # If conda environment already exists and .yml file exists, updates the environment using the .yml file.
     elif commands.update_command is not None:
         try:
             subprocess.run(commands.update_command, shell=True, check=True)
             message = f"Existing '{commands.environment_name}' conda environment updated from .yml file."
-            console.echo(message, level=LogLevel.SUCCESS)
+            click.echo(_colorize_message(message, color="green"))
         except subprocess.CalledProcessError:
             message = (
                 f"Unable to update existing conda environment '{commands.environment_name}' from .yml file. "
                 f"See conda-issued error-message above for more information."
             )
-            console.error(message, error=RuntimeError)
-
+            raise RuntimeError(_format_message(message))
     # If the .yml file does not exist, aborts with error.
     else:
         message = (
@@ -1866,7 +1830,7 @@ def import_env(environment_name: str) -> None:  # pragma: no cover
             f"file inside the /envs directory for the given project and host-OS combination. Try creating the "
             f"environment using pyproject.toml dependencies by using 'create-env' ('tox -e create')."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
 
 @cli.command()
@@ -1904,33 +1868,33 @@ def export_env(environment_name: str) -> None:  # pragma: no cover
             f"Unable to activate '{commands.environment_name}' conda environment, which likely indicates that it does "
             f"not exist. Create the environment with 'create-env' ('tox -e create') before attempting to export it."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Exports environment as a .yml file
     try:
         subprocess.run(commands.export_yml_command, shell=True, check=True)
         message = f"'{commands.environment_name}' conda environment exported to /envs as a .yml file."
-        console.echo(message, level=LogLevel.SUCCESS)
+        click.echo(_colorize_message(message, color="green"))
 
     except subprocess.CalledProcessError:
         message = (
             f"Unable to export '{commands.environment_name}' conda environment to .yml file. See conda-issued "
             f"error-message above for more information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
     # Exports environment as a spec.txt file
     try:
         subprocess.run(commands.export_spec_command, shell=True, check=True)
         message = f"'{commands.environment_name}' conda environment exported to /envs as a spec.txt file."
-        console.echo(message, level=LogLevel.SUCCESS)
+        click.echo(_colorize_message(message, color="green"))
 
     except subprocess.CalledProcessError:
         message = (
             f"Unable to export '{commands.environment_name}' conda environment to spec.txt file. See conda-issued "
             f"error-message above for more information."
         )
-        console.error(message, error=RuntimeError)
+        raise RuntimeError(_format_message(message))
 
 
 @cli.command()
@@ -1960,7 +1924,7 @@ def rename_environments(new_name: str) -> None:  # pragma: no cover
 
     # Issues a success message
     message = f"Renamed all supported environment files inside the /envs directory to use the new base name {new_name}."
-    console.echo(message, level=LogLevel.SUCCESS)
+    click.echo(_colorize_message(message, color="green"))
 
 
 @cli.command()
@@ -2070,7 +2034,7 @@ def adopt_project(
                 new_path = file_path.with_name(new_file_name)
                 file_path.rename(new_path)
                 message: str = f"Renamed file: {file_path} -> {new_path}."
-                console.echo(message, level=LogLevel.INFO)
+                click.echo(_colorize_message(message, color="white"))
 
         for directory in dirs:
             # Gets the absolute path to each scanned directory.
@@ -2082,7 +2046,7 @@ def adopt_project(
                 new_path = dir_path.with_name(new_dir_name)
                 dir_path.rename(new_path)
                 message = f"Renamed directory: {dir_path} -> {new_path}."
-                console.echo(message, level=LogLevel.INFO)
+                click.echo(_colorize_message(message, color="white"))
 
                 # Update the directory name in the dirs list to avoid potential issues
                 dirs[dirs.index(directory)] = new_dir_name
@@ -2093,4 +2057,4 @@ def adopt_project(
         f"proceeding to the next step. Overall, found and replaced {total_markers} markers in scanned file "
         f"contents."
     )
-    console.echo(message, level=LogLevel.SUCCESS)
+    click.echo(_colorize_message(message, color="green"))
