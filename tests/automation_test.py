@@ -4,7 +4,6 @@ import os
 import re
 import sys
 from pathlib import Path
-import tempfile
 import textwrap
 import subprocess
 from configparser import ConfigParser
@@ -13,7 +12,6 @@ from unittest.mock import Mock
 import yaml
 import click
 import pytest
-from click.testing import CliRunner
 
 import ataraxis_automation.automation as aa
 from ataraxis_automation.automation import EnvironmentCommands
@@ -51,52 +49,6 @@ def error_format(message: str) -> str:
         Formatted and escape message that can be used as the 'match' argument of pytest.raises() method.
     """
     return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
-
-
-def test_configure_console(tmp_path) -> None:
-    """Verifies the functionality of the configure_console() function."""
-    # Setup
-    log_dir = tmp_path.joinpath("logs")
-    log_dir.mkdir()
-    message_log = log_dir.joinpath("message_log.txt")
-    error_log = log_dir.joinpath("error_log.txt")
-
-    # Verifies initialization with logging enabled generates log files
-    aa.configure_console(log_dir, verbose=True, enable_logging=True)
-    assert message_log.exists()
-    assert error_log.exists()
-
-    # Replaces the log directory. Uses replacement instead of reset due to a permission clash on Windows platforms
-    # where 'pytest' prevents the log directory from being cleared.
-    log_dir = tmp_path.joinpath("logs2")
-    log_dir.mkdir()
-    message_log = log_dir.joinpath("message_log.txt")
-    error_log = log_dir.joinpath("error_log.txt")
-
-    # Verifies that disabling logging does not create log files
-    aa.configure_console(log_dir, verbose=True, enable_logging=False)
-    assert not message_log.exists()
-    assert not error_log.exists()
-
-    # Changes the working directory to the general temporary directory to fail the tests below
-    new_project_directory = tempfile.gettempdir()
-    os.chdir(new_project_directory)
-
-    # This should do two things: print a formatted message with traceback to the console and (evaluated here) call a
-    # SystemExit (through default callback). This is the expected 'verbose' console behavior.
-    # noinspection PyTypeChecker
-    with pytest.raises((SystemExit, RuntimeError), match="Runtime aborted."):
-        aa.resolve_project_directory()
-
-    # Reconfigures console to not print or log anything. This also disables() the shared console variable.
-    aa.configure_console(log_dir, verbose=False, enable_logging=False)
-    assert not message_log.exists()
-    assert not error_log.exists()
-
-    # When console is disabled, errors are raised using the standard python 'raise' system, which should be caught by
-    # pytest.
-    with pytest.raises(RuntimeError):
-        aa.resolve_project_directory()
 
 
 def test_resolve_project_directory(project_dir) -> None:
@@ -192,7 +144,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
     assert yml_path == project_dir / "envs" / f"{environment_base_name}_lin.yml"
     assert spec_path == project_dir / "envs" / f"{environment_base_name}_lin_spec.txt"
 
-    # Verifies environment resolution works as expected for the windows platform
+    # Verifies environment resolution works as expected for the Windows platform
     monkeypatch.setattr(sys, "platform", "win32")
     env_name, yml_path, spec_path = aa.resolve_environment_files(
         project_root=project_dir, environment_base_name=environment_base_name
@@ -273,7 +225,7 @@ def test_resolve_conda_engine_error(monkeypatch) -> None:
     # When neither conda nor mamba is available, expects a RuntimeError
     monkeypatch.setattr(subprocess, "run", mock_run)
     message: str = (
-        f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable"
+        f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable "
         f"to interface with either conda or mamba. Is conda or supported equivalent installed, initialized "
         f"and added to Path?"
     )
@@ -690,21 +642,15 @@ def test_resolve_environment_commands(
     else:
         assert ". $(conda info --base)/etc/profile.d/conda.sh" in result.activate_command
         assert ". $(conda info --base)/etc/profile.d/conda.sh" in result.deactivate_command
-    assert f"conda activate test_env{os_suffix}" in result.activate_command
+    assert f"test_env{os_suffix}" in result.activate_command
     assert f"conda deactivate" in result.deactivate_command
-    assert (
-        f"{conda_engine} create -n test_env{os_suffix} python={python_version} tox uv pip --yes"
-        in result.create_command
-    )
-    assert f"{conda_engine} remove -n test_env{os_suffix} --all --yes" in result.remove_command
+    assert f"python={python_version} pip tox uv --yes" in result.create_command
+    assert f"test_env{os_suffix} --all --yes" in result.remove_command
     assert result.environment_name == f"test_env{os_suffix}"
 
     # When there are no conda or pip dependencies, the corresponding command is actually set to None
     if len(dependencies[0]) != 0:
-        assert (
-            f"{conda_engine} install -n test_env{os_suffix} {' '.join(dependencies[0])} --yes"
-            in result.conda_dependencies_command
-        )
+        assert f"test_env{os_suffix} {' '.join(dependencies[0])} --yes" in result.conda_dependencies_command
     else:
         assert result.conda_dependencies_command is None
     if len(dependencies[1]) != 0:
@@ -728,11 +674,11 @@ def test_resolve_environment_commands(
 
     # Verifies that pip-engine-dependent additional parameters match expectation.
     if pip_engine == "uv pip":
-        assert f"--python={python_version}" in result.uninstall_project_command
-        command_string = f"--reinstall-package test-project --compile-bytecode --python={python_version}"
+        assert f"test_env{os_suffix}" in result.uninstall_project_command
+        command_string = f"--resolution highest --refresh --compile-bytecode"
         assert command_string in result.install_project_command
         if len(dependencies[1]) != 0:
-            assert f"--compile-bytecode --python={python_version}" in result.pip_dependencies_command
+            assert f"--compile-bytecode --python=" in result.pip_dependencies_command
     else:
         assert "--yes" in result.uninstall_project_command
         assert "--compile" in result.install_project_command
@@ -912,6 +858,7 @@ def test_verify_pypirc(tmp_path, config, expected_result):
     config_parser = ConfigParser()
     config_parser.read_dict(config)
     with pypirc_path.open("w") as f:
+        # noinspection PyTypeChecker
         config_parser.write(f)
 
     # Runs the verify_pypirc function
@@ -1243,6 +1190,7 @@ def mock_commands():
         install_project_command="uv pip install --no-cache-dir .",
         uninstall_project_command="pip uninstall -y project_name",
         provision_command="conda install --revision 0 -n test_env",
+        environment_directory="mock_dir",
     )
 
 

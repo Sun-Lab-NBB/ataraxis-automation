@@ -3,6 +3,37 @@ from dataclasses import dataclass
 
 import click
 
+def _format_message(message: str) -> str:
+    """Formats input message strings to follow the general Ataraxis style.
+
+    This function uses the same parameters as the default Console class implementation available through
+    the ataraxis-base-utilities library. This function is used to decouple the ataraxis-automation library from
+    the ataraxis-base-utilities library, removing the circular dependency introduced for these libraries in versions 2
+    and 3 and allows mimicking the output of console.error() method.
+
+    Args:
+        message: The input message string to format.
+
+    Returns:
+        Formatted message string with appropriate line breaks.
+    """
+
+def _colorize_message(message: str, color: str, format_message: bool = True) -> str:
+    """Modifies the input string to include an ANSI color code and, if necessary, formats the message by wrapping it
+    at 120 lines.
+
+    This function uses the same parameters as the default Console class implementation available through
+    the ataraxis-base-utilities library. This function is used to decouple the ataraxis-automation library from
+    ataraxis-base-utilities and, together with click.echo, allows mimicking the output of console.echo() method.
+
+    Args:
+        message: The input message string to format and colorize.
+        color: The ANSI color code to use for coloring the message.
+        format_message: If True, the message will be formatted by wrapping it at 120 lines.
+
+    Returns:
+        Colorized and formatted (if requested) message string.
+    """
 @dataclass
 class EnvironmentCommands:
     """Provides a convenient interface for storing conda environment commands.
@@ -25,6 +56,7 @@ class EnvironmentCommands:
     install_project_command: str
     uninstall_project_command: str
     provision_command: str
+    environment_directory: Path
     def __init__(
         self,
         activate_command,
@@ -41,34 +73,8 @@ class EnvironmentCommands:
         install_project_command,
         uninstall_project_command,
         provision_command,
+        environment_directory,
     ) -> None: ...
-
-def configure_console(
-    log_directory: Path | None = None, *, verbose: bool = False, enable_logging: bool = False
-) -> None:
-    """Configures, and, if requested, enables Console class instance exposed by the ataraxis-base-utilities library as
-    global 'console' variable.
-
-    This function is designed to be called by the main cli group setup code to (optionally) enable sending messages to
-    terminal and logging them to log files. All functions of this library are expected to use the same global Console
-    instance, and they should use the tools exposed by the console to issue errors and echo messages.
-
-    Notes:
-        Since version 1.1.0 of ataraxis-base-utilities and version 2.0.0 of this library, it uses shared 'console'
-        variable for terminal-printing and file-logging functionality. While effective, this design is potentially
-        dangerous, as it allows multiple modules to access and alter 'console' configuration. Since this function is
-        expected to be called from the highest module of the call hierarchy, it reconfigures and enables / disables the
-        console variable depending on the input arguments. This will interfere with any imported module that also
-        attempts to modify the console configuration. There should always be only one active module allowed to modify
-        console variable for each runtime.
-
-    Args:
-        log_directory: The absolute path to the user logs directory. The function ensures the directory exists, but
-            relies on the main cli group to provide the directory path.
-        verbose: Determines whether to print messages and errors to the terminal.
-        enable_logging: Determines whether to save messages and errors to log files. Note, error log files are
-            automatically cleaned up after a few days, while message logs are maintained indefinitely.
-    """
 
 def resolve_project_directory() -> Path:
     """Gets the current working directory from the OS and verifies that it points to a valid python project.
@@ -372,8 +378,15 @@ def validate_env_name(_ctx: click.Context, _param: click.Parameter, value: str) 
         BadParameter: If the input value contains invalid characters.
     """
 
+def resolve_conda_environments_directory() -> Path:
+    """Returns the path to the conda / mamba environments directory.
+
+    Raises:
+        RuntimeError: If conda is not installed and / or not initialized.
+    """
+
 def resolve_environment_commands(
-    project_root: Path, environment_name: str, python_version: str = "3.12"
+    project_root: Path, environment_name: str, python_version: str = "3.13"
 ) -> EnvironmentCommands:
     """Generates the list of conda and pip commands used to manipulate the project- and os-specific conda environment
     and packages it into EnvironmentCommands class.
@@ -384,9 +397,8 @@ def resolve_environment_commands(
     Args:
         project_root: The absolute path to the root directory of the processed project.
         environment_name: The base-name of the (project) conda environment.
-        python_version: The Python version to use as part of the new environment creation process. Also, this is used
-            to 'bias' uv to run in the conda environment instead of the virtualenv created by tox. For this reason, this
-            has to be different from tox 'basepython' requirement used in any task that uses uv through this library.
+        python_version: The Python version to use as part of the new environment creation process. This is also
+            used during environment provisioning to modify the python version in the environment.
 
     Returns:
         EnvironmentCommands class instance that includes all resolved commands as class attributes.
@@ -407,13 +419,9 @@ def environment_exists(commands: EnvironmentCommands) -> bool:
         True if the environment can be activated (and, implicitly, exists) and False if it cannot be activated.
     """
 
-def cli(verbose: bool, log: bool) -> None:
+def cli() -> None:
     """This command-line interface exposes helper commands used to automate various project development and building
-    steps.
-
-    In addition to being the main API interface for this library, it configures the logging system used by the library
-    based on the --verbose and --log options. These options apply to all subcommands of this CLI.
-    """
+    steps."""
 
 def process_typed_markers() -> None:
     """Crawls the library root directory and ensures that the 'py.typed' marker is found only at the highest level of
@@ -481,24 +489,24 @@ def acquire_pypi_token(replace_token: bool) -> None:
         RuntimeError: If the user aborts the token acquisition process without providing a valid token.
     """
 
-def install_project(environment_name: str, python_version: str) -> None:
+def install_project(environment_name: str) -> None:
     """Builds and installs the project into the specified conda environment.
 
-    This command is intended to be used between tox runtimes to (re)install the project into the development
-    environment. Removing the project before running tox tasks avoids (rare) tox runtime errors and reinstalling
-    the project after tox tasks is required for some development-related procedures (e.g: manual testing).
+    This command is primarily used to support project developing by compiling and installing the developed project into
+    the environment to allow manual project testing. Since tests have to be written to use compiled package, rather than
+    the source code to support tox testing, the project has to be rebuilt each time source code is changed, which is
+    conveniently performed by this command.
 
     Raises:
         RuntimeError: If project installation fails. If project environment does not exist.
     """
 
-def uninstall_project(environment_name: str, python_version: str) -> None:
+def uninstall_project(environment_name: str) -> None:
     """Uninstalls the project library from the specified conda environment.
 
-    This command is intended to be used between tox runtimes to uninstall the project from the development
-    environment before running tox. Removing the project before running tox tasks avoids (rare) tox runtime errors
-    and reinstalling the project after tox tasks is required for some development-related procedures
-    (e.g: manual testing).
+    This command is not used in most modern automation pipelines, but is kept for backward compatibility with legacy
+    projects. Previously, it was used to remove the project from its conda environment before running tests, as
+    installed projects used to interfere with tox re-building the wheels for testing.
 
     Notes:
         If the environment does not exist or is otherwise not accessible, the function returns without attempting to

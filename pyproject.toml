@@ -8,11 +8,11 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "3.0.4"
+version = "4.0.0"
 description = "Provides scripts that support tox-based development automation pipelines used by other Sun Lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
     { name = "Ivan Kondratyev", email = "ik278@cornell.edu" },
 ]
@@ -33,9 +33,9 @@ classifiers = [
     # License
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     # Supported Python Versions
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     # Supported Operating Systems
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
@@ -47,7 +47,6 @@ dependencies = [
     "click>=8,<9",
     "pyyaml>=6,<7",
     "appdirs>=1,<2",
-    "ataraxis-base-utilities>=2,<3",
     "tomli>=2,<3",
 ]
 
@@ -71,12 +70,9 @@ condarun = [
 
 # Dependencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
 conda = [
-    # Tox
-    "tox>=4,<5",
-
     # Testing
     "pytest>=8,<9",
-    "pytest-cov>=5,<6",
+    "pytest-cov>=6,<7",
     "pytest-xdist>=3,<4",
 
     # Coverage Reports
@@ -84,14 +80,14 @@ conda = [
     "junitparser>=3,<4",
 
     # Documentation
-    "sphinx>=7,<8",
+    "sphinx>=8,<9",
     "importlib_metadata>=8,<9",
-    "sphinx-rtd-theme>=2,<3",
+    "sphinx-rtd-theme>=3,<4",
     "sphinx-click>=6,<7",
     "sphinx-autodoc-typehints>=2,<3",
 
     # Linting and Stub-generation
-    "mypy>=1,<2",
+    "mypy[faster-cache]>=1,<2",
     "ruff>=0,<1",
 
     # Types
@@ -106,20 +102,18 @@ conda = [
 
     # Miscellaneous helpers
     "black>=24,<25",
-    "uv>=0,<1"
 ]
 
 # Dependencies known to not be installable with conda for at least one supported development platform
 # (OSX ARM64, WIN AMD64, LIN AMD64).
 noconda = [
-    # Tox
-    "tox-uv>=1,<2",
-
     # Building
     "build>=1,<2",
 
-    # Automation
-    "ataraxis-automation>=3,<4",
+    # Tox
+    "tox>=4,<5",
+    "uv>=0,<1",
+    "tox-uv>=1,<2",
 ]
 
 # A shorthand specification that installs tox and all packages required for development tasks. This specification can
@@ -146,7 +140,7 @@ packages = ["src/ataraxis_automation"]
 [tool.ruff]
 line-length = 120         # Maximum column length is set to 120 for this project.
 indent-width = 4          # Same as black, indents are 4 spaces
-target-version = "py310"  # Targets the lowest supported version of python 3.10
+target-version = "py311"  # Targets the lowest supported version of python 3.11
 src = ["src"]             # The name of the source directory
 
 # Excludes 'service' .py files, such as sphinx configuration file from linting.
@@ -159,10 +153,7 @@ lint.select = ["ALL"]
 lint.ignore = [
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
-    "ANN101",  # "missing-type-self"
     "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
-    "PT004",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
-    "PT005",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "D107",    # Project-specific, __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
