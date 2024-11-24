@@ -1029,6 +1029,41 @@ def resolve_conda_environments_directory() -> Path:
     return Path(os.path.dirname(os.path.dirname(conda_prefix)))
 
 
+def strip_versions(requirements: list[str]) -> list[str]:
+    """Strips version specifiers from the package names in the input list of dependencies.
+
+    This method is used to transform the list of packages with version specifiers into a list of names. In turn, this is
+    used to force uv to always reinstall pip dependencies and the base project, without reinstalling transient
+    dependencies. In turn, this maximizes the use of mamba/conda used for transient and non-pip dependencies, assuming
+    there is very likely an overlap between dependencies that can be installed with pip and conda for every
+    project.
+
+    Args:
+        requirements: The list of strings that store dependency package names with version specifiers.
+
+    Returns:
+        The list of string package names without version specifiers.
+    """
+    # Common version specifiers that need to be stripped to get only the package names
+    version_patterns = [">=", "<=", "==", "!=", "~=", ">", "<", "==="]
+
+    cleaned = []
+    for req in requirements:
+        # Finds the first occurrence of any version specifier
+        first_spec_index = len(req)  # Defaults to full length if no specifier found
+        for pattern in version_patterns:
+            pos = req.find(pattern)
+            if pos != -1 and pos < first_spec_index:
+                first_spec_index = pos
+
+        # Takes everything before the version specifier, stripped of whitespace. Also strips the first set of
+        # double-quotes from the resultant string. The second set at the end of the string is stripped by
+        # the 'strip' method.
+        cleaned.append(f"{req[:first_spec_index].strip()}"[1:])
+
+    return cleaned
+
+
 def resolve_environment_commands(
     project_root: Path, environment_name: str, python_version: str = "3.13"
 ) -> EnvironmentCommands:
@@ -1139,13 +1174,15 @@ def resolve_environment_commands(
         # Refreshes cache to ensure latest compatible versions are installed, compiles to bytecode and forces uv to
         # use conda environment
         pip_reinstall_command += (
-            f" --resolution highest --refresh --compile-bytecode --python={target_environment_directory} --strict"
+            f" --resolution highest --refresh --reinstall-package {project_name} --compile-bytecode "
+            f"--python={target_environment_directory} --strict"
         )
 
         if pip_dependencies_command is not None:
             # Forces compilation and forces uv to use conda environment
             pip_dependencies_command += (
-                f" --resolution highest --refresh --compile-bytecode --python={target_environment_directory} --strict"
+                f" --resolution highest --refresh --reinstall-package {' '.join(strip_versions(pip_list))} "
+                f"--compile-bytecode --python={target_environment_directory} --strict"
             )
     else:
         # Suppresses confirmation dialogs

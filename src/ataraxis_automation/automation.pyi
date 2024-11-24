@@ -385,6 +385,22 @@ def resolve_conda_environments_directory() -> Path:
         RuntimeError: If conda is not installed and / or not initialized.
     """
 
+def strip_versions(requirements: list[str]) -> list[str]:
+    """Strips version specifiers from the package names in the input list of dependencies.
+
+    This method is used to transform the list of packages with version specifiers into a list of names. In turn, this is
+    used to force uv to always reinstall pip dependencies and the base project, without reinstalling transient
+    dependencies. In turn, this maximizes the use of mamba/conda used for transient and non-pip dependencies, assuming
+    there is very likely an overlap between dependencies that can be installed with pip and conda for every
+    project.
+
+    Args:
+        requirements: The list of strings that store dependency package names with version specifiers.
+
+    Returns:
+        The list of string package names without version specifiers.
+    """
+
 def resolve_environment_commands(
     project_root: Path, environment_name: str, python_version: str = "3.13"
 ) -> EnvironmentCommands:
