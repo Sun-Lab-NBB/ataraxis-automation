@@ -675,7 +675,7 @@ def test_resolve_environment_commands(
     # Verifies that pip-engine-dependent additional parameters match expectation.
     if pip_engine == "uv pip":
         assert f"test_env{os_suffix}" in result.uninstall_project_command
-        command_string = f"--resolution highest --refresh --compile-bytecode"
+        command_string = f"--resolution highest --refresh --reinstall-package test-project --compile-bytecode"
         assert command_string in result.install_project_command
         if len(dependencies[1]) != 0:
             assert f"--compile-bytecode --python=" in result.pip_dependencies_command
