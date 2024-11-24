@@ -21,7 +21,7 @@ dependencies:
   - cmarkgfm=2024.11.20=py313h90d716c_0
   - colorama=0.4.6=pyhd8ed1ab_0
   - conda-souschef=2.2.3=pyhd8ed1ab_0
-  - coverage=7.6.7=py313ha9b7d5b_0
+  - coverage=7.6.8=py313ha9b7d5b_0
   - distlib=0.3.9=pyhd8ed1ab_0
   - docutils=0.21.2=pyhd8ed1ab_0
   - editables=0.5=pyhd8ed1ab_0
@@ -135,7 +135,7 @@ dependencies:
   - zstandard=0.23.0=py313hf2da073_1
   - zstd=1.5.6=hb46c0d2_0
   - pip:
-      - ataraxis-automation==4.0.0
+      - ataraxis-automation==4.0.1
       - build==1.2.2.post1
       - pyproject-hooks==1.2.0
       - tox-uv==1.16.0

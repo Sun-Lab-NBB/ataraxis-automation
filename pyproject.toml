@@ -140,7 +140,7 @@ packages = ["src/ataraxis_automation"]
 [tool.ruff]
 line-length = 120         # Maximum column length is set to 120 for this project.
 indent-width = 4          # Same as black, indents are 4 spaces
-target-version = "py311"  # Targets the lowest supported version of python 3.11
+target-version = "py311"  # Targets the lowest supported version of python
 src = ["src"]             # The name of the source directory
 
 # Excludes 'service' .py files, such as sphinx configuration file from linting.
