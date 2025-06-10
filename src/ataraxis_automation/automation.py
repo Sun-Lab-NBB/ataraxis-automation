@@ -408,7 +408,7 @@ def add_dependency(
         ValueError: If the extracted dependency is found in multiple major pyproject.toml dependency lists
             (conda, noconda, and condarun).
     """
-    # Strips version and extras from dependencies to verify they are not duplicates
+    # Strips the version and extras from dependencies to verify they are not duplicates
     stripped_dependency: str = get_base_name(dependency=dependency)
     if stripped_dependency in processed_dependencies:
         message: str = (
@@ -962,7 +962,7 @@ def resolve_conda_environments_directory() -> Path:
         # Method 1: Checks whether this script is executed from a conda-based python.
         python_exe = Path(sys.executable)
 
-        # This assumes that conda is provided by one of the major managers: miniforge, mambaforge or conda.
+        # This assumes that conda is provided by one of the major managers: miniforge, mambaforge, or conda.
         if any(name in str(python_exe).lower() for name in ("conda", "miniforge", "mambaforge")):
             # Navigates up until it finds the conda root.
             current = python_exe.parent
@@ -1140,8 +1140,14 @@ def resolve_environment_commands(
         activate_command = f"{conda_init} && conda activate {target_environment_directory}"
         deactivate_command = f"{conda_init} && conda deactivate"
 
-    # Generates the spec.txt export command, which is the same for all OS versions (unlike .yml export)
-    export_spec_command: str = f"{conda_command} list -n {extended_environment_name} --explicit -r > {spec_path}"
+    # Generates the spec.txt export command, which is the same for all OS versions (unlike .yml export). The command now
+    # differs between conda and mamba however, following the changes in mamba 2.2.0
+    export_spec_command: str
+    if conda_command == "conda":
+        export_spec_command = f"{conda_command} list -n {extended_environment_name} --explicit -r > {spec_path}"
+    else:
+        # Otherwise, it is mamba
+        export_spec_command = f"{conda_command} list -n {extended_environment_name} --explicit > {spec_path}"
 
     # Generates dependency installation commands. These are used during de-novo environment creation. If a particular
     # kind of dependencies is not used (there are no conda or pip dependencies to install), the command is set to None.
@@ -1194,7 +1200,7 @@ def resolve_environment_commands(
 
     # Generates conda environment manipulation commands.
     # Creation (base) generates a minimal conda environment. It is expected that conda and pip dependencies are added
-    # via separate dependency commands generated above. Note, installs the latest versions of tox, uv and pip with the
+    # via separate dependency commands generated above. Note, installs the latest versions of tox, uv, and pip with the
     # expectation that dependency installation command use --reinstall to override the versions of these packages as
     # necessary.
     create_command: str = (
@@ -1424,7 +1430,7 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
     # Generates the path to the .pypirc file. The file is expected to be found inside the root directory of the project.
     pypirc_path: Path = project_root.joinpath(".pypirc")
 
-    # If file exists, recreating the file is not requested and the file appears well-formed, ends the runtime.
+    # If the file exists, recreating the file is not requested and the file appears well-formed, ends the runtime.
     if verify_pypirc(pypirc_path) and not replace_token:
         message: str = f"Existing PyPI token found inside the '.pypirc' file."
         click.echo(_colorize_message(message, color="green"))
@@ -1749,7 +1755,9 @@ def remove_env(environment_name: str) -> None:  # pragma: no cover
     try:
         command: str = f"{commands.deactivate_command} && {commands.remove_command}"
         subprocess.run(command, shell=True, check=True)
-        commands.environment_directory.unlink(missing_ok=True)  # Ensures the environment directory is deleted.
+        # Ensures the environment directory is deleted.
+        if commands.environment_directory.exists():
+            shutil.rmtree(commands.environment_directory)
         message = f"Removed '{commands.environment_name}' conda environment."
         click.echo(_colorize_message(message, color="green"))
 

@@ -57,24 +57,6 @@ class EnvironmentCommands:
     uninstall_project_command: str
     provision_command: str
     environment_directory: Path
-    def __init__(
-        self,
-        activate_command,
-        deactivate_command,
-        create_command,
-        create_from_yml_command,
-        remove_command,
-        conda_dependencies_command,
-        pip_dependencies_command,
-        update_command,
-        export_yml_command,
-        export_spec_command,
-        environment_name,
-        install_project_command,
-        uninstall_project_command,
-        provision_command,
-        environment_directory,
-    ) -> None: ...
 
 def resolve_project_directory() -> Path:
     """Gets the current working directory from the OS and verifies that it points to a valid python project.
