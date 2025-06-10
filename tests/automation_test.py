@@ -491,9 +491,9 @@ def test_resolve_dependencies_priority(project_dir, section: Path) -> None:
     dependencies = ["dep1==1.0", "dep2>=2.0"]
 
     [project.optional-dependencies]
-    conda = ["conda_dep1", "conda_dep2"{', "priority_dep"' if section == 'conda' else ''}]
+    conda = ["conda_dep1", "conda_dep2"{', "priority_dep"' if section == "conda" else ""}]
     noconda = ["noconda_dep"]
-    condarun = ["condarun_dep"{', "priority_dep"' if section == 'condarun' else ''}]
+    condarun = ["condarun_dep"{', "priority_dep"' if section == "condarun" else ""}]
     """
     write_pyproject_toml(project_dir, pyproject_content)
 
@@ -660,7 +660,7 @@ def test_resolve_environment_commands(
 
     assert f"{conda_engine} env update -n test_env{os_suffix}" in result.update_command
     assert f"{conda_engine} env export --name test_env{os_suffix}" in result.export_yml_command
-    assert f"{conda_engine} list -n test_env{os_suffix} --explicit -r" in result.export_spec_command
+    assert f"{conda_engine} list -n test_env{os_suffix} --explicit" in result.export_spec_command
     assert "pip install ." in result.install_project_command
     assert "pip uninstall test-project" in result.uninstall_project_command
 

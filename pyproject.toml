@@ -8,13 +8,13 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "4.0.1"
-description = "Provides scripts that support tox-based development automation pipelines used by other Sun Lab projects."
+version = "5.0.0"
+description = "Provides scripts that support tox-based development automation pipelines used by other Sun lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 authors = [
-    { name = "Ivan Kondratyev", email = "ik278@cornell.edu" },
+    { name = "Ivan Kondratyev" },
 ]
 maintainers = [
     { name = "Ivan Kondratyev", email = "ik278@cornell.edu" },
@@ -55,7 +55,7 @@ Homepage = "https://github.com/Sun-Lab-NBB/ataraxis-automation"
 Documentation = "https://ataraxis-automation-api-docs.netlify.app/"
 
 # Specifies additional dependencies that can be installed alongside the main library. Also, this is the section that
-# stores conda, condarun and noconda lists that facilitate setting up dependencies via conda where possible.
+# stores conda, condarun, and noconda lists that facilitate setting up dependencies via conda where possible.
 [project.optional-dependencies]
 
 # Runtime dependencies known to be installable with conda for all development platforms
@@ -76,7 +76,7 @@ conda = [
     "pytest-xdist>=3,<4",
 
     # Coverage Reports
-    "coverage[toml]>=7,<8",
+    "coverage>=7,<8",
     "junitparser>=3,<4",
 
     # Documentation
@@ -84,10 +84,10 @@ conda = [
     "importlib_metadata>=8,<9",
     "sphinx-rtd-theme>=3,<4",
     "sphinx-click>=6,<7",
-    "sphinx-autodoc-typehints>=2,<3",
+    "sphinx-autodoc-typehints>=3,<4",
 
     # Linting and Stub-generation
-    "mypy[faster-cache]>=1,<2",
+    "mypy>=1,<2",
     "ruff>=0,<1",
 
     # Types
@@ -97,11 +97,8 @@ conda = [
     "hatchling>=1,<2",
 
     # Distribution
-    "twine>=5,<6",
+    "twine>=6,<7",
     "grayskull>=2,<3",
-
-    # Miscellaneous helpers
-    "black>=24,<25",
 ]
 
 # Dependencies known to not be installable with conda for at least one supported development platform
@@ -114,6 +111,9 @@ noconda = [
     "tox>=4,<5",
     "uv>=0,<1",
     "tox-uv>=1,<2",
+
+    # Documentation
+    "sphinx-rtd-dark-mode>=1,<2",
 ]
 
 # A shorthand specification that installs tox and all packages required for development tasks. This specification can
@@ -143,7 +143,7 @@ indent-width = 4          # Same as black, indents are 4 spaces
 target-version = "py311"  # Targets the lowest supported version of python
 src = ["src"]             # The name of the source directory
 
-# Excludes 'service' .py files, such as sphinx configuration file from linting.
+# Excludes 'service' .py files, such as the sphinx configuration file from linting.
 extend-exclude = ["conf.py"]
 
 # Checks for all potential violations and uses the exclusions below to target-disable specific ones.

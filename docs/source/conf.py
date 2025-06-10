@@ -4,17 +4,19 @@ import importlib_metadata
 # -- Project information -----------------------------------------------------
 project = 'ataraxis-automation'
 # noinspection PyShadowingBuiltins
-copyright = '2024, Ivan Kondratyev & Sun Lab'
+copyright = '2025, Sun (NeuroAI) lab'
 author = 'Ivan Kondratyev'
-release = importlib_metadata.version("ataraxis-automation")  # Extracts project version from the metadata .toml file.
+# Extracts the project version from the metadata .toml file.
+release = importlib_metadata.version("ataraxis-automation")
 
 # -- General configuration ---------------------------------------------------
 extensions = [
-    'sphinx.ext.autodoc',  # To build documentation from python source code docstrings.
-    'sphinx.ext.napoleon',  # To read google-style docstrings (works with autodoc module).
+    'sphinx.ext.autodoc',        # To build documentation from python source code docstrings.
+    'sphinx.ext.napoleon',       # To read google-style docstrings (works with autodoc module).
     'sphinx_autodoc_typehints',  # To parse typehints into documentation
-    'sphinx_rtd_theme',  # To format the documentation html using ReadTheDocs format.
-    'sphinx_click',  # To read docstrings and command-line arguments from click-wrapped python functions.
+    'sphinx_rtd_theme',          # To format the documentation HTML using ReadTheDocs format.
+    'sphinx_click',              # To read docstrings and command-line arguments from click-wrapped python functions.
+    'sphinx_rtd_dark_mode'       # Enables dark mode for RTD theme.
 ]
 
 templates_path = ['_templates']
@@ -24,8 +26,8 @@ exclude_patterns = []
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = False
-napoleon_include_private_with_doc = True
-napoleon_include_special_with_doc = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = False
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False

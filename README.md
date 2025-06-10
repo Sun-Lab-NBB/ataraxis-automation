@@ -1,7 +1,7 @@
 # ataraxis-automation
 
 A Python library that provides scripts that support tox-based development automation pipelines used by other 
-Sun Lab projects.
+Sun (NeuroAI) lab projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-automation)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-automation)
@@ -15,17 +15,17 @@ ___
 
 ## Detailed Description
 
-This library is one of the two 'base' dependency libraries used by every other Sun Lab project (the other being 
+This library is one of the two 'base' dependency libraries used by every other Sun lab project (the other being 
 [ataraxis-base-utilities](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities)). It exposes a command-line interface
 (automation-cli) that can be used through the [tox-based](https://tox.wiki/en/latest/user_guide.html) project
 development automation suite that comes with every Sun Lab project (we use tox as an analog to build system).
 
 The commands from this library generally fulfill two major roles. First, they are used to set up, support, 
-or clean up after third-party packages (ruff, mypy, stubgen, grayskull, etc.) used by our tox tasks. Second, they 
-automate most operations with conda environments, such as creating / removing the environment and 
-installing / uninstalling the project from the environment.
+or clean up after third-party packages (ruff, mypy, grayskull, etc.) used by our tox tasks. Second, they 
+automate most operations with conda environments, such as creating / removing the environment and installing / 
+uninstalling the project from the environment.
 
-The library can be used as a standalone module, but it is primarily designed to integrate with other Sun Lab projects,
+The library can be used as a standalone module, but it is primarily designed to integrate with other Sun lab projects,
 providing development automation functionality. Therefore, it may require either adopting and modifying a 
 tox automation suite from one of the lab projects or significant refactoring to work with non-lab projects.
 ___
@@ -34,7 +34,7 @@ ___
 
 - Supports Windows, Linux, and OSx.
 - Optimized for runtime speed by preferentially using mamba and uv over conda and pip.
-- Compliments the extensive suite of tox-automation tasks used by all Sun Lab projects.
+- Compliments the extensive suite of tox-automation tasks used by all Sun lab projects.
 - Pure-python API.
 - GPL 3 License.
 
@@ -77,21 +77,9 @@ Use the following command to install the library using PIP: ```pip install atara
 ___
 
 ## Usage
-
-### Quickstart
-The easiest way to get Sun Lab automation to work for your project is to initialize the project using one of our 
-templates for 
-[pure-python](https://github.com/Sun-Lab-NBB/pure-python-template) or 
-[c-extension](https://github.com/Sun-Lab-NBB/c-python-template) projects. To initialize and customize one of our 
-templates, follow these steps:
-1. Navigate to the desired template via one of the links above and click ```Use this template``` button in the 
-   top right corner of the page.
-2. Initialize your project as necessary and download and unpack it on your local machine. To do this, you can use tools
-   such as git-cloning.
-3. ```cd``` into the root directory of the project.
-4. Use the ```tox -e adopt``` command to 'adopt' the project. The adoption process replaces placeholder markers in the
-   template 'meta' files with information appropriate for your project.
-5. Add your source code and support files as needed.
+*__Note!__* The library expects the managed project to follow a specific configuration and layout. If any CLI script 
+terminates with an error, read all printed information carefully to determine whether the error is due to invalid 
+project directory layout.
 
 ### Automation Command-Line Interface
 All library functions designed to be called by end-users are exposed through the 'automation-cli' script.
@@ -99,8 +87,7 @@ This cli script is automatically exposed after installing the library into a con
 
 #### Automation-CLI
 While the preferred use case for this library is via 'tox' tasks, you can access all functions supplied by the library
-by calling ```automation-cli``` from the shell that has access to the python environment with the library. Here are 
-some examples of how you can use the automation-cli directly:
+by calling ```automation-cli``` from the shell that has access to the python environment with the library. For example:
 - Use ```automation-cli --help``` to verify that the cli is available and to see the list of supported commands.
 - Use ```automation-cli COMMAND-NAME --help``` to display additional information about a specific command. For example:
   ```automation-cli import-env --help```.
@@ -111,7 +98,7 @@ To use any of the commands as part of a tox 'task,' add it to the 'commands' sec
 ```
 [testenv:create]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 description =
     Creates a minimally-configured conda environment using the requested python version and installs conda- and pip-
     dependencies extracted from pyproject.toml file into the environment. Does not install the project!
@@ -168,7 +155,7 @@ deps =
     mypy>=1,<2
     ruff>=0,<1
     types-pyyaml>=6,<7
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 depends = uninstall
 # Note! Basepython has to be set to the 'lowest' version supported by your project
 basepython = py311
@@ -197,7 +184,7 @@ description =
 deps =
     mypy>=1,<2
     ruff>=0,<1
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 depends = lint
 commands =
     automation-cli process-typed-markers
@@ -312,7 +299,8 @@ deps =
     importlib_metadata>=8,<9
     sphinx-rtd-theme>=3,<4
     sphinx-click>=6,<7
-    sphinx-autodoc-typehints>=2,<3
+    sphinx-autodoc-typehints>=3,<4
+    sphinx-rtd-dark-mode>=1,<2
 commands =
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
 ```
@@ -330,7 +318,8 @@ deps =
     importlib_metadata>=8,<9
     sphinx-rtd-theme>=2,<3
     sphinx-click>=6,<7
-    sphinx-autodoc-typehints>=2,<3
+    sphinx-autodoc-typehints>=3,<4
+    sphinx-rtd-dark-mode>=1,<2
     breathe>=4,<5
 commands =
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
@@ -398,7 +387,7 @@ description =
     Uses API token stored in '.pypirc' file or provided by user to authenticate the upload.
 deps =
     twine>=5,<6
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 allowlist_externals =
     distutils
 commands =
@@ -427,7 +416,7 @@ description =
     https://conda-forge.org/docs/maintainer/adding_pkgs/ for more details.
 deps =
     grayskull>=2,<3
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 commands =
     automation-cli generate-recipe-folder
     grayskull pypi ataraxis_automation -o recipe --strict-conda-forge --list-missing-deps -m Inkaros
@@ -452,7 +441,7 @@ Example tox.ini section:
 ```
 [testenv:install]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 depends =
     lint
     stubs
@@ -476,7 +465,7 @@ Example tox.ini section:
 ```
 [testenv:uninstall]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 description =
     Uninstalls the project from the specified conda environment. If the environment does not exist
     this task silently succeeds.
@@ -497,7 +486,7 @@ Example tox.ini section:
 ```
 [testenv:create]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 description =
     Creates a minimally-configured conda environment using the requested python version and installs conda- and pip-
     dependencies extracted from pyproject.toml file into the environment. Does not install the project!
@@ -515,7 +504,7 @@ Example tox.ini section:
 ```
 [testenv:remove]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 description =
     Removes the requested conda environment, if it is installed locally.
 commands =
@@ -536,7 +525,7 @@ Example tox.ini section:
 ```
 [testenv:provision]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 description =
     Provisions an already existing environment by uninstalling all packages from the environment and then installing the
     project dependencies using pyproject.toml specifications.
@@ -556,7 +545,7 @@ Example tox.ini section:
 ```
 [testenv:export]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 description =
     Exports the requested conda environment to the 'envs' folder as a .yml file and as a spec.txt with revision history.
 commands =
@@ -576,7 +565,7 @@ Example tox.ini section:
 ```
 [testenv:import]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 description =
     Discovers and imports (installs) a new or updates an already existing environment using the .yml file
     stored in the 'envs' directory.
@@ -597,30 +586,11 @@ Example tox.ini section:
 ```
 [testenv:rename]
 deps =
-    ataraxis-automation>=4,<5
+    ataraxis-automation>=5,<6
 description =
     Replaces the base environment name used by all files inside the 'envs' directory with the user-input name.
 commands =
     automation-cli rename-environments
-```
-
-#### Adopt
-Shell command: ```tox -e adopt```
-
-This task is designed to be used on new projects initialized from one of Sun Lab templates. Templates come with 
-'placeholders' in most meta-files (pyproject.toml, tox.ini, etc.). This task finds and replaces the placeholders with
-user-defined values (obtained via dialog). This simplifies customizing the template projects to suite the specific needs
-of your particular project, while still benefiting from the Sun Lab structure and support files.
-
-Example tox.ini section:
-```
-[testenv:adopt]
-deps =
-    ataraxis-automation>=4,<5
-description =
-    Adopts a Sun Lab template-generated project by replacing default placeholders with user-provided information.
-commands =
-    automation-cli adopt-project
 ```
 ___
 
@@ -628,7 +598,7 @@ ___
 
 See the [API documentation](https://ataraxis-automation-api-docs.netlify.app/) for the
 detailed description of the methods and classes exposed by components of this library. __*Note*__ the documentation
-also includes a list of all command-line interface functions provided by automation-cli script.
+also includes a list of all command-line interface functions and their arguments exposed during library installation.
 ___
 
 ## Developers
@@ -714,7 +684,7 @@ via pyproject.toml dependencies. To do this, use ```tox -e create``` from projec
 Many packages used in 'tox' automation pipelines (uv, mypy, ruff) and 'tox' itself are prone to various failures. In 
 most cases, this is related to their caching behavior. Despite a considerable effort to disable caching behavior known 
 to be problematic, in some cases it cannot or should not be eliminated. If you run into an unintelligible error with 
-any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually 
+any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually, 
 or via a cli command is very likely to fix the issue.
 ___
 
