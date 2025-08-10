@@ -1,6 +1,4 @@
-# Defines the build system used for the project. For pure-python projects, uses the hatchling build system, which is
-# used internally by scikit-build for our C-extension projects. Therefore, there is clear continuity between our
-# c-extension and pure-python projects.
+# Defines the build system used for the project.
 [build-system]
 requires = ["hatchling>=1,<2"]
 build-backend = "hatchling.build"
@@ -8,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "5.0.0"
+version = "6.0.0"
 description = "Provides scripts that support tox-based development automation pipelines used by other Sun lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -21,7 +19,7 @@ maintainers = [
 ]
 
 # The list of keywords that describe the project
-keywords = ["automation", "tox", "development-tools", "ataraxis"]
+keywords = ["automation", "tox", "development-tools", "ataraxis", "sunlab"]
 
 # Additional classifiers used by PIP to group repositories.
 classifiers = [
@@ -42,34 +40,20 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X"
 ]
 
-# Runtime project dependencies. This overlaps with 'condarun' optional list.
+# Runtime project dependencies. This list includes both the dependencies necessary to run the ataraxis-automation code
+# and to support all Sun lab tox environments (tasks).
 dependencies = [
+    # Automation Logic
     "click>=8,<9",
     "pyyaml>=6,<7",
     "appdirs>=1,<2",
     "tomli>=2,<3",
-]
 
-[project.urls]
-Homepage = "https://github.com/Sun-Lab-NBB/ataraxis-automation"
-Documentation = "https://ataraxis-automation-api-docs.netlify.app/"
+    # Tox
+    "tox>=4,<5",
+    "uv>=0,<1",
+    "tox-uv>=1,<2",
 
-# Specifies additional dependencies that can be installed alongside the main library. Also, this is the section that
-# stores conda, condarun, and noconda lists that facilitate setting up dependencies via conda where possible.
-[project.optional-dependencies]
-
-# Runtime dependencies known to be installable with conda for all development platforms
-# (OSX ARM64, WIN AMD64, LIN AMD64). This specification is used by ataraxis-automation to resolve as many
-# project dependencies with conda over pip as possible.
-condarun = [
-    "click>=8,<9",
-    "pyyaml>=6,<7",
-    "appdirs>=1,<2",
-    "tomli>=2,<3",
-]
-
-# Dependencies known to be installable with conda for all development platforms (OSX ARM64, WIN AMD64, LIN AMD64).
-conda = [
     # Testing
     "pytest>=8,<9",
     "pytest-cov>=6,<7",
@@ -77,7 +61,7 @@ conda = [
 
     # Coverage Reports
     "coverage>=7,<8",
-    "junitparser>=3,<4",
+    "junitparser>=4,<5",
 
     # Documentation
     "sphinx>=8,<9",
@@ -85,48 +69,36 @@ conda = [
     "sphinx-rtd-theme>=3,<4",
     "sphinx-click>=6,<7",
     "sphinx-autodoc-typehints>=3,<4",
+    "sphinx-rtd-dark-mode>=1,<2",
 
     # Linting and Stub-generation
     "mypy>=1,<2",
     "ruff>=0,<1",
 
-    # Types
-    "types-pyyaml>=6,<7",
-
     # Building
+    "build>=1,<2",
     "hatchling>=1,<2",
 
     # Distribution
     "twine>=6,<7",
-    "grayskull>=2,<3",
 ]
 
-# Dependencies known to not be installable with conda for at least one supported development platform
-# (OSX ARM64, WIN AMD64, LIN AMD64).
-noconda = [
-    # Building
-    "build>=1,<2",
+[project.urls]
+Homepage = "https://github.com/Sun-Lab-NBB/ataraxis-automation"
+Documentation = "https://ataraxis-automation-api-docs.netlify.app/"
 
-    # Tox
-    "tox>=4,<5",
-    "uv>=0,<1",
-    "tox-uv>=1,<2",
+# Specifies additional dependencies that can be installed alongside the main library.
+[project.optional-dependencies]
 
-    # Documentation
-    "sphinx-rtd-dark-mode>=1,<2",
-]
-
-# A shorthand specification that installs tox and all packages required for development tasks. This specification can
-# be used by developers to quickly install all necessary components for working on this project. Has to be installed
-# from pip.
+# Dependencies that support developing this project.
 dev = [
-    "ataraxis-automation[conda]",
-    "ataraxis-automation[noconda]"
+    # Types
+    "types-pyyaml>=6,<7",
 ]
 
-# Exposes the cli interface that can be used to directly access all automation commands outside 'tox' hierarchy.
+# CLI interfaces.
 [project.scripts]
-automation-cli = "ataraxis_automation.automation:cli"
+automation-cli = "ataraxis_automation.cli:cli"
 
 # Specifies files that should not be included in the source-code distribution, but are also not part of gitignore.
 [tool.hatch.build.targets.sdist]
@@ -138,12 +110,12 @@ packages = ["src/ataraxis_automation"]
 
 # Ruff Configuration.
 [tool.ruff]
-line-length = 120         # Maximum column length is set to 120 for this project.
+line-length = 120         # Deviates from the commonly used '80' standard.
 indent-width = 4          # Same as black, indents are 4 spaces
 target-version = "py311"  # Targets the lowest supported version of python
-src = ["src"]             # The name of the source directory
+src = ["src"]             # The name of the root source code directory
 
-# Excludes 'service' .py files, such as the sphinx configuration file from linting.
+# Excludes 'service' .py files, such as the sphinx configuration file, from linting.
 extend-exclude = ["conf.py"]
 
 # Checks for all potential violations and uses the exclusions below to target-disable specific ones.
@@ -165,7 +137,7 @@ lint.ignore = [
 quote-style = "double"             # Uses double quotes for strings
 indent-style = "space"             # Uses space for indents
 skip-magic-trailing-comma = false  # Like black, ignores trailing commas
-line-ending = "auto"               # Automatically detects and standardizes line ending character
+line-ending = "auto"               # Automatically detects and standardizes line-ending character
 
 # Docstrings and comments' line length
 [tool.ruff.lint.pycodestyle]

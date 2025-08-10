@@ -9,8 +9,6 @@ import subprocess
 from configparser import ConfigParser
 from unittest.mock import Mock
 
-import yaml
-import click
 import pytest
 
 import ataraxis_automation.automation as aa
@@ -46,7 +44,7 @@ def error_format(message: str) -> str:
         message: The message to format and escape, according to standard Ataraxis testing parameters.
 
     Returns:
-        Formatted and escape message that can be used as the 'match' argument of pytest.raises() method.
+        Formatted and escaped message that can be used as the 'match' argument of the pytest.raises() method.
     """
     return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
 
@@ -63,9 +61,9 @@ def test_resolve_project_directory_error(tmp_path) -> None:
 
     os.chdir(tmp_path)
     message: str = (
-        f"Unable to confirm that ataraxis automation module has been called from the root directory of a valid "
-        f"Python project. This function expects that the current working directory is set to the root directory of "
-        f"the project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
+        f"Unable to confirm that ataraxis automation CLI has been called from the root directory of a valid Python "
+        f"project. This CLI expects that the current working directory is set to the root directory of the "
+        f"project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
         f"directory is set to {os.getcwd()}, which does not contain at least one of the required files."
     )
     # noinspection PyTypeChecker
@@ -137,7 +135,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
 
     # Verifies environment resolution works as expected for the linux platform
     monkeypatch.setattr(sys, "platform", "linux")
-    env_name, yml_path, spec_path = aa.resolve_environment_files(
+    env_name, yml_path, spec_path = aa._resolve_environment_files(
         project_root=project_dir, environment_base_name=environment_base_name
     )
     assert env_name == f"{environment_base_name}_lin"
@@ -146,7 +144,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
 
     # Verifies environment resolution works as expected for the Windows platform
     monkeypatch.setattr(sys, "platform", "win32")
-    env_name, yml_path, spec_path = aa.resolve_environment_files(
+    env_name, yml_path, spec_path = aa._resolve_environment_files(
         project_root=project_dir, environment_base_name=environment_base_name
     )
     assert env_name == f"{environment_base_name}_win"
@@ -155,7 +153,7 @@ def test_resolve_environment_files(project_dir, monkeypatch) -> None:
 
     # Verifies environment resolution works as expected for the darwin (OSx ARM64) platform
     monkeypatch.setattr(sys, "platform", "darwin")
-    env_name, yml_path, spec_path = aa.resolve_environment_files(
+    env_name, yml_path, spec_path = aa._resolve_environment_files(
         project_root=project_dir, environment_base_name=environment_base_name
     )
     assert env_name == f"{environment_base_name}_osx"
@@ -171,11 +169,12 @@ def test_resolve_environment_files_error(project_dir, monkeypatch) -> None:
     environment_base_name: str = "text_env"
     os.chdir(project_dir)
     message: str = (
-        f"Unable to resolve the os-specific suffix to use for conda environment file(s). Unsupported host OS "
-        f"detected: {'unsupported'}. Currently, supported OS options are are: {', '.join(supported_platforms.keys())}."
+        f"Unable to resolve the operating-system-specific suffix to use for conda environment file names. The "
+        f"local machine is using an unsupported operating system {'unsupported'}. Currently, only the following "
+        f"operating systems are supported: {', '.join(supported_platforms.keys())}."
     )
     with pytest.raises(RuntimeError, match=error_format(message)):
-        aa.resolve_environment_files(project_root=project_dir, environment_base_name=environment_base_name)
+        aa._resolve_environment_files(project_root=project_dir, environment_base_name=environment_base_name)
 
 
 def test_resolve_conda_engine(monkeypatch) -> None:
@@ -225,9 +224,8 @@ def test_resolve_conda_engine_error(monkeypatch) -> None:
     # When neither conda nor mamba is available, expects a RuntimeError
     monkeypatch.setattr(subprocess, "run", mock_run)
     message: str = (
-        f"Unable to determine the conda / mamba engine to use for 'conda' commands. Specifically, unable "
-        f"to interface with either conda or mamba. Is conda or supported equivalent installed, initialized "
-        f"and added to Path?"
+        f"Unable to determine the engine to use for 'conda' commands. Specifically, unable to interface with either "
+        f"conda or mamba. Is conda or (preferred) mamba installed, initialized, and added to Path?"
     )
     with pytest.raises(RuntimeError, match=error_format(message)):
         aa.resolve_conda_engine()
@@ -280,9 +278,8 @@ def test_resolve_pip_engine_error(monkeypatch) -> None:
     # When neither pip nor uv is available, expects a RuntimeError
     monkeypatch.setattr(subprocess, "run", mock_run)
     message: str = (
-        f"Unable to determine the engine to use for pip commands. Specifically, was not able to interface with any of "
-        f"the supported pip-engines. Is pip, uv or supported equivalent installed in the currently active "
-        f"virtual / conda environment?"
+        f"Unable to determine the engine to use for 'pip' commands. Specifically, unable to interface with either "
+        f"pip or uv. Is pip or (preferred) uv installed in the active python environment?"
     )
     with pytest.raises(RuntimeError, match=error_format(message)):
         aa.resolve_pip_engine()
@@ -307,7 +304,7 @@ def test_get_base_name(dependency, expected) -> None:
     Tests all supported input scenarios.
     """
 
-    assert aa.get_base_name(dependency) == expected
+    assert aa._get_base_name(dependency) == expected
 
 
 def test_add_dependency() -> None:
@@ -319,7 +316,7 @@ def test_add_dependency() -> None:
 
     # Ensures that if the base name of the dependency (stripped of "version") is correctly added to dependencies_list,
     # unless it is already contained in processed_dependencies
-    dependencies_list, processed_dependencies = aa.add_dependency(
+    dependencies_list, processed_dependencies = aa._add_dependency(
         dependency="package==1.0", dependencies_list=dependencies_list, processed_dependencies=processed_dependencies
     )
     assert dependencies_list == [f'"package==1.0"']
@@ -333,7 +330,7 @@ def test_add_dependency() -> None:
         f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun."
     )
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.add_dependency(
+        aa._add_dependency(
             dependency=dependency, dependencies_list=dependencies_list, processed_dependencies=processed_dependencies
         )
 
@@ -345,7 +342,7 @@ def test_add_dependency() -> None:
         f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun."
     )
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.add_dependency(
+        aa._add_dependency(
             dependency=dependency, dependencies_list=dependencies_list, processed_dependencies=processed_dependencies
         )
 
@@ -404,7 +401,7 @@ requires =
 """
     write_tox_ini(project_dir, tox_content)
 
-    conda_deps, pip_deps = aa.resolve_dependencies(project_dir)
+    conda_deps, pip_deps = aa._resolve_dependencies(project_dir)
 
     assert set(conda_deps) == {f'"conda_dep1[test]"', f'"conda_dep2"', f'"condarun_dep==3"'}
     assert set(pip_deps) == {f'"dep1==1.0"', f'"dep2>=2.0"', f'"noconda_dep<2.0.1"'}
@@ -443,7 +440,7 @@ requires =
         f"one of the pyproject.toml dependency lists: condarun, conda or noconda."
     )
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.resolve_dependencies(project_dir)
+        aa._resolve_dependencies(project_dir)
 
 
 def test_resolve_dependencies_duplicate_dep(project_dir: Path) -> None:
@@ -473,12 +470,12 @@ requires =
 """
     write_tox_ini(project_dir, tox_content)
     message: str = (
-        f"Unable to resolve conda-installable and pip-installable project dependencies. Found a duplicate "
-        f"dependency for 'dep1<3.0', listed in pyproject.toml. A dependency should only "
-        f"be found in one of the supported  pyproject.toml lists: conda, noconda or condarun."
+        f"Unable to resolve project dependencies. Found a duplicate dependency for 'dep1<3.0', listed in "
+        f"pyproject.toml. A dependency should only be found once across the dependencies and optional-dependencies "
+        f"lists."
     )
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.resolve_dependencies(project_dir)
+        aa._resolve_dependencies(project_dir)
 
 
 @pytest.mark.parametrize("section", ["condarun", "conda"])
@@ -510,7 +507,7 @@ def test_resolve_dependencies_priority(project_dir, section: Path) -> None:
     """
     write_tox_ini(project_dir, tox_content)
 
-    conda_deps, pip_deps = aa.resolve_dependencies(project_dir)
+    conda_deps, pip_deps = aa._resolve_dependencies(project_dir)
 
     assert f'"priority_dep"' in conda_deps
     assert f'"priority_dep"' not in pip_deps
@@ -526,7 +523,7 @@ def test_resolve_project_name(project_dir) -> None:
     pyproject_path = project_dir.joinpath("pyproject.toml")
     pyproject_path.write_text(pyproject_content)
 
-    result = aa.resolve_project_name(project_dir)
+    result = aa._resolve_project_name(project_dir)
     assert result == "test-project"
 
 
@@ -546,7 +543,7 @@ def test_resolve_project_name_errors(project_dir) -> None:
         f"Unable to parse the pyproject.toml file. The file may be corrupted or contain invalid TOML syntax. "
     )
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.resolve_project_name(project_dir)
+        aa._resolve_project_name(project_dir)
 
     # Verifies that processing fails when 'name' section does not exist.
     pyproject_content = """
@@ -560,7 +557,7 @@ def test_resolve_project_name_errors(project_dir) -> None:
     )
 
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.resolve_project_name(project_dir)
+        aa._resolve_project_name(project_dir)
 
     # Also verifies that processing fails when 'name' section exists, but is not set to a valid name-value
     pyproject_content = """
@@ -574,7 +571,7 @@ def test_resolve_project_name_errors(project_dir) -> None:
     )
 
     with pytest.raises(ValueError, match=error_format(message)):
-        aa.resolve_project_name(project_dir)
+        aa._resolve_project_name(project_dir)
 
 
 @pytest.mark.parametrize(
@@ -629,7 +626,7 @@ def test_resolve_environment_commands(
     yml_path.touch()
 
     # Runs the tested command
-    result = aa.resolve_environment_commands(project_dir, "test_env", python_version=python_version)
+    result = aa.resolve_project_environment(project_dir, "test_env", python_version=python_version)
 
     # Verifies the returned EnvironmentCommands class instance contains the fields expected given the mocked parameters
     # and function returned data.
@@ -654,9 +651,9 @@ def test_resolve_environment_commands(
     else:
         assert result.conda_dependencies_command is None
     if len(dependencies[1]) != 0:
-        assert f"{pip_engine} install {' '.join(dependencies[1])}" in result.pip_dependencies_command
+        assert f"{pip_engine} install {' '.join(dependencies[1])}" in result.install_dependencies_command
     else:
-        assert result.pip_dependencies_command is None
+        assert result.install_dependencies_command is None
 
     assert f"{conda_engine} env update -n test_env{os_suffix}" in result.update_command
     assert f"{conda_engine} env export --name test_env{os_suffix}" in result.export_yml_command
@@ -678,14 +675,14 @@ def test_resolve_environment_commands(
         command_string = f"--resolution highest --refresh --reinstall-package test-project --compile-bytecode"
         assert command_string in result.install_project_command
         if len(dependencies[1]) != 0:
-            assert f"--compile-bytecode --python=" in result.pip_dependencies_command
+            assert f"--compile-bytecode --python=" in result.install_dependencies_command
     else:
         assert "--yes" in result.uninstall_project_command
         assert "--compile" in result.install_project_command
         if len(dependencies[1]) != 0:
-            assert "--compile" in result.pip_dependencies_command
+            assert "--compile" in result.install_dependencies_command
         else:
-            assert result.pip_dependencies_command is None
+            assert result.install_dependencies_command is None
 
     # Checks for new yml-related commands
     assert result.create_from_yml_command == f"{conda_engine} env create -f {yml_path} --yes"
@@ -693,7 +690,7 @@ def test_resolve_environment_commands(
 
     # Also tests the case where .yaml files are not present in the /envs folder.
     os.remove(yml_path)
-    result = aa.resolve_environment_commands(project_dir, "test_env", python_version=python_version)
+    result = aa.resolve_project_environment(project_dir, "test_env", python_version=python_version)
     assert result.create_from_yml_command is None
     assert result.update_command is None
 
@@ -922,254 +919,6 @@ def test_delete_stubs(tmp_path) -> None:
 
     # Runs the function again to ensure it handles the case when no .pyi files are present
     aa.delete_stubs(library_root)  # This should not raise any errors
-
-
-def test_rename_all_envs(tmp_path) -> None:
-    """Verifies the functionality of the rename_all_envs() function."""
-
-    # Configure console to suppress output
-
-    # Creates a mock project directory structure
-    project_root = tmp_path.joinpath("project")
-    envs_dir = project_root.joinpath("envs")
-    envs_dir.mkdir(parents=True)
-
-    # Creates mock environment files
-    yml_content = {"name": "old_env_win", "dependencies": ["python=3.8"]}
-    envs_dir.joinpath("old_env_win.yml").write_text(yaml.dump(yml_content))
-    envs_dir.joinpath("old_env_lin.yml").write_text(yaml.dump(yml_content))
-    envs_dir.joinpath("old_env_osx.yml").write_text(yaml.dump(yml_content))
-    envs_dir.joinpath("old_env_win_spec.txt").touch()
-    envs_dir.joinpath("old_env_lin_spec.txt").touch()
-    envs_dir.joinpath("old_env_osx_spec.txt").touch()
-    envs_dir.joinpath("old_env_osx_spec.txt").touch()
-    envs_dir.joinpath("unrelated_spec.txt").touch()  # This file should not be renamed
-    envs_dir.joinpath("unrelated.yml").touch()  # This file should not be renamed
-
-    new_name = "new_env"
-    aa.rename_all_envs(project_root, new_name)
-
-    # Verifies that .yml files are renamed and their content is updated
-    for os_suffix in ["win", "lin", "osx"]:
-        new_yml_path = envs_dir.joinpath(f"{new_name}_{os_suffix}.yml")
-        assert new_yml_path.exists(), f"Expected {new_yml_path} to exist"
-
-        yml_content = yaml.safe_load(new_yml_path.read_text())
-        assert yml_content["name"] == f"{new_name}_{os_suffix}", f"Expected name in {new_yml_path} to be updated"
-
-        old_yml_path = envs_dir.joinpath(f"old_env_{os_suffix}.yml")
-        assert not old_yml_path.exists(), f"Expected {old_yml_path} to be deleted"
-
-    # Verifies that _spec.txt files are renamed
-    for os_suffix in ["win", "lin", "osx"]:
-        new_spec_path = envs_dir.joinpath(f"{new_name}_{os_suffix}_spec.txt")
-        assert new_spec_path.exists(), f"Expected {new_spec_path} to exist"
-
-        old_spec_path = envs_dir.joinpath(f"old_env_{os_suffix}_spec.txt")
-        assert not old_spec_path.exists(), f"Expected {old_spec_path} to be deleted"
-
-    # Verifies that unrelated files are not renamed
-    assert envs_dir.joinpath("unrelated_spec.txt").exists(), "Expected unrelated file to remain unchanged"
-    assert envs_dir.joinpath("unrelated.yml").exists(), "Expected unrelated file to remain unchanged"
-
-    # Verifies the total number of files in the directory
-    all_files = list(envs_dir.iterdir())
-    assert len(all_files) == 8, f"Expected 8 files in total, found {len(all_files)}"
-
-
-def test_replace_markers_in_file(tmp_path) -> None:
-    """Verifies the functionality of the replace_markers_in_file() function."""
-
-    # Creates a temporary file with markers
-    file_path = tmp_path.joinpath("test_file.txt")
-    initial_content = "Hello, {{NAME}}! Welcome to {{PLACE}}. Your ID is {{ID}}."
-    file_path.write_text(initial_content, encoding="utf-8")
-
-    # Defines markers to replace
-    markers = {
-        "{{NAME}}": "John Doe",
-        "{{PLACE}}": "Pythonville",
-        "{{ID}}": "12345",
-        "{{UNUSED}}": "This marker is not in the file",
-    }
-
-    # Runs the replace_markers_in_file function
-    modification_count = aa.replace_markers_in_file(file_path, markers)
-
-    # Reads the modified file content
-    modified_content = file_path.read_text(encoding="utf-8")
-
-    # Verifies the modified file matches expectations
-    assert modification_count == 3
-    assert modified_content == "Hello, John Doe! Welcome to Pythonville. Your ID is 12345."
-    assert "{{NAME}}" not in modified_content
-    assert "{{PLACE}}" not in modified_content
-    assert "{{ID}}" not in modified_content
-    assert "{{UNUSED}}" not in modified_content
-
-    # Verifies modifications are not performed for files without markers.
-    no_change_markers = {"{{NOTFOUND}}": "This won't be replaced"}
-    no_change_count = aa.replace_markers_in_file(file_path, no_change_markers)
-    assert no_change_count == 0
-
-    # Verifies file content hasn't changed after any modifications
-    unchanged_content = file_path.read_text(encoding="utf-8")
-    assert unchanged_content == modified_content
-
-
-@pytest.mark.parametrize(
-    "library_name, is_valid",
-    [
-        ("valid_name", True),
-        ("ValidName123", True),
-        ("VALID_NAME", True),
-        ("_valid_name_", True),
-        ("123valid", True),
-        ("invalid-name", False),
-        ("invalid name", False),
-        ("invalid.name", False),
-        ("invalid@name", False),
-        ("", True),  # Assuming empty string is valid, adjust if not
-    ],
-)
-def test_validate_library_name(library_name, is_valid):
-    """Verifies the functionality of the validate_library_name() function.
-
-    Tests all supported inputs.
-    """
-
-    if is_valid:
-        # noinspection PyTypeChecker
-        result = aa.validate_library_name(None, None, library_name)
-        assert result == library_name
-    else:
-        with pytest.raises(click.BadParameter) as excinfo:
-            # noinspection PyTypeChecker
-            aa.validate_library_name(None, None, library_name)
-        assert "Library name should contain only letters, numbers, and underscores." in str(excinfo.value)
-
-
-@pytest.mark.parametrize(
-    "project_name, is_valid",
-    [
-        ("valid-project", True),
-        ("ValidProject123", True),
-        ("VALID-PROJECT", True),
-        ("123valid", True),
-        ("invalid_project", False),
-        ("invalid project", False),
-        ("invalid.project", False),
-        ("invalid@project", False),
-        ("", False),  # Assuming empty string is invalid
-    ],
-)
-def test_validate_project_name(project_name, is_valid):
-    """Verifies the functionality of the validate_project_name() function.
-
-    Tests all supported inputs.
-    """
-
-    if is_valid:
-        # noinspection PyTypeChecker
-        result = aa.validate_project_name(None, None, project_name)
-        assert result == project_name
-    else:
-        with pytest.raises(click.BadParameter) as excinfo:
-            # noinspection PyTypeChecker
-            aa.validate_project_name(None, None, project_name)
-        assert "Project name should contain only letters, numbers, or dashes." in str(excinfo.value)
-
-
-@pytest.mark.parametrize(
-    "author_name, is_valid",
-    [
-        ("John Doe", True),
-        ("John Doe (johndoe)", True),
-        ("Mary-Jane O'Connor", True),
-        ("Alice Bob (alice-bob)", True),
-        ("Invalid Name (invalid@username)", False),
-        ("Invalid.Name", False),
-        ("(InvalidFormat)", False),
-        ("", False),  # Assuming empty string is invalid
-    ],
-)
-def test_validate_author_name(author_name, is_valid):
-    """Verifies the functioning of the validate_author_name() function.
-
-    Tests all supported inputs.
-    """
-
-    if is_valid:
-        # noinspection PyTypeChecker
-        result = aa.validate_author_name(None, None, author_name)
-        assert result == author_name
-    else:
-        with pytest.raises(click.BadParameter) as excinfo:
-            # noinspection PyTypeChecker
-            aa.validate_author_name(None, None, author_name)
-        assert "Author name should be in the format" in str(excinfo.value)
-
-
-@pytest.mark.parametrize(
-    "email, is_valid",
-    [
-        ("valid@example.com", True),
-        ("valid.email@sub.domain.com", True),
-        ("valid_email123@domain.co.uk", True),
-        ("invalid email@example.com", False),
-        ("invalid@domain", False),
-        ("@invalid.com", False),
-        ("invalid.com", False),
-        ("", False),  # Assuming empty string is invalid
-    ],
-)
-def test_validate_email(email, is_valid):
-    """Verifies the functioning of the validate_email() function.
-
-    Tests all supported inputs.
-    """
-
-    if is_valid:
-        # noinspection PyTypeChecker
-        result = aa.validate_email(None, None, email)
-        assert result == email
-    else:
-        with pytest.raises(click.BadParameter) as excinfo:
-            # noinspection PyTypeChecker
-            aa.validate_email(None, None, email)
-        assert "Invalid email address." in str(excinfo.value)
-
-
-@pytest.mark.parametrize(
-    "env_name, is_valid",
-    [
-        ("valid_env", True),
-        ("ValidEnv123", True),
-        ("VALID_ENV", True),
-        ("_valid_env_", True),
-        ("123valid", True),
-        ("invalid-env", False),
-        ("invalid env", False),
-        ("invalid.env", False),
-        ("invalid@env", False),
-        ("", True),  # Assuming empty string is valid, adjust if not
-    ],
-)
-def test_validate_env_name(env_name, is_valid):
-    """Verifies the functioning of the validate_env_name() function.
-
-    Tests all supported inputs.
-    """
-
-    if is_valid:
-        # noinspection PyTypeChecker
-        result = aa.validate_env_name(None, None, env_name)
-        assert result == env_name
-    else:
-        with pytest.raises(click.BadParameter) as excinfo:
-            # noinspection PyTypeChecker
-            aa.validate_env_name(None, None, env_name)
-        assert "Environment name should contain only letters, numbers, and underscores." in str(excinfo.value)
 
 
 @pytest.fixture
