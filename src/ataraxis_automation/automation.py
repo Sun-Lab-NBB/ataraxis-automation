@@ -762,8 +762,8 @@ def _check_package_engines() -> None:
         # If mamba is not available, raises an error as it is now required
         message: str = (
             "Unable to interface with mamba for environment management. Mamba is required for this automation "
-            "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge3) and ensure "
-            "it is initialized and added to PATH."
+            "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge3) and "
+            "ensure it is initialized and added to PATH."
         )
         raise RuntimeError(format_message(message))
 

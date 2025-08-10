@@ -617,5 +617,5 @@ ___
 - The teams behind [pip](https://github.com/pypa/pip), [uv](https://github.com/astral-sh/uv), 
   [conda](https://conda.org/), [mamba](https://github.com/mamba-org/mamba) and [tox](https://github.com/tox-dev/tox), 
   which form the backbone of Sun lab automation pipelines.
-- The creators of all other projects that are listed in the [pyproject.toml](pyproject.toml) file and used in automation 
+- The creators of all other projects that are listed in the [pyproject.toml](pyproject.toml) file and used in automation
   pipelines across all Sun Lab projects.
