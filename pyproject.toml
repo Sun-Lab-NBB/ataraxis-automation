@@ -1,13 +1,13 @@
 # Defines the build system used for the project.
 [build-system]
-requires = ["hatchling>=1,<2"]
+requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
 version = "6.0.0"
-description = "Provides scripts that support tox-based development automation pipelines used by other Sun lab projects."
+description = "Provides tools that support tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
@@ -42,47 +42,52 @@ classifiers = [
     "Typing :: Typed"
 ]
 
-# Runtime project dependencies. This list includes both the dependencies necessary to run the ataraxis-automation code
-# and to support all Sun lab tox environments (tasks).
+# Runtime project dependencies. This list includes both the dependencies necessary to run the ataraxis-automation CLIs
+# and support all Sun lab tox environments (tasks). Therefore, each 'tox' task in every Sun lab project can include
+# the ataraxis-automation as the sole dependency and work as expected.
 dependencies = [
     # Automation Logic
-    "click>=8,<9",
-    "pyyaml>=6,<7",
-    "appdirs>=1,<2",
-    "tomli>=2,<3",
+    "click>=8,<9",  # Since click is a common dependency for many packages, pins to the major version
+    "tomli==2.2.1",
 
     # Tox
-    "tox>=4,<5",
-    "uv>=0,<1",
-    "tox-uv>=1,<2",
+    "tox==4.28.4",
+    "uv==0.8.8",
+    "tox-uv==1.27.0",
 
     # Testing
-    "pytest>=8,<9",
-    "pytest-cov>=6,<7",
-    "pytest-xdist>=3,<4",
+    "pytest==8.4.1",
+    "pytest-cov==6.2.1",
+    "pytest-xdist==3.8.0",
 
     # Coverage Reports
-    "coverage>=7,<8",
-    "junitparser>=4,<5",
+    "coverage==7.10.2",
+    "junitparser==4.0.2",
 
     # Documentation
-    "sphinx>=8,<9",
-    "importlib_metadata>=8,<9",
-    "sphinx-rtd-theme>=3,<4",
-    "sphinx-click>=6,<7",
-    "sphinx-autodoc-typehints>=3,<4",
-    "sphinx-rtd-dark-mode>=1,<2",
+    "sphinx==8.2.3",
+    "importlib_metadata==8.7.0",
+    "sphinx-rtd-theme==3.0.2",
+    "sphinx-click==6.0.0",
+    "sphinx-autodoc-typehints==3.2.0",
+    "sphinx-rtd-dark-mode==1.3.0",
 
-    # Linting and Stub-generation
-    "mypy>=1,<2",
-    "ruff>=0,<1",
+    # Linting and Stub Generation
+    "mypy==1.17.1",
+    "ruff==0.12.8",
 
     # Building
-    "build>=1,<2",
-    "hatchling>=1,<2",
+    "build==1.3.0",
+    "hatchling==1.27.0",
+
+    # C-Extension Project Support
+    "cibuildwheel[uv]==3.1.3",
+    "nanobind==2.8.0",
+    "scikit-build-core==0.11.5",
+    "breathe==4.36.0",
 
     # Distribution
-    "twine>=6,<7",
+    "twine==6.1.0",
 ]
 
 [project.urls]
@@ -94,8 +99,8 @@ Documentation = "https://ataraxis-automation-api-docs.netlify.app/"
 
 # Dependencies that support developing this project.
 dev = [
-    # Types
-    "types-pyyaml>=6,<7",
+    # With ataraxis-automation 6.0.0, this section in all other projects typically includes ataraxis-automation
+    # dependency and optional stub (type) libraries for project dependencies.
 ]
 
 # CLI interfaces.
@@ -162,6 +167,10 @@ combine-as-imports = true          # Combines multiple "as" imports for the same
 force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line (after combining for package)
 force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close
 length-sort = true                 # Places shorter imports first
+
+
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true       # Ignores unused *args and **kwargs
 
 # MyPy configuration section.
 [tool.mypy]

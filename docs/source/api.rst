@@ -9,9 +9,9 @@ Automation Tools
    :undoc-members:
    :show-inheritance:
 
-CLI Commands
-============
+Command Line Interfaces (CLIs)
+==============================
 
-.. click:: ataraxis_automation.automation:cli
+.. click:: ataraxis_automation.cli:cli
    :prog: automation-cli
    :nested: full

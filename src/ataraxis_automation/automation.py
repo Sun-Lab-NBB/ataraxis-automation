@@ -65,7 +65,6 @@ def colorize_message(message: str, color: str, wrap: bool = True) -> str:
     Returns:
         Colorized and wrapped (if requested) message string.
     """
-
     if wrap:
         message = format_message(message)
 
@@ -217,25 +216,21 @@ def _should_include_dependency(dependency: str, platform_name: str) -> bool:
     # For negation markers (!=), inverts the logic
     if "!=" in marker:
         # Checks if this is a platform exclusion
-        if "windows" in marker and platform_name == "windows":
+        if (
+            ("windows" in marker and platform_name == "windows")
+            or ("darwin" in marker and platform_name == "darwin")
+            or ("linux" in marker and platform_name == "linux")
+        ):
             return False
-        elif "darwin" in marker and platform_name == "darwin":
-            return False
-        elif "linux" in marker and platform_name == "linux":
-            return False
-        # If the platform is not explicitly excluded, includes the dependency
-        return True
 
     # For equality markers (==), standard inclusion logic
     if "==" in marker or "platform_system" in marker or "sys_platform" in marker:
         # Checks for Windows markers
-        if ("win" in marker or "windows" in marker) and platform_name == "windows":
-            return True
-        # Checks for macOS markers
-        elif ("darwin" in marker or "macos" in marker or "osx" in marker) and platform_name == "darwin":
-            return True
-        # Checks for Linux markers
-        elif "linux" in marker and platform_name == "linux":
+        if (
+            ("windows" in marker and platform_name == "windows")
+            or ("darwin" in marker and platform_name == "darwin")
+            or ("linux" in marker and platform_name == "linux")
+        ):
             return True
         # If a specific platform is required, and it's not the current one, excludes the dependency
         return False
@@ -303,14 +298,13 @@ def _resolve_dependencies(project_root: Path, platform_name: str) -> tuple[tuple
             dependency lists.
         RuntimeError: If the host platform (operating system) is not supported.
     """
-
     # Resolves the paths to the .toml and tox.ini files. The function that generates the project root path checks for
     # the presence of these files as part of its runtime, so it is assumed that they always exist.
     pyproject_path: Path = project_root.joinpath("pyproject.toml")
     tox_path: Path = project_root.joinpath("tox.ini")
 
     # Opens pyproject.toml and parses its contents
-    with open(pyproject_path, "rb") as f:
+    with Path.open(pyproject_path, "rb") as f:
         pyproject_data = tomli.load(f)
 
     # Extracts dependencies and optional-dependencies from the main 'project' metadata section.
@@ -406,11 +400,11 @@ def _resolve_project_name(project_root: Path) -> str:
 
     # Reads and parses the pyproject.toml file
     try:
-        with open(pyproject_path, "rb") as f:
+        with Path.open(pyproject_path, "rb") as f:
             pyproject_data: dict[str, Any] = tomli.load(f)
     except tomli.TOMLDecodeError as e:
         message: str = (
-            f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax. "
+            f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax."
             f"Error details: {e}."
         )
         raise ValueError(format_message(message))
@@ -422,8 +416,8 @@ def _resolve_project_name(project_root: Path) -> str:
     # Checks if the project name was successfully extracted
     if project_name is None:
         message = (
-            f"Unable to resolve the project name from the pyproject.toml file. The 'name' field is missing or "
-            f"empty in the [project] section of the file."
+            "Unable to resolve the project name from the pyproject.toml file. The 'name' field is missing or "
+            "empty in the [project] section of the file."
         )
         raise ValueError(format_message(message))
 
@@ -445,7 +439,6 @@ def generate_typed_marker(library_root: Path) -> None:
     Args:
         library_root: The path to the root level of the library directory.
     """
-
     # Adds py.typed to the root directory if it doesn't exist
     root_py_typed = library_root.joinpath("py.typed")
     if not root_py_typed.exists():
@@ -481,7 +474,6 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         stubs_dir: The absolute path to the "stubs" directory, expected to be found under the project root directory.
         library_root: The absolute path to the library root directory.
     """
-
     # Compiles regex patterns once to optimize the cycles below
     copy_pattern = re.compile(r" (\d+)\.pyi$")
     base_name_pattern = re.compile(r" \d+\.pyi$")
@@ -690,10 +682,10 @@ def _resolve_mamba_environments_directory() -> Path:
 
     # If this point is reached, miniforge is not installed and/or initialized. Raises an error.
     message: str = (
-        f"Unable to resolve the path to the mamba environments directory. This version of ataraxis-automation expects "
-        f"that mamba is installed via miniforge3, following the deprecation of mambaforge. Make sure miniforge3 is "
-        f"installed and initialized before using ataraxis-automation cli. Install from: "
-        f"https://github.com/conda-forge/miniforge"
+        "Unable to resolve the path to the mamba environments directory. This version of ataraxis-automation expects "
+        "that mamba is installed via miniforge3, following the deprecation of mambaforge. Make sure miniforge3 is "
+        "installed and initialized before using ataraxis-automation cli. Install from: "
+        "https://github.com/conda-forge/miniforge"
     )
     raise RuntimeError(format_message(message))
 
@@ -726,7 +718,7 @@ def _resolve_environment_files(project_root: Path, environment_base_name: str) -
     os_name: str = sys.platform  # Obtains host os name
 
     # If the os name is not one of the supported names, raises an error
-    if os_name not in _SUPPORTED_PLATFORMS.keys():
+    if os_name not in _SUPPORTED_PLATFORMS:
         message: str = (
             f"Unable to resolve the operating-system-specific suffix to use for mamba environment file names. The "
             f"local machine is using an unsupported operating system '{os_name}'. Currently, only the following "
@@ -757,7 +749,6 @@ def _check_package_engines() -> None:
     Raises:
         RuntimeError: If either mamba or uv is not accessible via subprocess call through the shell.
     """
-
     # Verifies that mamba is available for environment management operations
     try:
         subprocess.run(
@@ -770,9 +761,9 @@ def _check_package_engines() -> None:
     except subprocess.CalledProcessError:
         # If mamba is not available, raises an error as it is now required
         message = (
-            f"Unable to interface with mamba for environment management. Mamba is required for this automation "
-            f"module and provides significantly faster conda operations. Install mamba (e.g., via miniforge or "
-            f"mambaforge) and ensure it is initialized and added to PATH."
+            "Unable to interface with mamba for environment management. Mamba is required for this automation "
+            "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge or "
+            "mambaforge) and ensure it is initialized and added to PATH."
         )
         raise RuntimeError(format_message(message))
 
@@ -788,9 +779,9 @@ def _check_package_engines() -> None:
     except subprocess.CalledProcessError:
         # If uv is not available, raises an error as it is now required
         message = (
-            f"Unable to interface with uv for package installation. uv is required for this automation module and "
-            f"provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install "
-            f"uv-python::uv') in the active Python environment."
+            "Unable to interface with uv for package installation. uv is required for this automation module and "
+            "provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install "
+            "uv-python::uv') in the active Python environment."
         )
         raise RuntimeError(format_message(message))
 
@@ -875,7 +866,10 @@ class ProjectEnvironment:
 
     @classmethod
     def resolve_project_environment(
-        cls, project_root: Path, environment_name: str, python_version: str = "3.13"
+        cls,
+        project_root: Path,
+        environment_name: str,
+        python_version: str = "3.13",
     ) -> "ProjectEnvironment":
         """Generates the list of mamba and uv commands used to manipulate the project- and os-specific mamba environment
         and packages it into ProjectEnvironment class.
@@ -891,7 +885,6 @@ class ProjectEnvironment:
         Returns:
             The resolved ProjectEnvironment instance.
         """
-
         # Gets the environment name with the appropriate os-extension and the paths to the .yml and /spec files.
         extended_environment_name, yml_path, spec_path = _resolve_environment_files(project_root, environment_name)
 
@@ -961,7 +954,7 @@ class ProjectEnvironment:
 
         # Generates dependency installation commands using uv:
         install_dependencies_command = (
-            f"uv pip install {' '.join((runtime_dependencies + development_dependencies))} --resolution highest "
+            f"uv pip install {' '.join(runtime_dependencies + development_dependencies)} --resolution highest "
             f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact"
         )
         uninstall_project_command = f"uv pip uninstall {project_name} --python={target_environment_directory}"
@@ -1007,7 +1000,6 @@ class ProjectEnvironment:
 
     def environment_exists(self) -> bool:
         """Returns True if the environment can be activated (and, implicitly, exists) and False otherwise."""
-
         # Verifies that the project- and os-specific mamba environment can be activated.
         try:
             subprocess.run(
@@ -1017,6 +1009,7 @@ class ProjectEnvironment:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            return True
         except subprocess.CalledProcessError:
             return False
+        else:
+            return True

@@ -5,7 +5,9 @@ be used directly. They are designed to work with Sun Lab 'tox' tasks and may req
 with other tox configurations.
 """
 
-import os
+# pragma: no cover
+import re
+import base64
 import shutil
 from pathlib import Path
 import subprocess
@@ -29,7 +31,8 @@ from .automation import (
 @click.group()
 def cli() -> None:  # pragma: no cover
     """This command-line interface exposes the helper environment used to automate various project development and
-    building steps."""
+    building steps.
+    """
 
 
 @cli.command()
@@ -37,19 +40,17 @@ def process_typed_markers() -> None:  # pragma: no cover
     """Crawls the library root directory and ensures that the 'py.typed' marker is found only at the highest level of
     the library hierarchy (the highest directory with __init__.py in it).
 
-    This command is intended to be called as part of the stub-generation tox command ('tox -e stubs').
-
-    Raises:
-        RuntimeError: If the root (highest) directory cannot be resolved for the project or library source code.
+    This command should be called as part of the stub-generation tox command ('tox -e stubs') to mark the library as
+    typed for static linters.
     """
-    # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
-    # key directories and files (src, envs, pyproject.toml, tox.ini).
+    # Verifies that the working directory is pointing to a project with the necessary key directories and files
+    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
 
-    # Resolves (finds) the root directory of the library.
+    # Resolves (finds) the root library directory (typically one level down under 'src').
     library_root: Path = resolve_library_root(project_root=project_root)
 
-    # Resolves typed markers.
+    # Ensures that the py.typed marker file is only found inside the library root directory.
     generate_typed_marker(library_root=library_root)
     message: str = "Typed (py.typed) marker(s) successfully processed."
     click.echo(colorize_message(message, color="green"))
@@ -57,91 +58,54 @@ def process_typed_markers() -> None:  # pragma: no cover
 
 @cli.command()
 def process_stubs() -> None:  # pragma: no cover
-    """Distributes the stub files from the /stubs directory to the appropriate level of the /src or
-    src/library directory (depending on the type of the processed project).
+    """Distributes the stub files from the /stubs directory to the appropriate level of the /src or src/library_name
+    directory (depending on the type of the processed project).
 
-    Notes:
-        This command is intended to be called after the /stubs directory has been generated using tox stub-generation
-        command ('tox -e stubs').
-
-    Raises:
-        RuntimeError: If the root (highest) directory cannot be resolved for the project or library source code. If
-        /stubs directory does not exist.
+    This command is intended to be called after the /stubs directory has been generated and filled by 'stubgen' as part
+    of the tox stub-generation command ('tox -e stubs').
     """
-    # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
-    # key directories and files (src, envs, pyproject.toml, tox.ini).
+    # Verifies that the working directory is pointing to a project with the necessary key directories and files
+    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
 
-    # Resolves (finds) the root directory of the library.
+    # Resolves (finds) the root library directory (typically one level down under 'src').
     library_root: Path = resolve_library_root(project_root=project_root)
 
-    # Generates the path to the 'stubs' folder, which is expected to be a subdirectory of the project root directory.
+    # Generates the path to the 'stubs' folder, which is expected to be a subdirectory under the project root directory.
     stubs_path: Path = project_root.joinpath("stubs")
 
     if not stubs_path.exists():
         message: str = (
-            f"Unable to move generated stub files from {stubs_path} to {library_root}. Stubs directory does not exist."
+            f"Unable to move generated stub (.pyi) files from {stubs_path} to {library_root}. Stubs directory does "
+            f"not exist under the project root directory."
         )
         raise RuntimeError(format_message(message))
 
     # Moves the stubs to the appropriate source code directories
     move_stubs(stubs_dir=stubs_path, library_root=library_root)
     shutil.rmtree(stubs_path)  # Removes the /stubs directory once all stubs are moved
-    message = "Stubs successfully distributed to appropriate source directories."
+    message = "Stubs successfully distributed to appropriate source code directories."
     click.echo(colorize_message(message, color="green"))
 
 
 @cli.command()
 def purge_stubs() -> None:  # pragma: no cover
-    """Removes all existing stub (.pyi) files from the library source code directory.
+    """Removes all existing stub (.pyi) files from the library source code directories.
 
     This command is intended to be called as part of the tox linting task ('tox -e lint'). If stub files are present
     during linting, mypy (type-checker) preferentially processes stub files and ignores source code files. Removing the
     stubs before running mypy ensures it runs on the source code.
-
-    Raises:
-        RuntimeError: If the root (highest) directory cannot be resolved for the project or library source code.
     """
-    # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
-    # key directories and files (src, envs, pyproject.toml, tox.ini).
-    project_dir: Path = resolve_project_directory()
+    # Verifies that the working directory is pointing to a project with the necessary key directories and files
+    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
+    project_root: Path = resolve_project_directory()
 
-    # Resolves (finds) the root directory of the library.
-    library_root: Path = resolve_library_root(project_root=project_dir)
+    # Resolves (finds) the root library directory (typically one level down under 'src').
+    library_root: Path = resolve_library_root(project_root=project_root)
 
     # Removes all stub files from the library source code folder.
     delete_stubs(library_root=library_root)
-    message: str = "Existing stub files purged."
-    click.echo(colorize_message(message, color="green"))
-
-
-@cli.command()
-def generate_recipe_folder() -> None:  # pragma: no cover
-    """Generates the /recipe directory inside the project root directory.
-
-    This command is intended to be called before using Grayskull via the tox recipe-generation task ('tox -e recipe')
-    to generate the conda-forge recipe for the project. Since Grayskull does not generate output directories by itself,
-    this task is 'outsourced' to this command instead.
-
-    Raises:
-        RuntimeError: If the root (highest) directory cannot be resolved for the project.
-    """
-    # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
-    # key directories and files (src, envs, pyproject.toml, tox.ini).
-    project_root: Path = resolve_project_directory()
-
-    # Generates the path to the 'recipe' directory. This directory is created inside the project root directory
-    recipe_path: Path = project_root.joinpath("recipe")
-
-    # If the recipe directory already exists, removes the directory with all existing contents
-    if recipe_path.exists():
-        shutil.rmtree(recipe_path)
-        message: str = "Existing recipe folder removed."
-        click.echo(colorize_message(message, color="white"))
-
-    # Creates the recipe directory
-    os.makedirs(recipe_path)
-    message = "Recipe folder created."
+    message: str = "Existing stub (.pyi) files purged from all source code directories."
     click.echo(colorize_message(message, color="green"))
 
 
@@ -150,30 +114,25 @@ def generate_recipe_folder() -> None:  # pragma: no cover
     "-rt",
     "--replace-token",
     is_flag=True,
-    help="If provided, recreates the .pypirc file even if it already contains an API token.",
+    help="If this flag is provided, the command recreates the .pypirc file even if it already contains an API token.",
 )
 def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
-    """Ensures that a validly formatted PyPI API token is available from the .pypirc file stored in the root directory
+    """Ensures that a validly formatted PyPI API token is contained in the .pypirc file stored in the root directory
     of the project.
 
     This command is intended to be called before the tox pip-uploading task ('tox -e upload') to ensure that twine is
     able to access the PyPI API token. If the token is available from the '.pypirc' file and appears valid, it is used.
     If the file or the API token is not available or the user provides the 'replace-token' flag, the command recreates
-    the file and prompts the user to provide a new token. The token is then added to the file for future (re)uses.
+    the file and prompts the user to provide a new token. The token is then added to the file for future (re)uses. The
+    '.pypirc' file is added to gitignore distributed with each Sun lab project, so the token will remain private unless
+    gitignore configuration is compromised.
 
-    Notes:
-        The '.pypirc' file is added to gitignore, so the token will remain private unless gitignore is compromised.
-
-        This function is currently not able to verify that the token works. Instead, it can only ensure the token
-        is formatted in a PyPI-specified way (specifically, that it includes the pypi-prefix). If the token is not
-        active or otherwise invalid, only a failed twine upload will be able to determine that.
-
-    Raises:
-        ValueError: If the token provided by the user is not valid.
-        RuntimeError: If the user aborts the token acquisition process without providing a valid token.
+    This command is currently not able to verify that the token works. Instead, it can only ensure the token is
+    formatted in a PyPI-specified way (that it includes the pypi-prefix). If the token is not active or otherwise
+    invalid, there is no way to know this before failing a twine upload.
     """
-    # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
-    # key directories and files (src, envs, pyproject.toml, tox.ini).
+    # Verifies that the working directory is pointing to a project with the necessary key directories and files
+    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
 
     # Generates the path to the .pypirc file. The file is expected to be found inside the root directory of the project.
@@ -181,53 +140,71 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
 
     # If the file exists, recreating the file is not requested, and the file appears well-formed, ends the runtime.
     if verify_pypirc(pypirc_path) and not replace_token:
-        message: str = f"Existing PyPI token found inside the '.pypirc' file."
+        message: str = "Existing PyPI token found inside the '.pypirc' file."
         click.echo(colorize_message(message, color="green"))
         return
 
     # Otherwise, proceeds to generating a new file and token entry.
-    else:
-        message = (
-            f"Unable to use the existing PyPI token: '.pypirc' file does not exist, is invalid or doesn't contain a "
-            f"valid token. Proceeding to new token acquisition."
-        )
-        click.echo(colorize_message(message, color="white"))
+    message = (
+        "Unable to use the existing PyPI token: the project's '.pypirc' file does not exist, is invalid, or "
+        "does not contain a valid PyPI API token. Proceeding to new token acquisition."
+    )
+    click.echo(colorize_message(message, color="white"))
 
     # Enters the while loop to iteratively ask for the token until a valid token entry is provided.
     while True:
-        try:
-            prompt: str = format_message(
-                message="Enter your PyPI (API) token. It will be stored inside the .pypirc file for future use. "
-                "Input is hidden:"
-            )
-            # Asks the user for the token.
-            token: str = click.prompt(text=prompt, hide_input=True, type=str)
+        prompt: str = format_message(
+            message="Enter the PyPI (API) token. It will be stored inside the .pypirc file for future use. "
+            "Input is hidden: ",
+        )
+        # Asks the user for the token.
+        token: str = click.prompt(text=prompt, hide_input=True, type=str)
 
-            # Catches and prevents entering incorrectly formatted tokens
-            if not token.startswith("pypi-"):
-                message = "Acquired invalidly-formatted PyPI token. PyPI tokens should start with 'pypi-'."
-                # This both logs and re-raises the error. Relies on the error being caught below and converted to a
-                # prompt instead.
-                raise ValueError(format_message(message))
+        # Strips whitespaces from the input string
+        token = token.strip()
 
-            # Generates the new .pypirc file and saves the valid token data to the file.
-            config = ConfigParser()
-            config["pypi"] = {"username": "__token__", "password": token}
-            with pypirc_path.open("w") as config_file:
-                # noinspection PyTypeChecker
-                config.write(config_file)
+        # Validates the token using multiple heuristic for what a well-formed PyPI token should look like
+        valid = (
+            token  # Not empty
+            and token.startswith("pypi-")  # Has the correct prefix
+            and 100 <= len(token) <= 500  # Has a reasonable length
+            and len(token[5:]) > 0  # Has body after the prefix
+            and re.match(r"^[A-Za-z0-9\-_]+=*$", token[5:])  # Uses valid base64 URL-safe chars
+            and " " not in token  # Contains no spaces
+            and "\n" not in token
+            and "\r" not in token
+            and "\t" not in token  # Does not have whitespace characters
+        )
 
-            # Notifies the user and breaks out of the while loop
-            message = f"Valid PyPI token acquired and added to '.pypirc' for future uses."
-            click.echo(colorize_message(message, color="green"))
-            break
+        # Additional base64 validation
+        if valid:
+            try:
+                token_body = token[5:]
+                padding_needed = (4 - len(token_body) % 4) % 4
+                base64.urlsafe_b64decode(token_body + ("=" * padding_needed))
+            except:
+                valid = False
 
-        # This block allows rerunning the token acquisition if an invalid token was provided, and the user has elected
-        # to retry token input.
-        except Exception:
-            if not click.confirm("Do you want to try again?"):
+        # Handles invalid token inputs
+        if not valid:
+            message = "The input token does not appear to be a valid PyPI token."
+            click.echo(colorize_message(message, color="red"))
+            if not click.confirm("Do you want to try entering another token?"):
                 message = "PyPI token acquisition: aborted by user."
                 raise RuntimeError(format_message(message))
+            continue
+
+        # Generates the new .pypirc file and saves the valid token data to the file.
+        config = ConfigParser()
+        config["pypi"] = {"username": "__token__", "password": token}
+        with pypirc_path.open("w") as config_file:
+            # noinspection PyTypeChecker
+            config.write(config_file)
+
+        # Notifies the user and breaks out of the while loop
+        message = "Valid PyPI token acquired and added to the project's '.pypirc' file for future use."
+        click.echo(colorize_message(message, color="green"))
+        break
 
 
 @cli.command()
@@ -246,7 +223,6 @@ def install_project(environment_name: str) -> None:  # pragma: no cover
     than the source code, to support tox testing, the project has to be rebuilt each time source code is changed, which
     is conveniently performed by this command.
     """
-
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -297,7 +273,6 @@ def uninstall_project(environment_name: str) -> None:  # pragma: no cover
     projects. Previously, it was used to remove the project from its mamba environment before running tests, as
     installed projects used to interfere with tox re-building the testing wheels in some cases.
     """
-
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -356,7 +331,6 @@ def create_environment(environment_name: str, python_version: str) -> None:  # p
     reset an already existing environment, use the provision ('tox -e provision') command instead, which inlines
     removing and (re)creating the environment.
     """
-
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -427,14 +401,14 @@ def remove_environment(environment_name: str) -> None:  # pragma: no cover
     environment, it is recommended to use the 'provision-environment' ('tox -e provision') command instead, which
     removes and (re)creates the environment as a single operation.
     """
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
 
     # Resolves the project's mamba environment data and generates a list of commands to interface with the environment.
     environment = ProjectEnvironment.resolve_project_environment(
-        project_root=project_root, environment_name=environment_name
+        project_root=project_root,
+        environment_name=environment_name,
     )
 
     # If the environment cannot be activated, it likely does not exist and no further processing is needed.
@@ -494,7 +468,6 @@ def provision_environment(environment_name: str, python_version: str) -> None:  
     This command inlines removing and (re)creating the project's mamba environment, which effectively resets the
     requested environment.
     """
-
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -580,14 +553,14 @@ def import_environment(environment_name: str) -> None:  # pragma: no cover
     'de-novo' environment creation, but modern Sun lab dependency resolution strategies ensure that using the .yml file
     and pyproject.toml creation procedures yields identical results in most cases.
     """
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
 
     # Resolves the project's mamba environment data and generates a list of commands to interface with the environment.
     environment = ProjectEnvironment.resolve_project_environment(
-        project_root=project_root, environment_name=environment_name
+        project_root=project_root,
+        environment_name=environment_name,
     )
 
     # If the environment cannot be activated (likely does not exist) and the environment .yml file is found inside /envs
@@ -642,7 +615,6 @@ def export_environment(environment_name: str) -> None:  # pragma: no cover
     This command is intended to be called as part of the pre-release checkout, before building the source distribution
     for the project (and releasing the new project version).
     """
-
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -651,7 +623,8 @@ def export_environment(environment_name: str) -> None:  # pragma: no cover
     # python_version is not provided, this uses the default value (but the python_version argument is not needed for
     # this function).
     environment = ProjectEnvironment.resolve_project_environment(
-        project_root=project_root, environment_name=environment_name
+        project_root=project_root,
+        environment_name=environment_name,
     )
 
     if not environment.environment_exists():

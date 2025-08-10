@@ -31,14 +31,15 @@ dependencies:
   - pluggy=1.6.0=pyhd8ed1ab_0
   - pyproject-api=1.9.1=pyhe01879c_0
   - python=3.13.5=hec9711d_102_cp313
-  - python-uv=0.8.6=pyhe01879c_0
+  - python-uv=0.8.8=pyhe01879c_0
   - python_abi=3.13=8_cp313
   - readline=8.2=h8c095d6_2
   - tk=8.6.13=noxft_hd72426e_102
+  - tomli=2.2.1=pyhe01879c_2
   - tox=4.28.4=pyhe01879c_0
   - tox-uv=1.27.0=pyhd8ed1ab_0
   - typing_extensions=4.14.1=pyhe01879c_0
   - tzdata=2025b=h78e105d_0
-  - uv=0.8.6=heb9285d_0
+  - uv=0.8.8=heb9285d_0
   - virtualenv=20.33.1=pyhd8ed1ab_0
 
