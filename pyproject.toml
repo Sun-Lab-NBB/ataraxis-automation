@@ -37,7 +37,9 @@ classifiers = [
     # Supported Operating Systems
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
-    "Operating System :: MacOS :: MacOS X"
+    "Operating System :: MacOS :: MacOS X",
+    # Typing
+    "Typing :: Typed"
 ]
 
 # Runtime project dependencies. This list includes both the dependencies necessary to run the ataraxis-automation code
