@@ -1,8 +1,8 @@
 Welcome to ataraxis-automation API documentation page
 =====================================================
 
-ataraxis-automation is a Python library that provides scripts that support tox-based development automation pipelines
-used by other Sun lab projects.
+ataraxis-automation is a Python library that provides tools that support tox-based development automation pipelines
+used by other Sun (NeuroAI) lab projects.
 
 This library is part of the broader 'Ataraxis' science-automation project, developed in the
 `Sun Lab <https://neuroai.github.io/sunlab/>`_ at Cornell University.
