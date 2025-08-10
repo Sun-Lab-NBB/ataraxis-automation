@@ -202,8 +202,8 @@ def test_check_package_engines_missing_mamba(monkeypatch) -> None:
     monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
     message: str = (
         "Unable to interface with mamba for environment management. Mamba is required for this automation "
-        "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge or "
-        "mambaforge) and ensure it is initialized and added to PATH."
+        "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge3) and ensure "
+        "it is initialized and added to PATH."
     )
     with pytest.raises(RuntimeError, match=error_format(message)):
         aa._check_package_engines()
@@ -219,10 +219,10 @@ def test_check_package_engines_missing_uv(monkeypatch) -> None:
         raise subprocess.CalledProcessError(1, cmd)
 
     monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
-    message: str = (
+    message = (
         "Unable to interface with uv for package installation. uv is required for this automation module and "
-        "provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install "
-        "uv-python::uv') in the active Python environment."
+        "provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install uv') "
+        "in the active Python environment."
     )
     with pytest.raises(RuntimeError, match=error_format(message)):
         aa._check_package_engines()
@@ -253,7 +253,7 @@ def test_check_package_engines_missing_uv(monkeypatch) -> None:
 def test_get_base_name(dependency, expected) -> None:
     """Verifies the functionality of the _get_base_name() function.
 
-    Tests all supported input scenarios including platform-specific dependencies.
+    Tests all supported input scenarios, including platform-specific dependencies.
     """
     assert aa._get_base_name(dependency) == expected
 

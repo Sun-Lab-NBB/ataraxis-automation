@@ -107,7 +107,7 @@ dev = [
 [project.scripts]
 automation-cli = "ataraxis_automation.cli:cli"
 
-# Specifies files that should not be included in the source-code distribution, but are also not part of gitignore.
+# Specifies files that should not be included in the source-code distribution but are also not part of gitignore.
 [tool.hatch.build.targets.sdist]
 exclude = [".github", "recipe"]
 

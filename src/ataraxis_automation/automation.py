@@ -760,10 +760,10 @@ def _check_package_engines() -> None:
         )
     except subprocess.CalledProcessError:
         # If mamba is not available, raises an error as it is now required
-        message = (
+        message: str = (
             "Unable to interface with mamba for environment management. Mamba is required for this automation "
-            "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge or "
-            "mambaforge) and ensure it is initialized and added to PATH."
+            "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge3) and ensure "
+            "it is initialized and added to PATH."
         )
         raise RuntimeError(format_message(message))
 
@@ -780,8 +780,8 @@ def _check_package_engines() -> None:
         # If uv is not available, raises an error as it is now required
         message = (
             "Unable to interface with uv for package installation. uv is required for this automation module and "
-            "provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install "
-            "uv-python::uv') in the active Python environment."
+            "provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install uv') "
+            "in the active Python environment."
         )
         raise RuntimeError(format_message(message))
 

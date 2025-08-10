@@ -218,7 +218,7 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
 def install_project(environment_name: str) -> None:  # pragma: no cover
     """Builds and installs the project into the specified mamba environment as a library.
 
-    This command is primarily used to support project developing by compiling and installing the developed project into
+    This command is primarily used to support project development by compiling and installing the developed project into
     the target environment to support testing. Since tests have to be written to use the compiled package, rather
     than the source code, to support tox testing, the project has to be rebuilt each time source code is changed, which
     is conveniently performed by this command.
@@ -233,7 +233,8 @@ def install_project(environment_name: str) -> None:  # pragma: no cover
         environment_name=environment_name,
     )
 
-    # Checks if the project's mamba environment is accessible via subprocess activation call. If not, raises an error.
+    # Checks if the project's mamba environment is accessible via subprocess activation call. If not, it raises an
+    # error.
     if not environment.environment_exists():
         message = (
             f"Unable to activate the requested mamba environment '{environment.environment_name}', which likely means "
@@ -269,7 +270,7 @@ def install_project(environment_name: str) -> None:  # pragma: no cover
 def uninstall_project(environment_name: str) -> None:  # pragma: no cover
     """Uninstalls the project library from the specified mamba environment.
 
-    This command is not used in most modern automation pipelines, but is kept for backward compatibility with legacy
+    This command is not used in most modern automation pipelines but is kept for backward compatibility with legacy
     projects. Previously, it was used to remove the project from its mamba environment before running tests, as
     installed projects used to interfere with tox re-building the testing wheels in some cases.
     """
@@ -549,7 +550,7 @@ def import_environment(environment_name: str) -> None:  # pragma: no cover
     """Creates or updates the existing project's mamba environment based on the operating-system-specific .yml file
     stored in the project /envs directory.
 
-    If the .yml file does not exist, aborts processing with an error. This command used to be preferred over the
+    If the .yml file does not exist, it aborts processing with an error. This command used to be preferred over the
     'de-novo' environment creation, but modern Sun lab dependency resolution strategies ensure that using the .yml file
     and pyproject.toml creation procedures yields identical results in most cases.
     """
@@ -612,7 +613,7 @@ def import_environment(environment_name: str) -> None:  # pragma: no cover
 def export_environment(environment_name: str) -> None:  # pragma: no cover
     """Exports the requested mamba environment as .yml and spec.txt files to the /envs directory.
 
-    This command is intended to be called as part of the pre-release checkout, before building the source distribution
+    This command is intended to be called as part of the pre-release checkout before building the source distribution
     for the project (and releasing the new project version).
     """
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary

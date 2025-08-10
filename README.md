@@ -116,14 +116,14 @@ their runtime. Consult the API documentation for the list of additional runtime 
 ### Intended CLI use pattern
 All CLI commands are intended to be used through tox pipelines. The most recent version of Sun Lab tox configuration
 is always available from this libraries’ [tox.ini file](tox.ini). Since version 6.0.0, this library is designed to be 
-the sole dependency for most tox tasks, it’s tox.ini file is always the most up to date and feature-complete compared 
+the sole dependency for most tox tasks, its tox.ini file is always the most up to date and feature-complete compared 
 to all other Sun Lab projects. The only exception to this rule is the C-extension projects. For the most up-to-date 
 tox.ini configuration for Sun lab C-extension projects, see the 
 [ataraxis-time](https://github.com/Sun-Lab-NBB/ataraxis-time) library.
 
 Any well-maintained Sun Lab project comes with an up-to-date tox configuration that automates most 'meta' development 
-steps, such as code formatting, project testing, and project distribution. Primarily, this allows, all contributors 
-working on any Sun lab projects abide by the same standards and practices, in addition to streamlining many of the 
+steps, such as code formatting, project testing, and project distribution. Primarily, this allows all contributors 
+working on any Sun lab projects to abide by the same standards and practices, in addition to streamlining many of the 
 routine project maintenance tasks.
 
 ### Available 'tox' commands
@@ -165,7 +165,7 @@ commands =
 #### Stubs
 Shell command: ```tox -e stubs```
 
-Uses [stubgen](https://mypy.readthedocs.io/en/stable/stubgen.html) to generate stub (.pyi) files and, distribute them
+Uses [stubgen](https://mypy.readthedocs.io/en/stable/stubgen.html) to generate stub (.pyi) files and distribute them
 via automation-cli to the appropriate levels of the library source code hierarchy. This is necessary to support static 
 type-checking for projects that use the library. As part of that process, automation-cli also ensures that there is a 
 'py.typed' marker file in the highest library directory. This is required for type-checkers like mypy to recognize the 
@@ -195,7 +195,7 @@ versions 3.11, 3.12, and 3.13. Therefore, it has ```tox -e py311-test```, ```tox
 ```tox -e py313-test``` as valid 'test' tasks. These tasks are used to build the project in an isolated environment and 
 run the tests expected to be located inside the project_root/tests directory to verify the project works as expected 
 for each python version. This is especially relevant for C-extension projects that compile code for each supported 
-python versions and platforms combination.
+python version and platforms combination.
 
 Example tox.ini section:
 ```
@@ -216,8 +216,8 @@ commands =
 #### Coverage
 Shell command: ```tox -e coverage``` 
 
-This task is used in-conjunction with the 'test' task. It aggregates code coverage data for different python versions 
-and compiles it into a html-report accessible by opening project_root/reports/coverage_html/index.html in a browser.
+This task is used in conjunction with the 'test' task. It aggregates code coverage data for different python versions 
+and compiles it into an HTML report accessible by opening project_root/reports/coverage_html/index.html in a browser.
 
 Example tox.ini section:
 ```
@@ -442,7 +442,7 @@ commands =
 #### Provision
 Shell command: ```tox -e provsion```
 
-This task is a combination of the 'remove' and 'create' tasks that allows resetting environments by recreating them from
+This task is a combination of the 'remove' and 'create' tasks that reset environments by recreating them from
 scratch. This can be used to both reset and actualize project development environments to match the latest version of 
 the .toml file dependency specification.
 
@@ -574,9 +574,9 @@ To install any development environment on the local platform:
        and axa_dev_lin for Linux).
 
 **Hint:** while only the platforms mentioned above were explicitly evaluated, this project is likely to work on any 
-common OS, but may require additional configurations steps.
+common OS but may require additional configuration steps.
 
-Since the release of ataraxis-automation 2.0.0, the development environment cna also be created from scratch 
+Since the release of ataraxis-automation 2.0.0, the development environment can also be created from scratch 
 via pyproject.toml dependencies. To do this, use ```tox -e create``` from the project root directory.
 
 ### Automation Troubleshooting
@@ -584,7 +584,7 @@ via pyproject.toml dependencies. To do this, use ```tox -e create``` from the pr
 Many packages used in 'tox' automation pipelines (uv, mypy, ruff) and 'tox' itself may experience runtime failures. In 
 most cases, this is related to their caching behavior. Despite a considerable effort to disable caching behavior known 
 to be problematic, in some cases it cannot or should not be eliminated. If an unintelligible error is encountered with 
-any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually, 
+any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually  
 or via a CLI command is very likely to fix the issue.
 
 ___
@@ -617,5 +617,5 @@ ___
 - The teams behind [pip](https://github.com/pypa/pip), [uv](https://github.com/astral-sh/uv), 
   [conda](https://conda.org/), [mamba](https://github.com/mamba-org/mamba) and [tox](https://github.com/tox-dev/tox), 
   which form the backbone of Sun lab automation pipelines.
-- The creators of all other projects listed in the [pyproject.toml](pyproject.toml) file and used in automation 
+- The creators of all other projects that are listed in the [pyproject.toml](pyproject.toml) file and used in automation 
   pipelines across all Sun Lab projects.
