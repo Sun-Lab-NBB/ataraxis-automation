@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "6.0.0"
+version = "6.0.1"
 description = "Provides tools that support tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -47,47 +47,42 @@ classifiers = [
 # the ataraxis-automation as the sole dependency and work as expected.
 dependencies = [
     # Automation Logic
-    "click>=8,<9",  # Since click is a common dependency for many packages, pins to the major version
-    "tomli==2.2.1",
-
-    # Tox
-    "tox==4.28.4",
-    "uv==0.8.8",
-    "tox-uv==1.27.0",
+    "click>=8,<9",
+    "tomli>=2,<3",
 
     # Testing
-    "pytest==8.4.1",
-    "pytest-cov==6.2.1",
-    "pytest-xdist==3.8.0",
+    "pytest>=8,<9",
+    "pytest-cov>=6,<7",
+    "pytest-xdist>=3,<4",
 
     # Coverage Reports
-    "coverage==7.10.2",
-    "junitparser==4.0.2",
+    "coverage>=7,<8",
+    "junitparser>=4,<5",
 
     # Documentation
-    "sphinx==8.2.3",
-    "importlib_metadata==8.7.0",
-    "sphinx-rtd-theme==3.0.2",
-    "sphinx-click==6.0.0",
-    "sphinx-autodoc-typehints==3.2.0",
-    "sphinx-rtd-dark-mode==1.3.0",
+    "sphinx>=8,<9",
+    "importlib_metadata>=8,<9",
+    "sphinx-rtd-theme>=3,<4",
+    "sphinx-click>=6,<7",
+    "sphinx-autodoc-typehints>=3,<4",
+    "sphinx-rtd-dark-mode>=1,<2",
 
     # Linting and Stub Generation
-    "mypy==1.17.1",
-    "ruff==0.12.8",
+    "mypy>=1,<2",
+    "ruff>=0,<1",
 
     # Building
-    "build==1.3.0",
-    "hatchling==1.27.0",
+    "build>=1,<2",
+    "hatchling>=1,<2",
 
     # C-Extension Project Support
-    "cibuildwheel[uv]==3.1.3",
-    "nanobind==2.8.0",
-    "scikit-build-core==0.11.5",
-    "breathe==4.36.0",
+    "cibuildwheel[uv]>=3,<4",
+    "nanobind>=2,<3",
+    "scikit-build-core>=0,<1",
+    "breathe>=4,<5",
 
     # Distribution
-    "twine==6.1.0",
+    "twine>=6,<7",
 ]
 
 [project.urls]
@@ -99,7 +94,12 @@ Documentation = "https://ataraxis-automation-api-docs.netlify.app/"
 
 # Dependencies that support developing this project.
 dev = [
-    # With ataraxis-automation 6.0.0, this section in all other projects typically includes ataraxis-automation
+    # Tox
+    "tox>=4,<5",
+    "uv>=0,<1",
+    "tox-uv>=1,<2",
+
+    # With ataraxis-automation 6.0.0+, this section in all other projects typically also includes ataraxis-automation
     # dependency and optional stub (type) libraries for project dependencies.
 ]
 
