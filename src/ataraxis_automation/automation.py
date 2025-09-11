@@ -49,7 +49,7 @@ def format_message(message: str) -> str:
     )
 
 
-def colorize_message(message: str, color: str, wrap: bool = True) -> str:
+def colorize_message(message: str, color: str, *, wrap: bool = True) -> str:
     """Modifies the input string to include an ANSI color code and, if necessary, formats the message by wrapping it
     at 120 lines.
 
@@ -214,26 +214,21 @@ def _should_include_dependency(dependency: str, platform_name: str) -> bool:
     # os_name comparisons.
 
     # For negation markers (!=), inverts the logic
-    if "!=" in marker:
-        # Checks if this is a platform exclusion
-        if (
-            ("windows" in marker and platform_name == "windows")
-            or ("darwin" in marker and platform_name == "darwin")
-            or ("linux" in marker and platform_name == "linux")
-        ):
-            return False
+    if "!=" in marker and (
+        ("windows" in marker and platform_name == "windows")
+        or ("darwin" in marker and platform_name == "darwin")
+        or ("linux" in marker and platform_name == "linux")
+    ):
+        return False
 
     # For equality markers (==), standard inclusion logic
     if "==" in marker or "platform_system" in marker or "sys_platform" in marker:
-        # Checks for Windows markers
-        if (
-            ("windows" in marker and platform_name == "windows")
-            or ("darwin" in marker and platform_name == "darwin")
-            or ("linux" in marker and platform_name == "linux")
-        ):
-            return True
-        # If a specific platform is required, and it's not the current one, excludes the dependency
-        return False
+        platform_matches = [
+            ("windows" in marker and platform_name == "windows"),
+            ("darwin" in marker and platform_name == "darwin"),
+            ("linux" in marker and platform_name == "linux"),
+        ]
+        return any(platform_matches)
 
     # For complex or unrecognized markers, includes the dependency to be safe
     return True
@@ -288,6 +283,7 @@ def _resolve_dependencies(project_root: Path, platform_name: str) -> tuple[tuple
 
     Args:
         project_root: The absolute path to the root directory of the processed project.
+        platform_name: The name of the platform (host-machine) for which the dependencies are being resolved.
 
     Returns:
         A tuple containing two elements. The first element is a tuple of runtime dependencies. The second element is
@@ -407,7 +403,7 @@ def _resolve_project_name(project_root: Path) -> str:
             f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax."
             f"Error details: {e}."
         )
-        raise ValueError(format_message(message))
+        raise ValueError(format_message(message)) from None
 
     # Extracts the project name from the [project] section
     project_data: dict[str, Any] = pyproject_data.get("project", {})
@@ -765,7 +761,7 @@ def _check_package_engines() -> None:
             "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge3) and "
             "ensure it is initialized and added to PATH."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
     # Verifies that uv is available for package installation operations
     try:
@@ -783,7 +779,7 @@ def _check_package_engines() -> None:
             "provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install uv') "
             "in the active Python environment."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
 
 @dataclass

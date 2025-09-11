@@ -9,7 +9,7 @@ with other tox configurations.
 import re
 import base64
 import shutil
-from pathlib import Path
+from typing import TYPE_CHECKING
 import subprocess
 from configparser import ConfigParser
 
@@ -26,6 +26,13 @@ from .automation import (
     generate_typed_marker,
     resolve_project_directory,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+# Defines minimum and maximum token lengths used when verifying PYPI tokens.
+_MINIMUM_PYPI_TOKEN_LENGTH = 100
+_MAXIMUM_PYPI_TOKEN_LENGTH = 500
 
 
 @click.group()
@@ -116,7 +123,7 @@ def purge_stubs() -> None:  # pragma: no cover
     is_flag=True,
     help="If this flag is provided, the command recreates the .pypirc file even if it already contains an API token.",
 )
-def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
+def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
     """Ensures that a validly formatted PyPI API token is contained in the .pypirc file stored in the root directory
     of the project.
 
@@ -167,7 +174,7 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
         valid = (
             token  # Not empty
             and token.startswith("pypi-")  # Has the correct prefix
-            and 100 <= len(token) <= 500  # Has a reasonable length
+            and _MINIMUM_PYPI_TOKEN_LENGTH <= len(token) <= _MAXIMUM_PYPI_TOKEN_LENGTH  # Has a reasonable length
             and len(token[5:]) > 0  # Has body after the prefix
             and re.match(r"^[A-Za-z0-9\-_]+=*$", token[5:])  # Uses valid base64 URL-safe chars
             and " " not in token  # Contains no spaces
@@ -182,7 +189,7 @@ def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
                 token_body = token[5:]
                 padding_needed = (4 - len(token_body) % 4) % 4
                 base64.urlsafe_b64decode(token_body + ("=" * padding_needed))
-            except:
+            except Exception:
                 valid = False
 
         # Handles invalid token inputs
@@ -256,7 +263,7 @@ def install_project(environment_name: str) -> None:  # pragma: no cover
             f"'{environment.environment_name}'. See uv-generated error messages for specific details about the "
             f"errors that prevented the installation."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
 
 @cli.command()
@@ -306,7 +313,7 @@ def uninstall_project(environment_name: str) -> None:  # pragma: no cover
             f"Unable to uninstall the project from the requested mamba environment '{environment.environment_name}'. "
             f"See uv-generated error messages for specific details about the errors that prevented the uninstallation."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
 
 @cli.command()
@@ -364,7 +371,7 @@ def create_environment(environment_name: str, python_version: str) -> None:  # p
             f"Unable to create the project's mamba environment '{environment.environment_name}'. See the mamba-issued "
             f"error-messages above for more information."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
     # If the environment was successfully created, installs project dependencies.
     try:
@@ -377,7 +384,7 @@ def create_environment(environment_name: str, python_version: str) -> None:  # p
             f"Unable to install project dependencies into created '{environment.environment_name}' mamba environment. "
             f"See uv-generated error messages above for more information."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
     # Displays the final success message.
     message = (
@@ -445,7 +452,7 @@ def remove_environment(environment_name: str) -> None:  # pragma: no cover
             f"Unable to remove the requested mamba environment '{environment.environment_name}'. See the mamba-issued "
             f"error-messages above for more information."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
 
 @cli.command()
@@ -503,7 +510,7 @@ def provision_environment(environment_name: str, python_version: str) -> None:  
                 f"failed at the environment removal step. See the mamba-issued error-messages above for more "
                 f"information."
             )
-            raise RuntimeError(format_message(message))
+            raise RuntimeError(format_message(message)) from None
 
     # Recreates the environment
     try:
@@ -515,7 +522,7 @@ def provision_environment(environment_name: str, python_version: str) -> None:  
             f"Unable to provision the requested mamba environment '{environment.environment_name}'. See the "
             f"mamba-issued error-messages above for more information."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
     # Installs all project dependencies using uv into the newly created environment.
     try:
@@ -531,7 +538,7 @@ def provision_environment(environment_name: str, python_version: str) -> None:  
             f"Unable to install project dependencies into the provisioned '{environment.environment_name}' mamba "
             f"environment. See uv-generated error messages above for more information."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
     # Displays the final success message.
     message = f"Successfully provisioned '{environment.environment_name}' mamba environment."
@@ -578,7 +585,7 @@ def import_environment(environment_name: str) -> None:  # pragma: no cover
                 f"Unable to import (create) the mamba environment'{environment.environment_name}' from existing .yml "
                 f"file. See mamba-issued error-message above for more information."
             )
-            raise RuntimeError(format_message(message))
+            raise RuntimeError(format_message(message)) from None
 
     # If the mamba environment already exists and the .yml file exists, updates the environment using the .yml file.
     elif environment.update_command is not None:
@@ -591,7 +598,7 @@ def import_environment(environment_name: str) -> None:  # pragma: no cover
                 f"Unable to update the existing mamba environment '{environment.environment_name}' from .yml file. "
                 f"See mamba-issued error-message above for more information."
             )
-            raise RuntimeError(format_message(message))
+            raise RuntimeError(format_message(message)) from None
     # If the .yml file does not exist, aborts with error.
     else:
         message = (
@@ -646,7 +653,7 @@ def export_environment(environment_name: str) -> None:  # pragma: no cover
             f"Unable to export the '{environment.environment_name}' mamba environment to .yml file. See mamba-issued "
             f"error-message above for more information."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None
 
     # Exports environment as a spec.txt file
     try:
@@ -658,4 +665,4 @@ def export_environment(environment_name: str) -> None:  # pragma: no cover
             f"Unable to export the '{environment.environment_name}' mamba environment to spec.txt file. See "
             f"mamba-issued error-message above for more information."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message)) from None

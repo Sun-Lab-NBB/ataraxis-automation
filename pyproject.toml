@@ -6,11 +6,11 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "6.0.1"
+version = "6.0.2"
 description = "Provides tools that support tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 authors = [
     { name = "Ivan Kondratyev" },
 ]
@@ -130,12 +130,22 @@ lint.select = ["ALL"]
 
 # General ignore directives
 lint.ignore = [
-    "COM812",  # Conflicts with the formatter
-    "ISC001",  # Conflicts with the formatter
-    "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
-    "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
-    "D107",    # Project-specific, __init__ is documented inside the main class docstring where applicable
-    "D205",    # Bugs out for file descriptions
+    "BLE001",  # Interferes with desired library behavior
+    "S602",  # Interferes with desired library behavior
+    "S607",  # Interferes with desired library behavior
+    "W291",  # Conflicts with docstring formatting
+    "ANN401",  # While suboptimal, ANY is a helpful type when used with caution
+    "C901",  # Sometimes complex functions are necessary
+    "PLR0911", # Sometimes complex return graphs are necessary
+    "PLR0912",  # Sometimes complex functions are necessary
+    "PLR0915",  # Sometimes complex type defenitions are necessary
+    "PLR0913",  # Sometimes complex functions are necessary
+    "COM812", # Conflicts with the formatter
+    "ISC001", # Conflicts with the formatter
+    "PT001", # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
+    "PT023", # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
+    "D107", # Project-specific, __init__ is documented inside the main class docstring where applicable
+    "D205", # Bugs out for file descriptions
     "PLW0603", # While global statement usage is not ideal, it greatly streamlines certain development patterns
 ]
 
@@ -174,8 +184,27 @@ ignore-variadic-names = true       # Ignores unused *args and **kwargs
 
 # MyPy configuration section.
 [tool.mypy]
-disallow_untyped_defs = true # Enforces function annotation
-warn_unused_ignores = true   # Warns against using 'type: ignore' for packages that have type stubs available.
+# Strict mode settings (equivalent to --strict)
+warn_unused_configs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+
+# Extra checks (equivalent to --extra-checks)
+extra_checks = true
+
+# Pretty output (equivalent to --pretty)
+pretty = true
+
 exclude = [
     "ataraxis-automation-\\d+", # Ignores temporary folder created by setuptools when building the sdist
     "venv.*/",                  # Ignores virtual environments
@@ -196,3 +225,16 @@ source = ["src/", ".tox/*/lib/python*/site-packages/"]
 # Same as above, specifies the output directory for the coverage .html report
 [tool.coverage.html]
 directory = "reports/coverage_html"
+
+# Specifies additional ignore directives
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __del__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "\\.\\.\\."
+]
