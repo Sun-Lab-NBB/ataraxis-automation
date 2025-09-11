@@ -157,9 +157,9 @@ deps = ataraxis-automation==6.0.0
 basepython = py311
 commands =
     automation-cli purge-stubs
-    ruff check --select I,NPY,FLY,ERA,PTH,N,FURB,TRY,RUF,UP,ARG --fix
     ruff format
-    mypy . --strict --extra-checks --pretty
+    ruff check --fix ./src
+    mypy ./src
 ```
 
 #### Stubs
@@ -181,10 +181,10 @@ depends = lint
 deps = ataraxis-automation==6.0.0
 commands =
     automation-cli process-typed-markers
-    stubgen -o stubs --include-private --include-docstrings -p ataraxis_automation -v
+    stubgen -o stubs --include-private -p ataraxis_automation -v
     automation-cli process-stubs
-    ruff check --select I,NPY,FLY,ERA,PTH,N,FURB,TRY,RUF,UP,ARG --fix
     ruff format
+    ruff check --select I --fix ./src
 ```
 
 #### Test
