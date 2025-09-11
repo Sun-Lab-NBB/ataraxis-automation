@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "7.0.0"
+version = "6.0.2"
 description = "Provides tools that support tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -136,13 +136,10 @@ lint.ignore = [
     "W291",  # Conflicts with docstring formatting
     "ANN401",  # While suboptimal, ANY is a helpful type when used with caution
     "C901",  # Sometimes complex functions are necessary
-    "PLR0913",  # Sometimes complex functions are necessary
+    "PLR0911", # Sometimes complex return graphs are necessary
     "PLR0912",  # Sometimes complex functions are necessary
     "PLR0915",  # Sometimes complex type defenitions are necessary
-    "PLR0911", # Sometimes complex return graphs are necessary
-    "FBT001", # Sometimes positional boolean atguments are necessary
-    "FBT002", # Sometimes positional boolean arguments are necessary
-    "SLF001",  # Sometimes accessing private members is necessary
+    "PLR0913",  # Sometimes complex functions are necessary
     "COM812", # Conflicts with the formatter
     "ISC001", # Conflicts with the formatter
     "PT001", # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771

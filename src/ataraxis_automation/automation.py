@@ -49,7 +49,7 @@ def format_message(message: str) -> str:
     )
 
 
-def colorize_message(message: str, color: str, wrap: bool = True) -> str:
+def colorize_message(message: str, color: str, *, wrap: bool = True) -> str:
     """Modifies the input string to include an ANSI color code and, if necessary, formats the message by wrapping it
     at 120 lines.
 

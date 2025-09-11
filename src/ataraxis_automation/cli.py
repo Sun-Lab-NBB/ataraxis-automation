@@ -123,7 +123,7 @@ def purge_stubs() -> None:  # pragma: no cover
     is_flag=True,
     help="If this flag is provided, the command recreates the .pypirc file even if it already contains an API token.",
 )
-def acquire_pypi_token(replace_token: bool) -> None:  # pragma: no cover
+def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
     """Ensures that a validly formatted PyPI API token is contained in the .pypirc file stored in the root directory
     of the project.
 
