@@ -742,10 +742,9 @@ class ProjectEnvironment:
         # Resolves the physical path to the project's mamba environment directory.
         try:
             target_environment_directory = _resolve_mamba_environments_directory().joinpath(extended_environment_name)
-
         # Only uses the manual override if the automated resolution fails.
         except RuntimeError:
-            if environment_directory:
+            if environment_directory is not None:
                 target_environment_directory = environment_directory.joinpath(extended_environment_name)
             else:
                 # If no manual override is available, re-raises the original error.
