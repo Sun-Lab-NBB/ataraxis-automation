@@ -1,21 +1,15 @@
-"""This module provides a Command Line Interface (CLI) that automates certain project building and development steps.
+"""This module provides a Command Line Interface (CLI) that automates certain project building and development steps."""
 
-The functions exposed through this module are intended to be called through appropriate 'tox' pipelines and should not
-be used directly. They are designed to work with Sun Lab 'tox' tasks and may require significant refactoring to work
-with other tox configurations.
-"""
+import re  # pragma: no cover
+import base64  # pragma: no cover
+import shutil  # pragma: no cover
+from pathlib import Path  # pragma: no cover
+import subprocess  # pragma: no cover
+from configparser import ConfigParser  # pragma: no cover
 
-# pragma: no cover
-import re
-import base64
-import shutil
-from typing import TYPE_CHECKING
-import subprocess
-from configparser import ConfigParser
+import click  # pragma: no cover
 
-import click
-
-from .automation import (
+from .automation import (  # pragma: no cover
     ProjectEnvironment,
     move_stubs,
     delete_stubs,
@@ -27,18 +21,19 @@ from .automation import (
     resolve_project_directory,
 )
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 # Defines minimum and maximum token lengths used when verifying PYPI tokens.
-_MINIMUM_PYPI_TOKEN_LENGTH = 100
-_MAXIMUM_PYPI_TOKEN_LENGTH = 500
+_MINIMUM_PYPI_TOKEN_LENGTH = 100  # pragma: no cover
+_MAXIMUM_PYPI_TOKEN_LENGTH = 500  # pragma: no cover
+
+# Ensures that displayed CLICK help messages are formatted according to the lab standard.
+CONTEXT_SETTINGS = {"max_content_width": 120}  # pragma: no cover
 
 
-@click.group()
+@click.group(context_settings=CONTEXT_SETTINGS)
 def cli() -> None:  # pragma: no cover
     """This command-line interface exposes the helper environment used to automate various project development and
-    building steps.
+    building steps. Commands exposed by this interface are intended to be called via the 'tox' automation manager and
+    should not be used directly by end-users.
     """
 
 
@@ -46,9 +41,6 @@ def cli() -> None:  # pragma: no cover
 def process_typed_markers() -> None:  # pragma: no cover
     """Crawls the library root directory and ensures that the 'py.typed' marker is found only at the highest level of
     the library hierarchy (the highest directory with __init__.py in it).
-
-    This command should be called as part of the stub-generation tox command ('tox -e stubs') to mark the library as
-    typed for static linters.
     """
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -67,9 +59,6 @@ def process_typed_markers() -> None:  # pragma: no cover
 def process_stubs() -> None:  # pragma: no cover
     """Distributes the stub files from the /stubs directory to the appropriate level of the /src or src/library_name
     directory (depending on the type of the processed project).
-
-    This command is intended to be called after the /stubs directory has been generated and filled by 'stubgen' as part
-    of the tox stub-generation command ('tox -e stubs').
     """
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -97,12 +86,7 @@ def process_stubs() -> None:  # pragma: no cover
 
 @cli.command()
 def purge_stubs() -> None:  # pragma: no cover
-    """Removes all existing stub (.pyi) files from the library source code directories.
-
-    This command is intended to be called as part of the tox linting task ('tox -e lint'). If stub files are present
-    during linting, mypy (type-checker) preferentially processes stub files and ignores source code files. Removing the
-    stubs before running mypy ensures it runs on the source code.
-    """
+    """Removes all existing stub (.pyi) files from the library source code directories."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -126,17 +110,6 @@ def purge_stubs() -> None:  # pragma: no cover
 def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
     """Ensures that a validly formatted PyPI API token is contained in the .pypirc file stored in the root directory
     of the project.
-
-    This command is intended to be called before the tox pip-uploading task ('tox -e upload') to ensure that twine is
-    able to access the PyPI API token. If the token is available from the '.pypirc' file and appears valid, it is used.
-    If the file or the API token is not available or the user provides the 'replace-token' flag, the command recreates
-    the file and prompts the user to provide a new token. The token is then added to the file for future (re)uses. The
-    '.pypirc' file is added to gitignore distributed with each Sun lab project, so the token will remain private unless
-    gitignore configuration is compromised.
-
-    This command is currently not able to verify that the token works. Instead, it can only ensure the token is
-    formatted in a PyPI-specified way (that it includes the pypi-prefix). If the token is not active or otherwise
-    invalid, there is no way to know this before failing a twine upload.
     """
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -222,14 +195,18 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
 )
-def install_project(environment_name: str) -> None:  # pragma: no cover
-    """Builds and installs the project into the specified mamba environment as a library.
-
-    This command is primarily used to support project development by compiling and installing the developed project into
-    the target environment to support testing. Since tests have to be written to use the compiled package, rather
-    than the source code, to support tox testing, the project has to be rebuilt each time source code is changed, which
-    is conveniently performed by this command.
-    """
+@click.option(
+    "-ed",
+    "--environment-directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    required=False,
+    help=(
+        "The absolute path to the local conda / mamba environments directory. This optional argument allows overriding "
+        "the default environment detection procedure when it fails."
+    ),
+)
+def install_project(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+    """Builds and installs the project into the specified mamba environment as a library."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -238,6 +215,7 @@ def install_project(environment_name: str) -> None:  # pragma: no cover
     environment = ProjectEnvironment.resolve_project_environment(
         project_root=project_root,
         environment_name=environment_name,
+        environment_directory=environment_directory,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If not, it raises an
@@ -274,21 +252,25 @@ def install_project(environment_name: str) -> None:  # pragma: no cover
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
 )
-def uninstall_project(environment_name: str) -> None:  # pragma: no cover
-    """Uninstalls the project library from the specified mamba environment.
-
-    This command is not used in most modern automation pipelines but is kept for backward compatibility with legacy
-    projects. Previously, it was used to remove the project from its mamba environment before running tests, as
-    installed projects used to interfere with tox re-building the testing wheels in some cases.
-    """
+@click.option(
+    "-ed",
+    "--environment-directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    required=False,
+    help=(
+        "The absolute path to the local conda / mamba environments directory. This optional argument allows overriding "
+        "the default environment detection procedure when it fails."
+    ),
+)
+def uninstall_project(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+    """Uninstalls the project library from the specified mamba environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
 
     # Resolves the project's mamba environment data and generates a list of commands to interface with the environment.
     environment = ProjectEnvironment.resolve_project_environment(
-        project_root=project_root,
-        environment_name=environment_name,
+        project_root=project_root, environment_name=environment_name, environment_directory=environment_directory
     )
 
     # Attempts to activate the target mamba environment. If activation fails, concludes that the environment does not
@@ -331,14 +313,20 @@ def uninstall_project(environment_name: str) -> None:  # pragma: no cover
     type=str,
     help="The python version to use for the project's mamba environment, e.g. '3.13'.",
 )
-def create_environment(environment_name: str, python_version: str) -> None:  # pragma: no cover
-    """Creates the project's mamba environment and installs the project dependencies into the created environment.
-
-    This command is intended to be called as part of the initial project setup on new machines and / or operating
-    systems. For most runtimes, it is advised to import ('tox -e import') an existing .yml file if it is available. To
-    reset an already existing environment, use the provision ('tox -e provision') command instead, which inlines
-    removing and (re)creating the environment.
-    """
+@click.option(
+    "-ed",
+    "--environment-directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    required=False,
+    help=(
+        "The absolute path to the local conda / mamba environments directory. This optional argument allows overriding "
+        "the default environment detection procedure when it fails."
+    ),
+)
+def create_environment(
+    environment_name: str, python_version: str, environment_directory: Path | None
+) -> None:  # pragma: no cover
+    """Creates the project's mamba environment and installs the project dependencies into the created environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -348,6 +336,7 @@ def create_environment(environment_name: str, python_version: str) -> None:  # p
         project_root=project_root,
         environment_name=environment_name,
         python_version=python_version,
+        environment_directory=environment_directory,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If it is accessible
@@ -402,21 +391,25 @@ def create_environment(environment_name: str, python_version: str) -> None:  # p
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
 )
-def remove_environment(environment_name: str) -> None:  # pragma: no cover
-    """Removes (deletes) the project's mamba environment if it exists.
-
-    This command can be used to clean up the project's mamba environment that is no longer needed. To reset the
-    environment, it is recommended to use the 'provision-environment' ('tox -e provision') command instead, which
-    removes and (re)creates the environment as a single operation.
-    """
+@click.option(
+    "-ed",
+    "--environment-directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    required=False,
+    help=(
+        "The absolute path to the local conda / mamba environments directory. This optional argument allows overriding "
+        "the default environment detection procedure when it fails."
+    ),
+)
+def remove_environment(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+    """Removes (deletes) the project's mamba environment if it exists."""
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
 
     # Resolves the project's mamba environment data and generates a list of commands to interface with the environment.
     environment = ProjectEnvironment.resolve_project_environment(
-        project_root=project_root,
-        environment_name=environment_name,
+        project_root=project_root, environment_name=environment_name, environment_directory=environment_directory
     )
 
     # If the environment cannot be activated, it likely does not exist and no further processing is needed.
@@ -470,12 +463,20 @@ def remove_environment(environment_name: str) -> None:  # pragma: no cover
     type=str,
     help="The python version to use for the project's mamba environment, e.g. '3.13'.",
 )
-def provision_environment(environment_name: str, python_version: str) -> None:  # pragma: no cover
-    """Recreates the project's mamba environment.
-
-    This command inlines removing and (re)creating the project's mamba environment, which effectively resets the
-    requested environment.
-    """
+@click.option(
+    "-ed",
+    "--environment-directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    required=False,
+    help=(
+        "The absolute path to the local conda / mamba environments directory. This optional argument allows overriding "
+        "the default environment detection procedure when it fails."
+    ),
+)
+def provision_environment(
+    environment_name: str, python_version: str, environment_directory: Path | None
+) -> None:  # pragma: no cover
+    """Recreates the project's mamba environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -485,6 +486,7 @@ def provision_environment(environment_name: str, python_version: str) -> None:  
         project_root=project_root,
         environment_name=environment_name,
         python_version=python_version,
+        environment_directory=environment_directory,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If it is not accessible
@@ -553,13 +555,19 @@ def provision_environment(environment_name: str, python_version: str) -> None:  
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
 )
-def import_environment(environment_name: str) -> None:  # pragma: no cover
+@click.option(
+    "-ed",
+    "--environment-directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    required=False,
+    help=(
+        "The absolute path to the local conda / mamba environments directory. This optional argument allows overriding "
+        "the default environment detection procedure when it fails."
+    ),
+)
+def import_environment(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
     """Creates or updates the existing project's mamba environment based on the operating-system-specific .yml file
     stored in the project /envs directory.
-
-    If the .yml file does not exist, it aborts processing with an error. This command used to be preferred over the
-    'de-novo' environment creation, but modern Sun lab dependency resolution strategies ensure that using the .yml file
-    and pyproject.toml creation procedures yields identical results in most cases.
     """
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
@@ -567,8 +575,7 @@ def import_environment(environment_name: str) -> None:  # pragma: no cover
 
     # Resolves the project's mamba environment data and generates a list of commands to interface with the environment.
     environment = ProjectEnvironment.resolve_project_environment(
-        project_root=project_root,
-        environment_name=environment_name,
+        project_root=project_root, environment_name=environment_name, environment_directory=environment_directory
     )
 
     # If the environment cannot be activated (likely does not exist) and the environment .yml file is found inside /envs
@@ -617,12 +624,18 @@ def import_environment(environment_name: str) -> None:  # pragma: no cover
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
 )
-def export_environment(environment_name: str) -> None:  # pragma: no cover
-    """Exports the requested mamba environment as .yml and spec.txt files to the /envs directory.
-
-    This command is intended to be called as part of the pre-release checkout before building the source distribution
-    for the project (and releasing the new project version).
-    """
+@click.option(
+    "-ed",
+    "--environment-directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    required=False,
+    help=(
+        "The absolute path to the local conda / mamba environments directory. This optional argument allows overriding "
+        "the default environment detection procedure when it fails."
+    ),
+)
+def export_environment(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+    """Exports the requested mamba environment as .yml and spec.txt files to the /envs directory."""
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -633,6 +646,7 @@ def export_environment(environment_name: str) -> None:  # pragma: no cover
     environment = ProjectEnvironment.resolve_project_environment(
         project_root=project_root,
         environment_name=environment_name,
+        environment_directory=environment_directory,
     )
 
     if not environment.environment_exists():

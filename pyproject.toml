@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "6.0.2"
+version = "6.1.0"
 description = "Provides tools that support tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -236,5 +236,4 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "pass",
-    "\\.\\.\\."
 ]

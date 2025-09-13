@@ -46,7 +46,7 @@ def error_format(message: str) -> str:
     Returns:
         Formatted and escaped message that can be used as the 'match' argument of the pytest.raises() method.
     """
-    return re.escape(textwrap.fill(message, width=120, break_long_words=False, break_on_hyphens=False))
+    return re.escape(aa.format_message(message))
 
 
 def test_resolve_project_directory(project_dir) -> None:
@@ -258,25 +258,6 @@ def test_get_base_name(dependency, expected) -> None:
     assert aa._get_base_name(dependency) == expected
 
 
-@pytest.mark.parametrize(
-    "dependency, platform, expected",
-    [
-        ("package==1.0", "windows", True),
-        ("package==1.0; platform_system=='Windows'", "windows", True),
-        ("package==1.0; platform_system=='Windows'", "linux", False),
-        ("package==1.0; platform_system!='Windows'", "windows", False),
-        ("package==1.0; platform_system!='Windows'", "linux", False),  # Changed from True
-        ("package==1.0; sys_platform=='darwin'", "darwin", True),
-        ("package==1.0; sys_platform=='darwin'", "linux", False),
-        ("package==1.0; platform_system=='Linux'", "linux", True),
-        ("package==1.0; platform_system=='Darwin'", "darwin", True),
-    ],
-)
-def test_should_include_dependency(dependency, platform, expected) -> None:
-    """Verifies the functionality of the _should_include_dependency() function."""
-    assert aa._should_include_dependency(dependency, platform) == expected
-
-
 def test_add_dependency() -> None:
     """Verifies the functionality and duplicate input handling of the _add_dependency() function."""
     # Setup
@@ -296,9 +277,9 @@ def test_add_dependency() -> None:
     # Verifies that packages with the same base name but different 'extras' are correctly recognized as duplicates.
     dependency: str = "package[test]"
     message: str = (
-        f"Unable to resolve project dependencies. Found a duplicate dependency for '{dependency}', listed in "
-        f"pyproject.toml. A dependency should only be found once across the dependencies and optional-dependencies "
-        f"lists."
+        f"Unable to resolve project dependencies. Found a duplicate dependency for '{dependency}', listed in the "
+        f"pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
+        f"'optional-dependencies' lists."
     )
     with pytest.raises(ValueError, match=error_format(message)):
         aa._add_dependency(
@@ -310,9 +291,9 @@ def test_add_dependency() -> None:
     # Verifies that packages with the same base name but different versions are correctly recognized as duplicates.
     dependency = "package>=2.0"
     message = (
-        f"Unable to resolve project dependencies. Found a duplicate dependency for '{dependency}', listed in "
-        f"pyproject.toml. A dependency should only be found once across the dependencies and optional-dependencies "
-        f"lists."
+        f"Unable to resolve project dependencies. Found a duplicate dependency for '{dependency}', listed in the "
+        f"pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
+        f"'optional-dependencies' lists."
     )
     with pytest.raises(ValueError, match=error_format(message)):
         aa._add_dependency(
@@ -373,107 +354,11 @@ def test_resolve_dependencies(project_dir: Path, monkeypatch) -> None:
     write_tox_ini(project_dir, tox_content)
 
     # Test for the Linux platform
-    monkeypatch.setattr(sys, "platform", "linux")
-    runtime_deps, dev_deps = aa._resolve_dependencies(project_dir, "linux")
-
-    assert set(runtime_deps) == {'"dep1==1.0"', '"dep2>=2.0"'}
-    assert set(dev_deps) == {'"dev_dep1[test]"', '"dev_dep2<2.0.1"'}
-
-
-def test_resolve_dependencies_with_platform_markers(project_dir: Path, monkeypatch) -> None:
-    """Verifies that _resolve_dependencies() correctly handles platform-specific dependencies."""
-    pyproject_content = """
-    [project]
-    dependencies = [
-        "dep1==1.0",
-        "win_dep==1.0; platform_system=='Windows'",
-        "linux_dep==1.0; platform_system=='Linux'"
-    ]
-    
-    [project.optional-dependencies]
-    dev = [
-        "dev_dep1",
-        "dev_win==1.0; platform_system=='Windows'",
-        "dev_linux==1.0; platform_system=='Linux'"
-    ]
-    """
-    write_pyproject_toml(project_dir, pyproject_content)
-
-    # For Windows test, only include Windows-compatible deps in tox
-    tox_content_windows = """
-    [testenv]
-    deps =
-        dep1
-        win_dep
-        dev_dep1
-        dev_win
-    """
-
-    # Test for the Windows platform
-    write_tox_ini(project_dir, tox_content_windows)
-    monkeypatch.setattr(sys, "platform", "win32")
-    runtime_deps, dev_deps = aa._resolve_dependencies(project_dir, "windows")
-    assert '"dep1==1.0"' in runtime_deps
-    assert "\"win_dep==1.0; platform_system=='Windows'\"" in runtime_deps
-    assert "\"linux_dep==1.0; platform_system=='Linux'\"" not in runtime_deps
-    assert '"dev_dep1"' in dev_deps
-    assert "\"dev_win==1.0; platform_system=='Windows'\"" in dev_deps
-    assert "\"dev_linux==1.0; platform_system=='Linux'\"" not in dev_deps
-
-    # For Linux test, only include Linux-compatible deps in tox
-    tox_content_linux = """
-[testenv]
-deps =
-    dep1
-    linux_dep
-    dev_dep1
-    dev_linux
-"""
-
-    # Test for the Linux platform
-    write_tox_ini(project_dir, tox_content_linux)
-    monkeypatch.setattr(sys, "platform", "linux")
-    runtime_deps, dev_deps = aa._resolve_dependencies(project_dir, "linux")
-    assert '"dep1==1.0"' in runtime_deps
-    assert "\"linux_dep==1.0; platform_system=='Linux'\"" in runtime_deps
-    assert "\"win_dep==1.0; platform_system=='Windows'\"" not in runtime_deps
-    assert '"dev_dep1"' in dev_deps
-    assert "\"dev_linux==1.0; platform_system=='Linux'\"" in dev_deps
-    assert "\"dev_win==1.0; platform_system=='Windows'\"" not in dev_deps
-
-
-def test_resolve_dependencies_missing_tox_dep(project_dir: Path, monkeypatch) -> None:
-    """Verifies that the _resolve_dependencies() function correctly detects tox dependencies missing from
-    pyproject.toml.
-    """
-    pyproject_content = """
-[project]
-dependencies = ["dep1==1.0", "dep2>=2.0"]
-
-[project.optional-dependencies]
-dev = ["dev_dep1", "dev_dep2"]
-"""
-    write_pyproject_toml(project_dir, pyproject_content)
-
-    tox_content = """
-[testenv]
-deps =
-    dep1
-    dev_dep1
-    missing_dep
-requires =
-    dep2
-"""
-    write_tox_ini(project_dir, tox_content)
-
-    monkeypatch.setattr(sys, "platform", "linux")
-    message: str = (
-        f"Unable to resolve project dependencies. The following dependencies in tox.ini are not found in "
-        f"pyproject.toml: missing_dep. Add them to either the main dependencies "
-        f"list or the 'dev' optional-dependencies list in pyproject.toml."
+    runtime_deps = aa._resolve_dependencies(
+        project_dir,
     )
-    with pytest.raises(ValueError, match=error_format(message)):
-        aa._resolve_dependencies(project_dir, "linux")
+
+    assert set(runtime_deps) == {'"dep1==1.0"', '"dep2>=2.0"', '"dev_dep1[test]"', '"dev_dep2<2.0.1"'}
 
 
 def test_resolve_dependencies_duplicate_dep(project_dir: Path, monkeypatch) -> None:
@@ -499,15 +384,13 @@ requires =
     dep2
 """
     write_tox_ini(project_dir, tox_content)
-
-    monkeypatch.setattr(sys, "platform", "linux")
     message: str = (
-        "Unable to resolve project dependencies. Found a duplicate dependency for 'dep1<3.0', listed in "
-        "pyproject.toml. A dependency should only be found once across the dependencies and optional-dependencies "
-        "lists."
+        "Unable to resolve project dependencies. Found a duplicate dependency for 'dep1<3.0', listed in the "
+        "pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
+        "'optional-dependencies' lists."
     )
     with pytest.raises(ValueError, match=error_format(message)):
-        aa._resolve_dependencies(project_dir, "linux")
+        aa._resolve_dependencies(project_dir)
 
 
 def test_resolve_project_name(project_dir) -> None:
