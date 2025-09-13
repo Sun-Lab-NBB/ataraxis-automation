@@ -11,30 +11,22 @@ Sun (NeuroAI) lab projects.
 ![PyPI - License](https://img.shields.io/pypi/l/ataraxis-automation)
 ![PyPI - Status](https://img.shields.io/pypi/status/ataraxis-automation)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ataraxis-automation)
+
 ___
 
 ## Detailed Description
 
 This library is one of the two 'base' dependency libraries used by every other Sun lab project (the other being 
 [ataraxis-base-utilities](https://github.com/Sun-Lab-NBB/ataraxis-base-utilities)). It exposes a command-line interface
-(automation-cli) that can be used through the [tox-based](https://tox.wiki/en/latest/user_guide.html) project
-development automation suite that comes with every Sun Lab project to streamline project development.
-
-The commands from this library generally fulfill two major roles. First, they are used to set up, support the runtime 
-of, or clean up after third-party packages (ruff, mypy, etc.) used in tox project-management tasks. Second, they 
-automate most operations with mamba (conda) environments, such as creating the environment and installing the project 
-and its dependencies.
-
-The library can be used as a standalone module, but it is primarily designed to integrate with other Sun lab projects,
-providing development automation functionality. Therefore, it may require either adopting and modifying a 
-tox automation suite from one of the lab projects or significant refactoring to work with non-lab projects.
+(automation-cli) used by the [tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation 
+suite that comes with every Sun Lab project to streamline project development.
 
 ___
 
 ## Features
 
-- Supports Windows, Linux, and OSx.
-- Optimized for runtime speed by using mamba and uv over conda and pip.
+- Supports Windows, Linux, and macOS.
+- Optimized for runtime speed by using mamba and uv.
 - Compliments the extensive suite of tox-automation tasks used by all Sun lab projects.
 - Pure-python API.
 - GPL 3 License.
@@ -58,7 +50,7 @@ ___
 ## Dependencies
 
 For users, all library dependencies are installed automatically for all supported installation methods
-(see [Installation](#installation) section). For developers, see the [Developers](#developers) section for
+(see the [Installation](#installation) section). For developers, see the [Developers](#developers) section for
 information on installing additional development dependencies.
 
 ___
@@ -73,9 +65,9 @@ ___
 3. Run ```python -m pip install .``` to install the project. Alternatively, if using a distribution with precompiled
    binaries, use ```python -m pip install WHEEL_PATH```, replacing 'WHEEL_PATH' with the path to the wheel file.
 
-### PIP
+### pip
 
-Use the following command to install the library using PIP: ```pip install ataraxis-automation```.
+Use the following command to install the library using pip: ```pip install ataraxis-automation```.
 
 ___
 
@@ -101,7 +93,7 @@ tox 'task,' add it to the 'commands' section of the tox.ini:
 ```
 [testenv:create]
 deps =
-    ataraxis-automation==6.0.0
+    ataraxis-automation==6.1.0
 description =
     Creates the mamba environment using the requested python version and installs runtime and development project
     dependencies extracted from the pyproject.toml file into the environment. Does not install the project library.
@@ -116,7 +108,7 @@ their runtime. Consult the API documentation for the list of additional runtime 
 ### Intended CLI use pattern
 All CLI commands are intended to be used through tox pipelines. The most recent version of Sun Lab tox configuration
 is always available from this libraries’ [tox.ini file](tox.ini). Since version 6.0.0, this library is designed to be 
-the sole dependency for most tox tasks, its tox.ini file is always the most up to date and feature-complete compared 
+the sole dependency for most tox tasks, and its tox.ini file is always the most up to date and feature-complete compared
 to all other Sun Lab projects. The only exception to this rule is the C-extension projects. For the most up-to-date 
 tox.ini configuration for Sun lab C-extension projects, see the 
 [ataraxis-time](https://github.com/Sun-Lab-NBB/ataraxis-time) library.
@@ -153,7 +145,7 @@ description =
     Runs static code formatting, style, and typing checkers. Mypy may not always work properly until py.typed marker is
     added the first time the 'stubs' task is executed.
 extras = dev
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 basepython = py311
 commands =
     automation-cli purge-stubs
@@ -178,7 +170,7 @@ description =
     Generates the py.typed marker and the stub files using the built library wheel. Formats the stubs with ruff before
     moving them to appropriate source sub-directories.
 depends = lint
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 commands =
     automation-cli process-typed-markers
     stubgen -o stubs --include-private -p ataraxis_automation -v
@@ -205,7 +197,7 @@ description =
     Runs unit and integration tests for each of the python versions listed in the task name. Uses 'loadgroup' balancing
     and all logical cores to optimize runtime speed while allowing manual control over which cores execute tasks (see
     pytest-xdist documentation).
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 setenv =
     COVERAGE_FILE = reports{/}.coverage.{envname}
 commands =
@@ -226,7 +218,7 @@ skip_install = true
 description =
     Combines test-coverage data from multiple test runs (for different python versions) into a single html file. The
     file can be viewed by loading the 'reports/coverage_html/index.html'.
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 setenv = COVERAGE_FILE = reports/.coverage
 depends = {py311, py312, py313}-test
 commands =
@@ -278,7 +270,7 @@ description =
 depends = 
     uninstall
     doxygen
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 commands =
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
 ```
@@ -301,7 +293,7 @@ skip-install = true
 description =
     Builds the source code distribution (sdist) and the binary distribution package (wheel). Use 'upload' task to
     subsequently upload built wheels to PIP.
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 allowlist_externals =
     docker
 commands =
@@ -316,7 +308,7 @@ skip-install = true
 description =
     Builds the source code distribution (sdist) and compiles and assembles binary wheels for all host-platform 
     architectures supported by the library. Use 'upload' task to subsequently upload built wheels to PIP.
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 allowlist_externals =
     docker
 commands =
@@ -340,7 +332,7 @@ skip_install = true
 description =
     Uses twine to upload all files inside the '/dist' folder to pip, ignoring any files that are already uploaded.
     Uses API token stored in '.pypirc' file or provided by user to authenticate the upload.
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 allowlist_externals =
     distutils
 commands =
@@ -367,7 +359,7 @@ Example tox.ini section:
 ```
 [testenv:install]
 skip_install = true
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 depends =
     lint
     stubs
@@ -392,7 +384,7 @@ Example tox.ini section:
 ```
 [testenv:uninstall]
 skip_install = true
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 description =
     Uninstalls the project from the specified mamba environment. If the environment does not exist this task silently
     succeeds.
@@ -413,7 +405,7 @@ Example tox.ini section:
 ```
 [testenv:create]
 skip_install = true
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 description =
     Creates the mamba environment using the requested python version and installs runtime and development project
     dependencies extracted from the pyproject.toml file into the environment. Does not install the project library.
@@ -432,7 +424,7 @@ Example tox.ini section:
 ```
 [testenv:remove]
 skip_install = true
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 description =
     Removes the requested mamba environment.
 commands =
@@ -450,7 +442,7 @@ Example tox.ini section:
 ```
 [testenv:provision]
 skip_install = true
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 description =
     Provisions the requested mamba environment by removing and (re)creating the environment.
 commands =
@@ -469,7 +461,7 @@ Example tox.ini section:
 ```
 [testenv:export]
 skip_install = true
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 description =
     Exports the requested mamba environment to the 'envs' folder as a .yml file and as a spec.txt with revision history.
 commands =
@@ -489,7 +481,7 @@ Example tox.ini section:
 ```
 [testenv:import]
 skip_install = true
-deps = ataraxis-automation==6.0.0
+deps = ataraxis-automation==6.1.0
 description =
     Discovers and imports (installs) a new or updates an already existing mamba environment using the .yml file
     stored in the 'envs' directory.
@@ -556,8 +548,8 @@ To expedite the task runtime, use ```tox --parallel``` command to run some tasks
 ### Environments
 
 All environments used during development are exported as .yml files and as spec.txt files to the [envs](envs) folder.
-The environment snapshots were taken on each of the three explicitly supported OS families: Windows, OSx (M1),
-and Linux Ubuntu LTS.
+The environment snapshots were taken on each of the three explicitly supported OS families: Windows, macOS (M1),
+and Linux.
 
 **Note!** Since the OSx environment was built on an M1 (Apple Silicon) platform, it may not work on Intel-based 
 Apple devices.
