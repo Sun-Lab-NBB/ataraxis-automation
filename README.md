@@ -457,6 +457,8 @@ This section provides installation, dependency, and build-system instructions fo
 
 ### Installing the Project
 
+***Note!*** This project requires **mamba version 2.0.0 or above**. 
+
 1. Download this repository to the local machine using the preferred method, such as git-cloning.
 2. ```cd``` to the root project directory.
 3. Install core Sun lab development dependencies into the 'base' mamba environment via the 
