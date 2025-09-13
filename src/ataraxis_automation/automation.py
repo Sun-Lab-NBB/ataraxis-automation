@@ -187,8 +187,8 @@ def _add_dependency(dependency: str, dependencies: list[str], processed_dependen
     if stripped_dependency in processed_dependencies:
         message: str = (
             f"Unable to resolve project dependencies. Found a duplicate dependency for '{dependency}', listed in the "
-            f"pyproject.toml file. A dependency should only be found in either the 'dependencies' or "
-            f"'optional-dependencies' list."
+            f"pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
+            f"'optional-dependencies' lists."
         )
         raise ValueError(format_message(message))
 
