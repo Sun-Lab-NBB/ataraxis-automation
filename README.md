@@ -457,7 +457,7 @@ This section provides installation, dependency, and build-system instructions fo
 
 ### Installing the Project
 
-***Note!*** This project requires **mamba version 2.0.0 or above**. 
+***Note!*** This installation method requires **mamba version 2.0.0 or above**.
 
 1. Download this repository to the local machine using the preferred method, such as git-cloning.
 2. ```cd``` to the root project directory.
@@ -472,22 +472,22 @@ In addition to installing the project and all user dependencies, install the fol
 
 1. [Python](https://www.python.org/downloads/) distributions, one for each version supported by the developed project. 
    Currently, this library supports the three latest stable versions. It is recommended to use a tool like 
-   [pyenv](https://github.com/pyenv/pyenv).
-2. [Doxygen](https://doxygen.nl/), if the project uses c-extensions. This is necessary to build the API documentation
+   [pyenv](https://github.com/pyenv/pyenv) to install and manage the required versions.
+2. [Doxygen](https://doxygen.nl/), if the project uses C-extensions. This is necessary to build the API documentation
    for the C-code portion of the project.
 
 ### Development Automation
 
 This project comes with a fully configured set of automation pipelines implemented using 
-[tox](https://tox.wiki/en/latest/user_guide.html). Check [tox.ini file](tox.ini) for details about 
-available pipelines and their implementation. Alternatively, call ```tox list``` from the root directory of the project
-to see the list of available tasks. __*Note*__, automation pipelines for this library have been modified from the 
-implementation used in all other projects, as they require this library to support their runtime. To avoid circular 
+[tox](https://tox.wiki/en/latest/user_guide.html). Check the [tox.ini file](tox.ini) for details about 
+the available pipelines and their implementation. Alternatively, call ```tox list``` from the root directory of the 
+project to see the list of available tasks. __*Note*__, automation pipelines for this library have been modified from 
+the implementation used in all other projects, as they require this library to support their runtime. To avoid circular 
 dependencies, the pipelines for this library always compile and install the library from source code before running 
 each automation task.
 
 **Note!** All pull requests for this project have to successfully complete the ```tox``` task before being merged. 
-To expedite the task’s runtime, use ```tox --parallel``` command to run some tasks in-parallel.
+To expedite the task’s runtime, use the ```tox --parallel``` command to run some tasks in-parallel.
 
 ### Automation Troubleshooting
 
