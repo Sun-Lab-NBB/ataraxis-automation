@@ -62,7 +62,7 @@ ___
 
 ### Source
 
-Note, installation from source is ***highly discouraged*** for everyone who is not an active project developer.
+Note, installation from source is ***highly discouraged*** for anyone who is not an active project developer.
 
 1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the stable 
    releases that include precompiled binary and source code distribution (sdist) wheels.
