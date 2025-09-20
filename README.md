@@ -457,7 +457,7 @@ This section provides installation, dependency, and build-system instructions fo
 
 ### Installing the Project
 
-***Note!*** This installation method requires **mamba version 2.0.0 or above**.
+***Note!*** This installation method requires **mamba version 2.3.2 or above**.
 
 1. Download this repository to the local machine using the preferred method, such as git-cloning.
 2. ```cd``` to the root project directory.
