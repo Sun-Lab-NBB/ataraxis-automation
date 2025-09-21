@@ -64,8 +64,9 @@ ___
 
 Note, installation from source is ***highly discouraged*** for anyone who is not an active project developer.
 
-1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the stable 
-   releases that include precompiled binary and source code distribution (sdist) wheels.
+1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the 
+   [stable releases](https://github.com/Sun-Lab-NBB/ataraxis-automation/tags) that include precompiled binary and source
+   code distribution (sdist) wheels.
 2. ```cd``` to the root directory of the project.
 3. Run ```python -m pip install .``` to install the project. Alternatively, if using a distribution with precompiled
    binaries, use ```python -m pip install WHEEL_PATH```, replacing 'WHEEL_PATH' with the path to the wheel file.
@@ -461,10 +462,10 @@ This section provides installation, dependency, and build-system instructions fo
 
 1. Download this repository to the local machine using the preferred method, such as git-cloning.
 2. ```cd``` to the root project directory.
-3. Install core Sun lab development dependencies into the 'base' mamba environment via the 
+3. Install core Sun lab development dependencies into the ***base*** mamba environment via the 
    ```mamba install tox uv tox-uv``` command.
 4. Use the ```tox -e create``` command to create the project-specific development environment followed by 
-   ```tox -e install``` command to isntall the project into that environment as a library.
+   ```tox -e install``` command to install the project into that environment as a library.
 
 ### Additional Dependencies
 
@@ -493,7 +494,7 @@ To expedite the task’s runtime, use the ```tox --parallel``` command to run so
 
 Many packages used in 'tox' automation pipelines (uv, mypy, ruff) and 'tox' itself may experience runtime failures. In 
 most cases, this is related to their caching behavior. If an unintelligible error is encountered with 
-any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually  
+any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually 
 or via a CLI command typically solves the issue.
 
 ___
