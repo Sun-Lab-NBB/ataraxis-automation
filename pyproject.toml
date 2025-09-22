@@ -131,21 +131,21 @@ lint.select = ["ALL"]
 # General ignore directives
 lint.ignore = [
     "BLE001",  # Interferes with desired library behavior
-    "S602",  # Interferes with desired library behavior
-    "S607",  # Interferes with desired library behavior
-    "W291",  # Conflicts with docstring formatting
+    "S602",    # Interferes with desired library behavior
+    "S607",    # Interferes with desired library behavior
+    "W291",    # Conflicts with docstring formatting
     "ANN401",  # While suboptimal, ANY is a helpful type when used with caution
-    "C901",  # Sometimes complex functions are necessary
+    "C901",    # Sometimes complex functions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
-    "PLR0912",  # Sometimes complex functions are necessary
-    "PLR0915",  # Sometimes complex type defenitions are necessary
-    "PLR0913",  # Sometimes complex functions are necessary
-    "COM812", # Conflicts with the formatter
-    "ISC001", # Conflicts with the formatter
-    "PT001", # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
-    "PT023", # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
-    "D107", # Project-specific, __init__ is documented inside the main class docstring where applicable
-    "D205", # Bugs out for file descriptions
+    "PLR0912", # Sometimes complex functions are necessary
+    "PLR0915", # Sometimes complex type defenitions are necessary
+    "PLR0913", # Sometimes complex functions are necessary
+    "COM812",  # Conflicts with the formatter
+    "ISC001",  # Conflicts with the formatter
+    "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
+    "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
+    "D107",    # Project-specific, __init__ is documented inside the main class docstring where applicable
+    "D205",    # Bugs out for file descriptions
     "PLW0603", # While global statement usage is not ideal, it greatly streamlines certain development patterns
 ]
 
