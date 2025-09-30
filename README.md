@@ -67,7 +67,7 @@ Note, installation from source is ***highly discouraged*** for anyone who is not
 1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the 
    [stable releases](https://github.com/Sun-Lab-NBB/ataraxis-automation/tags) that include precompiled binary and source
    code distribution (sdist) wheels.
-2. ```cd``` to the root directory of the project.
+2. Unpack the downloaded distribution archive and ```cd``` to the root directory of the project.
 3. Run ```python -m pip install .``` to install the project. Alternatively, if using a distribution with precompiled
    binaries, use ```python -m pip install WHEEL_PATH```, replacing 'WHEEL_PATH' with the path to the wheel file.
 
