@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "7.0.0"
+version = "7.1.0"
 description = "Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -51,7 +51,7 @@ dependencies = [
     "tomli>=2,<3",
 
     # Testing
-    "pytest>=8,<9",
+    "pytest>=9,<10",
     "pytest-cov>=7,<8",
     "pytest-xdist>=3,<4",
 
