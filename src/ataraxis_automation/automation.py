@@ -796,12 +796,12 @@ class ProjectEnvironment:
         # Generates dependency installation commands using uv:
         install_dependencies_command = (
             f"uv pip install {' '.join(_resolve_dependencies(project_root))} --resolution highest "
-            f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact"
+            f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact --prerelease=allow"
         )
         uninstall_project_command = f"uv pip uninstall {project_name} --python={target_environment_directory}"
         install_project_command = (
             f"uv pip install . --resolution highest --refresh --reinstall-package {project_name} --compile-bytecode "
-            f"--python={target_environment_directory} --strict"
+            f"--python={target_environment_directory} --strict --prerelease=allow"
         )
 
         # Generates mamba environment manipulation commands.
