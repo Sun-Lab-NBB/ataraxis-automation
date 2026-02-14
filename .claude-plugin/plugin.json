@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "Shared Sun Lab development skills for Claude Code. Provides standardized coding conventions, codebase exploration workflows, and documentation standards used across all Sun Lab projects.",
   "repository": "https://github.com/Sun-Lab-NBB/ataraxis-automation",
-  "license": "GPL-3.0",
+  "license": "Apache-2.0",
   "skills": "./skills/"
 }
