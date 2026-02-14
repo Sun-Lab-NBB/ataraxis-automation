@@ -2,9 +2,9 @@
 name: applying-sun-lab-style
 description: >-
   Applies Sun Lab Python coding conventions when writing, reviewing, or refactoring code. Covers
-  .py files, docstrings, type annotations, naming conventions, README.md files, git commit messages,
-  and Claude skill files. Use when writing new code, modifying existing code, reviewing pull requests,
-  creating documentation, writing commit messages, or when the user asks about coding standards.
+  .py files, docstrings, type annotations, naming conventions, and README.md files. Use when writing
+  new code, modifying existing code, reviewing pull requests, creating documentation, or when the
+  user asks about coding standards.
 ---
 
 # Sun Lab Style Guide
@@ -25,8 +25,8 @@ insufficient for compliance. Each guide contains detailed rules and verification
 |-----------------------------|-----------------------------------------------|
 | **Writing Python code?**    | Read [PYTHON_STYLE.md](PYTHON_STYLE.md)       |
 | **Writing README?**         | Read [README_STYLE.md](README_STYLE.md)       |
-| **Writing commit message?** | Read [COMMIT_STYLE.md](COMMIT_STYLE.md)       |
-| **Writing skill file?**     | Read [SKILL_STYLE.md](SKILL_STYLE.md)         |
+| **Writing commit message?** | Invoke the `/commit` skill instead            |
+| **Writing skill file?**     | Invoke the `/skill-design` skill instead       |
 
 After reading the appropriate guide:
 1. Apply all conventions from that guide
@@ -43,8 +43,8 @@ for the full guide.
 |--------------------------------------|------------------------------------------------------------------------------|
 | [PYTHON_STYLE.md](PYTHON_STYLE.md)   | Writing Python code (docstrings, type annotations, naming, error handling)   |
 | [README_STYLE.md](README_STYLE.md)   | Creating or updating README files                                            |
-| [COMMIT_STYLE.md](COMMIT_STYLE.md)   | Writing git commit messages                                                  |
-| [SKILL_STYLE.md](SKILL_STYLE.md)     | Creating Claude skills or YAML configuration files                           |
+| `/commit` skill                      | Writing git commit messages (invoke `/commit` directly)                      |
+| `/skill-design` skill                | Creating or modifying Claude skills (invoke `/skill-design` directly)        |
 
 ---
 
