@@ -5,6 +5,7 @@ description: >-
   structure, YAML frontmatter, formatting conventions, inter-skill relationships, scope declarations, and
   verification checklists. Use when creating new skills, modifying existing skills, updating CLAUDE.md files,
   or when the user asks about skill conventions.
+user_invocable: true
 ---
 
 # Skill design
@@ -16,14 +17,30 @@ checklists at the end are mandatory before submitting any work.
 
 ---
 
+## Scope
+
+**Covers:**
+- SKILL.md structure, YAML frontmatter, and formatting conventions
+- CLAUDE.md structure, section ordering, and formatting conventions
+- Inter-skill relationships and scope declarations
+- Verification checklists for skill files and project instructions
+
+**Does not cover:**
+- Python code style conventions (see `/sun-lab-style`)
+- README file conventions (see `/sun-lab-style`)
+- Commit message conventions (see `/commit`)
+- Codebase exploration workflows (see `/explore-codebase`)
+
+---
+
 ## File types
 
 This skill covers two types of Claude instruction files:
 
-| File Type  | Location          | Purpose                                        |
-|------------|-------------------|------------------------------------------------|
-| SKILL.md   | `skills/*/`       | Skill-specific instructions loaded on demand   |
-| CLAUDE.md  | Project root      | Project-wide instructions loaded every session |
+| File Type | Location            | Purpose                                        |
+|-----------|---------------------|------------------------------------------------|
+| SKILL.md  | `.claude/skills/*/` | Skill-specific instructions loaded on demand   |
+| CLAUDE.md | Project root        | Project-wide instructions loaded every session |
 
 ---
 
@@ -66,7 +83,7 @@ assessments and ensure consistent compliance.
 
 Keep SKILL.md under 500 lines. Split detailed reference material into separate files:
 
-```
+```text
 skill-name/
 ├── SKILL.md              # Main instructions (loaded when triggered)
 ├── REFERENCE.md          # Detailed reference (loaded as needed)
@@ -341,7 +358,7 @@ CLAUDE.md follows the same formatting conventions as skill files:
 
 ### Skill files (SKILL.md)
 
-```
+```text
 Skill File Compliance:
 - [ ] YAML frontmatter with `name` and `description`
 - [ ] `user_invocable: true` set if skill is directly invocable via slash command
@@ -364,7 +381,7 @@ Skill File Compliance:
 
 ### Project instructions (CLAUDE.md)
 
-```
+```text
 CLAUDE.md Compliance:
 - [ ] Title is `# Claude Code Instructions`
 - [ ] All lines ≤ 120 characters (tables/code blocks may exceed for clarity)

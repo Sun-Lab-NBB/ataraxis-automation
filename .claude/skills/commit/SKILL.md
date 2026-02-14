@@ -79,7 +79,7 @@ Git logs, GitHub, and other tools.
 
 **Single-line commits**: Use for focused, single-purpose changes.
 
-```
+```text
 Added Python 3.14 support.
 Fixed a bug that allowed valves to violate keepalive guard.
 Optimized the behavior of camera ID discovery functionality.
@@ -88,7 +88,7 @@ Optimized the behavior of camera ID discovery functionality.
 **Multi-line commits**: Use for changes that bundle related modifications. Insert a blank line after the header,
 then prefix each detail bullet with `-- `.
 
-```
+```text
 Added MCP server module for agentic library interaction.
 
 -- Added mcp_server.py exposing camera discovery and video session management.
@@ -128,7 +128,7 @@ Focus on *what* was changed and *why*, not *how*. Be specific and descriptive.
 
 **Good commit messages:**
 
-```
+```text
 Added trigger_type field to all task templates.
 Fixed zone range calculation for occupancy zones.
 Updated configuration-verification skill with cross-platform support.
@@ -138,7 +138,7 @@ Removed deprecated API endpoints from configuration loader.
 
 **Good multi-line commit:**
 
-```
+```text
 Refactored skill architecture to support user-invocable skills.
 
 -- Extracted commit style guide into a dedicated /commit skill.
@@ -148,7 +148,7 @@ Refactored skill architecture to support user-invocable skills.
 
 **Avoid:**
 
-```
+```text
 fixed bug                          # Too vague, no punctuation
 Updated stuff                      # Not specific
 Changes to Task.cs                 # Describes file, not change
@@ -196,11 +196,20 @@ Generated with AI assistance       # Tool attribution does not belong
 
 ---
 
+## Proactive behavior
+
+After completing substantial code changes (new features, bug fixes, refactors), proactively offer to draft a commit
+message. For example: "Would you like me to draft a commit message for these changes?"
+
+Do NOT stage or commit files. Present the drafted message for the user to use manually.
+
+---
+
 ## Verification checklist
 
 **You MUST verify the commit message against this checklist before presenting it to the user.**
 
-```
+```text
 Commit Message Compliance:
 - [ ] Starts with past tense verb (Added, Fixed, Updated, Refactored, Removed, etc.)
 - [ ] Header line ≤ 72 characters
@@ -213,12 +222,3 @@ Commit Message Compliance:
 - [ ] Contains NO references to tools or AI unless explicitly requested by the user
 - [ ] Contains ONLY information about the changes themselves
 ```
-
----
-
-## Proactive behavior
-
-After completing substantial code changes (new features, bug fixes, refactors), proactively offer to draft a commit
-message. For example: "Would you like me to draft a commit message for these changes?"
-
-Do NOT stage or commit files. Present the drafted message for the user to use manually.
