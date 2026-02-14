@@ -1,0 +1,13 @@
+{
+  "name": "sun-lab",
+  "owner": {
+    "name": "Sun Lab at Cornell University"
+  },
+  "plugins": [
+    {
+      "name": "ataraxis-automation",
+      "source": ".",
+      "description": "Shared Sun Lab development skills: coding conventions, codebase exploration, and documentation standards."
+    }
+  ]
+}
