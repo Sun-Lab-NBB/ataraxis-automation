@@ -70,7 +70,7 @@ The method will return a tuple of timestamps.
 
 VR behavioral experiment tasks for the Sun Lab's mesoscope experiments.
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 ___
 
@@ -137,7 +137,7 @@ project releases.
 ```markdown
 ## License
 
-This project is licensed under the GPL3 License: see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License: see the [LICENSE](LICENSE) file for details.
 ```
 
 ---

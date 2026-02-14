@@ -27,7 +27,7 @@ ___
 - Supports Windows, Linux, and macOS.
 - Optimized for runtime speed by using mamba and uv for all environment management tasks.
 - Compliments the extensive suite of tox environments and tasks used by all Sun lab projects to streamline development.
-- GPL 3 License.
+- Apache 2.0 License.
 
 ___
 
@@ -517,7 +517,7 @@ ___
 
 ## License
 
-This project is licensed under the GPL3 License: see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License: see the [LICENSE](LICENSE) file for details.
 
 ___
 
