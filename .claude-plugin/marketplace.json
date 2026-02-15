@@ -1,13 +1,13 @@
 {
-  "name": "sun-lab",
+  "name": "ataraxis",
   "owner": {
-    "name": "Sun Lab at Cornell University"
+    "name": "Sun (NeuroAI) lab at Cornell University"
   },
   "plugins": [
     {
-      "name": "ataraxis-automation",
+      "name": "automation",
       "source": ".",
-      "description": "Shared Sun Lab development skills: coding conventions, codebase exploration, and documentation standards."
+      "description": "Provides the shared software development skills that enforce conventions and code style in Ataraxis and derived projects."
     }
   ]
 }
