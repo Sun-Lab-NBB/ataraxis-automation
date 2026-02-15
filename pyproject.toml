@@ -1,15 +1,16 @@
 # Defines the build system used for the project.
 [build-system]
-requires = ["hatchling==1.27.0"]
+requires = ["hatchling>=1,<2"]
 build-backend = "hatchling.build"
 
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "7.1.0"
+version = "8.0.0"
 description = "Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.12,<3.15"
 authors = [
     { name = "Ivan Kondratyev" },
@@ -28,8 +29,6 @@ classifiers = [
     # Intended audience and project topic
     "Intended Audience :: Developers",
     "Topic :: Software Development",
-    # License
-    "License :: OSI Approved :: Apache Software License",
     # Supported Python Versions
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -89,23 +88,18 @@ dependencies = [
 Homepage = "https://github.com/Sun-Lab-NBB/ataraxis-automation"
 Documentation = "https://ataraxis-automation-api-docs.netlify.app/"
 
-# Specifies additional dependencies that can be installed alongside the main library.
-[project.optional-dependencies]
+# CLI interfaces.
+[project.scripts]
+automation-cli = "ataraxis_automation.cli:cli"
 
-# Dependencies that support developing this project.
+# Development dependencies (PEP 735). Not published to PyPI.
+[dependency-groups]
 dev = [
     # Tox
     "tox>=4,<5",
     "uv>=0,<1",
     "tox-uv>=1,<2",
-
-    # With ataraxis-automation 6.0.0+, this section in all other projects typically also includes ataraxis-automation
-    # dependency and optional stub (type) libraries for project dependencies.
 ]
-
-# CLI interfaces.
-[project.scripts]
-automation-cli = "ataraxis_automation.cli:cli"
 
 # Specifies files that should not be included in the source-code distribution but are also not part of gitignore.
 [tool.hatch.build.targets.sdist]
@@ -138,7 +132,7 @@ lint.ignore = [
     "C901",    # Sometimes complex functions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
     "PLR0912", # Sometimes complex functions are necessary
-    "PLR0915", # Sometimes complex type defenitions are necessary
+    "PLR0915", # Sometimes complex type definitions are necessary
     "PLR0913", # Sometimes complex functions are necessary
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
