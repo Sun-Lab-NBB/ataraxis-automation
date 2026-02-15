@@ -142,7 +142,7 @@ Removed deprecated API endpoints from configuration loader.
 Refactored skill architecture to support user-invocable skills.
 
 -- Extracted commit style guide into a dedicated /commit skill.
--- Updated sun-lab-style skill to reference /commit for commit conventions.
+-- Updated python-style skill to reference /commit for commit conventions.
 -- Added the /commit skill to CLAUDE.md available skills table.
 ```
 
@@ -191,7 +191,7 @@ Generated with AI assistance       # Tool attribution does not belong
 
 | Skill               | Relationship                                                       |
 |---------------------|--------------------------------------------------------------------|
-| `/sun-lab-style`    | Provides coding conventions; invoke before making code changes     |
+| `/python-style`     | Provides coding conventions; invoke before making code changes     |
 | `/explore-codebase` | Provides project context that helps write accurate commit messages |
 
 ---

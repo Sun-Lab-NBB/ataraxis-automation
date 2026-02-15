@@ -36,9 +36,9 @@ my-skill/
 If two skills need the same information, one must reference the other rather than duplicating the
 content. Duplication causes inconsistencies when one copy is updated but not the other.
 
-**Wrong:** Copying the commit message rules into both `/commit` and `/sun-lab-style`.
+**Wrong:** Copying the commit message rules into both `/commit` and `/python-style`.
 
-**Correct:** `/sun-lab-style` references `/commit`: "For commit message conventions, invoke the
+**Correct:** `/python-style` references `/commit`: "For commit message conventions, invoke the
 `/commit` skill."
 
 ### Overly broad scope
@@ -49,7 +49,7 @@ inconsistently.
 **Wrong:** A single skill covering Python style, README formatting, commit messages, and skill
 design.
 
-**Correct:** Four separate skills (`/sun-lab-style`, `/commit`, `/skill-design`) each with a
+**Correct:** Four separate skills (`/python-style`, `/commit`, `/skill-design`) each with a
 focused scope declaration.
 
 ### Missing trigger conditions

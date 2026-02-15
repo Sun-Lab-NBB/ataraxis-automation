@@ -27,8 +27,8 @@ verification checklists at the end are mandatory before submitting any work.
 - Verification checklists for skill files and project instructions
 
 **Does not cover:**
-- Python code style conventions (see `/sun-lab-style`)
-- README file conventions (see `/sun-lab-style`)
+- Python code style conventions (see `/python-style`)
+- README file conventions (see `/readme-style`)
 - Commit message conventions (see `/commit`)
 - Codebase exploration workflows (see `/explore-codebase`)
 
@@ -260,7 +260,7 @@ When a skill relates to other skills, declare the relationship explicitly using 
 
 | Skill               | Relationship                                                |
 |---------------------|-------------------------------------------------------------|
-| `/sun-lab-style`    | Provides coding conventions that inform code review skills  |
+| `/python-style`    | Provides coding conventions that inform code review skills  |
 | `/commit`           | Should be invoked after completing code changes             |
 | `/explore-codebase` | Provides project context that informs implementation skills |
 ```
@@ -374,7 +374,7 @@ CLAUDE.md follows the same conventions as skill files with one difference:
 ### Voice
 
 - **Descriptive content**: Third person. Example: "This library provides shared assets..."
-- **Agent directives**: Second person with emphasis. Example: "You MUST invoke the `/sun-lab-style`
+- **Agent directives**: Second person with emphasis. Example: "You MUST invoke the `/python-style`
   skill..."
 
 ### Content guidelines
@@ -391,7 +391,7 @@ CLAUDE.md follows the same conventions as skill files with one difference:
 
 | Skill               | Relationship                                                          |
 |---------------------|-----------------------------------------------------------------------|
-| `/sun-lab-style`    | Provides formatting conventions that skill files must also follow     |
+| `/python-style`    | Provides formatting conventions that skill files must also follow     |
 | `/commit`           | Should be invoked after completing skill file changes                 |
 | `/explore-codebase` | Provides project context needed when writing project-specific skills  |
 

@@ -27,7 +27,7 @@ Performs thorough, structured codebase exploration to build deep understanding b
 
 **Does not cover:**
 - Modifying code or configuration files
-- Applying coding conventions (see `/sun-lab-style`)
+- Applying coding conventions (see `/python-style`)
 - Writing commit messages (see `/commit`)
 - Creating or modifying skill files (see `/skill-design`)
 
@@ -242,11 +242,11 @@ Exported from `__init__.py` via `__all__`:
 
 ## Related skills
 
-| Skill            | Relationship                                                        |
-|------------------|---------------------------------------------------------------------|
-| `/sun-lab-style` | Provides coding conventions discovered during exploration           |
-| `/commit`        | Should be invoked after completing code changes informed by context |
-| `/skill-design`  | Provides skill conventions when exploration reveals skill files     |
+| Skill           | Relationship                                                        |
+|-----------------|---------------------------------------------------------------------|
+| `/python-style` | Provides coding conventions discovered during exploration           |
+| `/commit`       | Should be invoked after completing code changes informed by context |
+| `/skill-design` | Provides skill conventions when exploration reveals skill files     |
 
 ---
 
