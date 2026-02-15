@@ -1,4 +1,4 @@
-"""This module provides a Command Line Interface (CLI) that automates certain project building and development steps."""
+"""Provides a Command Line Interface (CLI) that automates certain project building and development steps."""
 
 import re  # pragma: no cover
 import base64  # pragma: no cover
@@ -26,14 +26,15 @@ _MINIMUM_PYPI_TOKEN_LENGTH = 100  # pragma: no cover
 _MAXIMUM_PYPI_TOKEN_LENGTH = 500  # pragma: no cover
 
 # Ensures that displayed CLICK help messages are formatted according to the lab standard.
-CONTEXT_SETTINGS = {"max_content_width": 120}  # pragma: no cover
+CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}  # pragma: no cover
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli() -> None:  # pragma: no cover
-    """This command-line interface exposes the helper environment used to automate various project development and
-    building steps. Commands exposed by this interface are intended to be called via the 'tox' automation manager and
-    should not be used directly by end-users.
+    """Exposes the helper environment used to automate various project development and building steps.
+
+    Commands exposed by this interface are intended to be called via the 'tox' automation manager and should not be
+    used directly by end-users.
     """
 
 
@@ -143,17 +144,18 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
         # Strips whitespaces from the input string
         token = token.strip()
 
-        # Validates the token using multiple heuristic for what a well-formed PyPI token should look like
+        # Validates the token using multiple heuristics for what a well-formed PyPI token should look like.
+        # Checks non-emptiness, prefix, length constraints, base64 URL-safe character set, and absence of whitespace.
         valid = (
-            token  # Not empty
-            and token.startswith("pypi-")  # Has the correct prefix
-            and _MINIMUM_PYPI_TOKEN_LENGTH <= len(token) <= _MAXIMUM_PYPI_TOKEN_LENGTH  # Has a reasonable length
-            and len(token[5:]) > 0  # Has body after the prefix
-            and re.match(r"^[A-Za-z0-9\-_]+=*$", token[5:])  # Uses valid base64 URL-safe chars
-            and " " not in token  # Contains no spaces
+            token
+            and token.startswith("pypi-")
+            and _MINIMUM_PYPI_TOKEN_LENGTH <= len(token) <= _MAXIMUM_PYPI_TOKEN_LENGTH
+            and len(token[5:]) > 0
+            and re.match(r"^[A-Za-z0-9\-_]+=*$", token[5:])
+            and " " not in token
             and "\n" not in token
             and "\r" not in token
-            and "\t" not in token  # Does not have whitespace characters
+            and "\t" not in token
         )
 
         # Additional base64 validation
@@ -190,7 +192,7 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
 @cli.command()
 @click.option(
     "-e",
-    "--environment_name",
+    "--environment-name",
     required=True,
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
@@ -205,7 +207,15 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
         "the default environment detection procedure when it fails."
     ),
 )
-def install_project(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+@click.option(
+    "--prerelease",
+    is_flag=True,
+    default=False,
+    help="Determines whether uv is allowed to install prerelease versions of dependencies.",
+)
+def install_project(
+    environment_name: str, environment_directory: Path | None, *, prerelease: bool
+) -> None:  # pragma: no cover
     """Builds and installs the project into the specified mamba environment as a library."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -216,6 +226,7 @@ def install_project(environment_name: str, environment_directory: Path | None) -
         project_root=project_root,
         environment_name=environment_name,
         environment_directory=environment_directory,
+        prerelease=prerelease,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If not, it raises an
@@ -247,7 +258,7 @@ def install_project(environment_name: str, environment_directory: Path | None) -
 @cli.command()
 @click.option(
     "-e",
-    "--environment_name",
+    "--environment-name",
     required=True,
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
@@ -301,14 +312,14 @@ def uninstall_project(environment_name: str, environment_directory: Path | None)
 @cli.command()
 @click.option(
     "-e",
-    "--environment_name",
+    "--environment-name",
     required=True,
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
 )
 @click.option(
     "-p",
-    "--python_version",
+    "--python-version",
     required=True,
     type=str,
     help="The python version to use for the project's mamba environment, e.g. '3.13'.",
@@ -323,8 +334,14 @@ def uninstall_project(environment_name: str, environment_directory: Path | None)
         "the default environment detection procedure when it fails."
     ),
 )
+@click.option(
+    "--prerelease",
+    is_flag=True,
+    default=False,
+    help="Determines whether uv is allowed to install prerelease versions of dependencies.",
+)
 def create_environment(
-    environment_name: str, python_version: str, environment_directory: Path | None
+    environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
 ) -> None:  # pragma: no cover
     """Creates the project's mamba environment and installs the project dependencies into the created environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
@@ -337,6 +354,7 @@ def create_environment(
         environment_name=environment_name,
         python_version=python_version,
         environment_directory=environment_directory,
+        prerelease=prerelease,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If it is accessible
@@ -386,7 +404,7 @@ def create_environment(
 @cli.command()
 @click.option(
     "-e",
-    "--environment_name",
+    "--environment-name",
     required=True,
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
@@ -429,6 +447,7 @@ def remove_environment(environment_name: str, environment_directory: Path | None
         shutil.rmtree(environment.environment_directory)
         message = f"Removed mamba environment '{environment.environment_name}'."
         click.echo(colorize_message(message, color="green"))
+        return
 
     # Otherwise, ensures the environment is not active and carries out the full removal procedure.
     try:
@@ -451,14 +470,14 @@ def remove_environment(environment_name: str, environment_directory: Path | None
 @cli.command()
 @click.option(
     "-e",
-    "--environment_name",
+    "--environment-name",
     required=True,
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
 )
 @click.option(
     "-p",
-    "--python_version",
+    "--python-version",
     required=True,
     type=str,
     help="The python version to use for the project's mamba environment, e.g. '3.13'.",
@@ -473,8 +492,14 @@ def remove_environment(environment_name: str, environment_directory: Path | None
         "the default environment detection procedure when it fails."
     ),
 )
+@click.option(
+    "--prerelease",
+    is_flag=True,
+    default=False,
+    help="Determines whether uv is allowed to install prerelease versions of dependencies.",
+)
 def provision_environment(
-    environment_name: str, python_version: str, environment_directory: Path | None
+    environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
 ) -> None:  # pragma: no cover
     """Recreates the project's mamba environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
@@ -487,6 +512,7 @@ def provision_environment(
         environment_name=environment_name,
         python_version=python_version,
         environment_directory=environment_directory,
+        prerelease=prerelease,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If it is not accessible
@@ -550,7 +576,7 @@ def provision_environment(
 @cli.command()
 @click.option(
     "-e",
-    "--environment_name",
+    "--environment-name",
     required=True,
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
@@ -619,7 +645,7 @@ def import_environment(environment_name: str, environment_directory: Path | None
 @cli.command()
 @click.option(
     "-e",
-    "--environment_name",
+    "--environment-name",
     required=True,
     type=str,
     help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",

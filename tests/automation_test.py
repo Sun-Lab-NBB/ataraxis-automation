@@ -1,10 +1,9 @@
-"""This module stores the tests for all non-cli functions available from the automation.py module."""
+"""Contains tests for non-CLI functions provided by the automation module."""
 
 import os
 import re
 import sys
 from pathlib import Path
-import textwrap
 import subprocess
 from configparser import ConfigParser
 from unittest.mock import Mock
@@ -17,14 +16,7 @@ from ataraxis_automation.automation import ProjectEnvironment
 
 @pytest.fixture
 def project_dir(tmp_path) -> Path:
-    """Generates the test project root directory with the required files expected by the automation functions.
-
-    Args:
-        tmp_path: Internal pytest fixture that generates temporary folders to isolate test-generated files.
-
-    Returns:
-        The absolute path to the test project root directory.
-    """
+    """Generates the test project root directory with the required files expected by the automation functions."""
     project_dir = tmp_path.joinpath("project")
     project_dir.mkdir()
     project_dir.joinpath("src").mkdir()
@@ -279,7 +271,7 @@ def test_add_dependency() -> None:
     message: str = (
         f"Unable to resolve project dependencies. Found a duplicate dependency for '{dependency}', listed in the "
         f"pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
-        f"'optional-dependencies' lists."
+        f"'dependency-groups' lists."
     )
     with pytest.raises(ValueError, match=error_format(message)):
         aa._add_dependency(
@@ -293,7 +285,7 @@ def test_add_dependency() -> None:
     message = (
         f"Unable to resolve project dependencies. Found a duplicate dependency for '{dependency}', listed in the "
         f"pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
-        f"'optional-dependencies' lists."
+        f"'dependency-groups' lists."
     )
     with pytest.raises(ValueError, match=error_format(message)):
         aa._add_dependency(
@@ -336,8 +328,8 @@ def test_resolve_dependencies(project_dir: Path, monkeypatch) -> None:
     pyproject_content = """
         [project]
         dependencies = ["dep1==1.0", "dep2>=2.0"]
-        
-        [project.optional-dependencies]
+
+        [dependency-groups]
         dev = ["dev_dep1[test]", "dev_dep2<2.0.1"]
     """
     write_pyproject_toml(project_dir, pyproject_content)
@@ -368,8 +360,8 @@ def test_resolve_dependencies_duplicate_dep(project_dir: Path, monkeypatch) -> N
     pyproject_content = """
     [project]
     dependencies = ["dep1==1.0", "dep2>=2.0"]
-    
-    [project.optional-dependencies]
+
+    [dependency-groups]
     dev = ["dev_dep1", "dev_dep2", "dep1<3.0"]
     """
     write_pyproject_toml(project_dir, pyproject_content)
@@ -387,7 +379,7 @@ requires =
     message: str = (
         "Unable to resolve project dependencies. Found a duplicate dependency for 'dep1<3.0', listed in the "
         "pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
-        "'optional-dependencies' lists."
+        "'dependency-groups' lists."
     )
     with pytest.raises(ValueError, match=error_format(message)):
         aa._resolve_dependencies(project_dir)
@@ -476,8 +468,8 @@ def test_project_environment_resolve(
     [project]
     name = "test-project"
     dependencies = ["runtime_dep==1.0"]
-    
-    [project.optional-dependencies]
+
+    [dependency-groups]
     dev = ["dev_dep==1.0"]
     """
     pyproject_path = project_dir.joinpath("pyproject.toml")
@@ -528,10 +520,12 @@ def test_project_environment_resolve(
     assert f"test_env{os_suffix} --all --yes" in result.remove_command
     assert result.environment_name == f"test_env{os_suffix}"
 
-    # Checks dependency installation command
+    # Checks dependency installation command (prerelease disabled by default).
     assert "uv pip install" in result.install_dependencies_command
     assert '"runtime_dep==1.0"' in result.install_dependencies_command
     assert '"dev_dep==1.0"' in result.install_dependencies_command
+    assert "--prerelease=allow" not in result.install_dependencies_command
+    assert "--prerelease=allow" not in result.install_project_command
 
     # Checks other commands
     assert f"mamba env update -n test_env{os_suffix}" in result.update_command
@@ -557,6 +551,14 @@ def test_project_environment_resolve(
     result = ProjectEnvironment.resolve_project_environment(project_dir, "test_env", python_version=python_version)
     assert result.create_from_yml_command is None
     assert result.update_command is None
+
+    # Verifies that prerelease=True includes the --prerelease=allow flag in uv commands.
+    yml_path.touch()
+    result = ProjectEnvironment.resolve_project_environment(
+        project_dir, "test_env", python_version=python_version, prerelease=True
+    )
+    assert "--prerelease=allow" in result.install_dependencies_command
+    assert "--prerelease=allow" in result.install_project_command
 
 
 def test_generate_typed_marker(tmp_path) -> None:
@@ -695,7 +697,7 @@ def test_move_stubs_error(project_dir) -> None:
         ({}, False),
     ],
 )
-def test_verify_pypirc(tmp_path, config, expected_result):
+def test_verify_pypirc(tmp_path, config, expected_result) -> None:
     """Verifies the functionality of the verify_pypirc() function.
 
     Tests all supported pypirc layouts.

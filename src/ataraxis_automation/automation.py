@@ -1,5 +1,5 @@
-"""This module provides the assets that support various project development automation Command Line Interface (CLI)
-commands exposed by the 'cli' module. It implements the logic of all automation tasks.
+"""Provides the assets that support various project development automation Command Line Interface (CLI) commands
+exposed by the 'cli' module. Implements the logic of all automation tasks.
 """
 
 import os
@@ -46,7 +46,7 @@ def format_message(message: str) -> str:
 
 def colorize_message(message: str, color: str, *, wrap: bool = True) -> str:
     """Modifies the input string to include an ANSI color code and, if necessary, formats the message by wrapping it
-    at 120 lines.
+    at 120 characters.
 
     Args:
         message: The input message string to format and colorize.
@@ -168,7 +168,7 @@ def _add_dependency(dependency: str, dependencies: list[str], processed_dependen
     """Verifies that dependency base-name is not already added to the input list and, if not, adds it to the list.
 
     This method ensures that each dependency only appears in a single pyproject.toml dependency list, preventing
-    listing dependencies as both required and optional.
+    listing dependencies as both required and development.
 
     Notes:
         As part of its runtime, it modifies the input 'dependencies' list and 'processed_dependencies' set to include
@@ -188,7 +188,7 @@ def _add_dependency(dependency: str, dependencies: list[str], processed_dependen
         message: str = (
             f"Unable to resolve project dependencies. Found a duplicate dependency for '{dependency}', listed in the "
             f"pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
-            f"'optional-dependencies' lists."
+            f"'dependency-groups' lists."
         )
         raise ValueError(format_message(message))
 
@@ -200,12 +200,13 @@ def _add_dependency(dependency: str, dependencies: list[str], processed_dependen
 
 
 def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
-    """Extracts project dependencies from all pyproject.toml lists as a tuple of all dependencies (runtime and
-    development).
+    """Extracts project dependencies from pyproject.toml as a tuple of all dependencies (runtime and development).
 
     Notes:
-        As part of its runtime, this function also ensures that dependencies appear exclusively in the main
-        'dependencies' list or the 'optional-dependencies' list.
+        Reads runtime dependencies from ``[project].dependencies`` and development dependencies from
+        ``[dependency-groups].dev`` (PEP 735). Falls back to ``[project.optional-dependencies].dev`` for backward
+        compatibility with projects that have not yet migrated. As part of its runtime, this function also ensures
+        that each dependency appears in only one list, preventing duplicates.
 
     Args:
         project_root: The absolute path to the root directory of the processed project.
@@ -225,17 +226,15 @@ def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
     with Path.open(pyproject_path, "rb") as f:
         pyproject_data = tomli.load(f)
 
-    # Extracts dependencies and optional-dependencies from the main 'project' metadata section.
+    # Extracts runtime dependencies from the main 'project' metadata section.
     project_data: dict[str, Any] = pyproject_data.get("project", {})
     dependencies: list[str] = project_data.get("dependencies", [])
-    optional_dependencies: dict[str, list[str]] = project_data.get("optional-dependencies", {})
 
     runtime_dependencies: list[str] = []  # Stores all platform-applicable runtime dependencies
     development_dependencies: list[str] = []  # Stores all platform-applicable development dependencies
     processed_dependencies: set[str] = set()  # Keeps track of duplicates to prevent double-listing
 
     # Processes runtime dependencies first. These are the core dependencies required for the project to function.
-    # Filters them based on platform markers if present.
     for dependency in dependencies:
         _add_dependency(
             dependency=dependency,
@@ -243,15 +242,27 @@ def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
             processed_dependencies=processed_dependencies,
         )
 
-    # Processes development dependencies if they exist. These include testing, linting, documentation, and build tools.
-    # Also filters based on platform markers.
-    if "dev" in optional_dependencies:
-        for dependency in optional_dependencies["dev"]:
-            _add_dependency(
-                dependency=dependency,
-                dependencies=development_dependencies,
-                processed_dependencies=processed_dependencies,
-            )
+    # Extracts development dependencies. Prefers PEP 735 dependency groups over legacy optional-dependencies.
+    dependency_groups: dict[str, Any] = pyproject_data.get("dependency-groups", {})
+    if "dev" in dependency_groups:
+        for dependency in dependency_groups["dev"]:
+            # Skips PEP 735 include-group references (dict entries), only processes string dependencies.
+            if isinstance(dependency, str):
+                _add_dependency(
+                    dependency=dependency,
+                    dependencies=development_dependencies,
+                    processed_dependencies=processed_dependencies,
+                )
+    else:
+        # Falls back to legacy optional-dependencies for backward compatibility with unmigrated projects.
+        optional_dependencies: dict[str, list[str]] = project_data.get("optional-dependencies", {})
+        if "dev" in optional_dependencies:
+            for dependency in optional_dependencies["dev"]:
+                _add_dependency(
+                    dependency=dependency,
+                    dependencies=development_dependencies,
+                    processed_dependencies=processed_dependencies,
+                )
 
     # Merges the two dependency lists and returns the merged list to caller as a tuple
     runtime_dependencies.extend(development_dependencies)
@@ -280,7 +291,7 @@ def _resolve_project_name(project_root: Path) -> str:
             pyproject_data: dict[str, Any] = tomli.load(f)
     except tomli.TOMLDecodeError as e:
         message: str = (
-            f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax."
+            f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax. "
             f"Error details: {e}."
         )
         raise ValueError(format_message(message)) from None
@@ -491,11 +502,11 @@ def _resolve_mamba_environments_directory() -> Path:
     # intended runtime scenario. Therefore, attempts to find the mamba environments directory manually.
 
     # Method 1: Checks whether this script is executed from a miniforge-based python shell.
-    python_exe = Path(sys.executable)
+    python_executable = Path(sys.executable)
 
-    if "miniforge" in str(python_exe).lower():
+    if "miniforge" in str(python_executable).lower():
         # Navigates up until it finds the miniforge root.
-        current = python_exe.parent
+        current = python_executable.parent
         while current != current.parent:  # Stops at root
             # If the 'envs' directory is found while ascending towards the root, returns the directory path to caller
             if current.name == "envs":
@@ -516,9 +527,9 @@ def _resolve_mamba_environments_directory() -> Path:
             current = current.parent
 
     # Method 2: Tries to find mamba by locating mamba/conda executable (mamba uses CONDA_EXE).
-    mamba_exe = os.environ.get("CONDA_EXE")
-    if mamba_exe:
-        envs_dir = Path(mamba_exe).parents[1].joinpath("envs")
+    mamba_executable = os.environ.get("CONDA_EXE")
+    if mamba_executable:
+        envs_dir = Path(mamba_executable).parents[1].joinpath("envs")
         if envs_dir.exists():
             return envs_dir
 
@@ -641,7 +652,7 @@ def _check_package_engines() -> None:
         raise RuntimeError(format_message(message)) from None
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProjectEnvironment:
     """Encapsulates the data used to interface with the project's mamba environment.
 
@@ -654,57 +665,29 @@ class ProjectEnvironment:
     """
 
     activate_command: str
-    """
-    Stores the command used to activate the project's mamba environment.
-    """
+    """Stores the command used to activate the project's mamba environment."""
     deactivate_command: str
-    """
-    Stores the command used to deactivate any current environment and switch to the base environment.
-    """
+    """Stores the command used to deactivate any current environment and switch to the base environment."""
     create_command: str
-    """
-    Stores the command used to generate a minimally-configured mamba environment.
-    """
+    """Stores the command used to generate a minimally-configured mamba environment."""
     create_from_yml_command: str | None
-    """
-    Stores the command used to create a new mamba environment from an existing .yml file. If valid .yml files do not 
-    exist inside the 'envs' project directory, this command is set to None.
-    """
+    """Stores the command used to create a new mamba environment from an existing .yml file."""
     remove_command: str
-    """
-    Stores the command used to remove (delete) the project's mamba environment.
-    """
+    """Stores the command used to remove (delete) the project's mamba environment."""
     install_dependencies_command: str
-    """
-    Stores the command used to install all project dependencies (runtime and development) into the project's mamba 
-    environment using uv.
-    """
+    """Stores the command used to install all project dependencies into the project's mamba environment using uv."""
     update_command: str | None
-    """
-    Stores the command used to update an already existing mamba environment using an existing .yml file. If the .yml 
-    file for the environment does not exist inside the 'envs' project folder, this command is set to None.
-    """
+    """Stores the command used to update an already existing mamba environment using an existing .yml file."""
     export_yml_command: str
-    """
-    Stores the command used to export the project's mamba environment to a .yml file.
-    """
+    """Stores the command used to export the project's mamba environment to a .yml file."""
     export_spec_command: str
-    """
-    Stores the command used to export the project's mamba environment to a spec.txt file with revision history.
-    """
+    """Stores the command used to export the project's mamba environment to a spec.txt file with revision history."""
     install_project_command: str
-    """
-    Stores the command used to build and install the project as a library into the project's mamba environment.
-    """
+    """Stores the command used to build and install the project as a library into the project's mamba environment."""
     uninstall_project_command: str
-    """
-    Stores the command used to uninstall the project library from the project's mamba environment.
-    """
+    """Stores the command used to uninstall the project library from the project's mamba environment."""
     environment_name: str
-    """
-    Stores the name of the project's mamba environment with the appended os-suffix. This name is used by all other 
-    commands to target the project's environment.
-    """
+    """Stores the name of the project's mamba environment with the appended os-suffix."""
     environment_directory: Path
     """Stores the path to the project's mamba environment directory."""
 
@@ -715,6 +698,8 @@ class ProjectEnvironment:
         environment_name: str,
         python_version: str = "3.13",
         environment_directory: Path | None = None,
+        *,
+        prerelease: bool = False,
     ) -> "ProjectEnvironment":
         """Generates the mamba and uv commands used to manipulate the project- and os-specific mamba
         environment and packages them into a ProjectEnvironment instance.
@@ -726,9 +711,15 @@ class ProjectEnvironment:
             environment_directory: Optional. The absolute path to the directory used by the mamba / conda manager to
                 store Python environments. This argument only needs to be provided if the automatic (default)
                 environment resolution fails.
+            prerelease: Determines whether uv is allowed to install prerelease versions of dependencies.
 
         Returns:
             The resolved ProjectEnvironment instance.
+
+        Raises:
+            RuntimeError: If the host OS is unsupported, mamba or uv is not accessible, or the mamba environments
+                directory cannot be resolved and no manual override is provided.
+            ValueError: If the project name cannot be extracted from pyproject.toml or duplicate dependencies are found.
         """
         # Gets the environment name with the appropriate os-extension and the paths to the .yml and /spec files.
         extended_environment_name, yml_path, spec_path = _resolve_environment_files(project_root, environment_name)
@@ -794,14 +785,15 @@ class ProjectEnvironment:
         export_spec_command = f"mamba list -n {extended_environment_name} --use-uv --explicit > {spec_path}"
 
         # Generates dependency installation commands using uv:
+        prerelease_flag = " --prerelease=allow" if prerelease else ""
         install_dependencies_command = (
             f"uv pip install {' '.join(_resolve_dependencies(project_root))} --resolution highest "
-            f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact --prerelease=allow"
+            f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact{prerelease_flag}"
         )
         uninstall_project_command = f"uv pip uninstall {project_name} --python={target_environment_directory}"
         install_project_command = (
             f"uv pip install . --resolution highest --refresh --reinstall-package {project_name} --compile-bytecode "
-            f"--python={target_environment_directory} --strict --prerelease=allow"
+            f"--python={target_environment_directory} --strict{prerelease_flag}"
         )
 
         # Generates mamba environment manipulation commands.
