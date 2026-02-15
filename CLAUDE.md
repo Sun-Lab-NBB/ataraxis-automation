@@ -14,16 +14,17 @@ This ensures you:
 
 You MUST invoke the appropriate skill before performing ANY of the following tasks:
 
-| Task                                    | Skill to invoke    |
-|-----------------------------------------|--------------------|
-| Writing or modifying Python code        | `/python-style`    |
-| Writing or modifying C++ code           | `/cpp-style`       |
-| Writing or modifying C# code            | `/csharp-style`    |
-| Writing or modifying README files       | `/readme-style`    |
-| Writing or modifying pyproject.toml     | `/pyproject-style` |
-| Writing git commit messages             | `/commit`          |
-| Writing or modifying Sphinx docs files  | `/api-docs`        |
-| Writing or modifying skill files        | `/skill-design`    |
+| Task                                    | Skill to invoke     |
+|-----------------------------------------|---------------------|
+| Writing or modifying Python code        | `/python-style`     |
+| Writing or modifying C++ code           | `/cpp-style`        |
+| Writing or modifying C# code            | `/csharp-style`     |
+| Writing or modifying README files       | `/readme-style`     |
+| Writing or modifying pyproject.toml     | `/pyproject-style`  |
+| Writing git commit messages             | `/commit`           |
+| Writing or modifying Sphinx docs files  | `/api-docs`         |
+| Creating or verifying project structure | `/project-layout`   |
+| Writing or modifying skill files        | `/skill-design`     |
 
 This is non-negotiable. Each skill contains verification checklists that you MUST complete before submitting any work.
 Failure to invoke the appropriate skill results in style violations.
@@ -67,6 +68,7 @@ state to prevent integration errors.
 | `/pyproject-style`  | Apply Sun Lab pyproject.toml conventions (REQUIRED for pyproject)    |
 | `/commit`           | Generate style-compliant commit messages for local changes           |
 | `/api-docs`         | Apply Sun Lab API documentation conventions (REQUIRED for docs)      |
+| `/project-layout`   | Apply Sun Lab project directory structure conventions                 |
 | `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md               |
 
 ## Project Context
@@ -75,8 +77,8 @@ This is **ataraxis-automation**, a Python library that supports tox-based develo
 Sun Lab (NeuroAI) projects at Cornell University. It provides a CLI (`automation-cli`) that abstracts project
 environment manipulation and facilitates development tasks such as linting, typing, testing, documentation, and
 building. This library also serves as the shared Claude Code plugin, distributing the `/explore-codebase`,
-`/python-style`, `/cpp-style`, `/csharp-style`, `/readme-style`, `/pyproject-style`, `/api-docs`, `/commit`, and
-`/skill-design` skills to all downstream Sun Lab repositories.
+`/python-style`, `/cpp-style`, `/csharp-style`, `/readme-style`, `/pyproject-style`, `/api-docs`, `/project-layout`,
+`/commit`, and `/skill-design` skills to all downstream Sun Lab repositories.
 
 **Note:** The `/cpp-style` skill applies to both C++ embedded projects (e.g., `ataraxis-transport-layer-mc`,
 `ataraxis-micro-controller`, `sl-micro-controllers`) and C++ Python extension projects (e.g., `ataraxis-time`). The
@@ -96,6 +98,7 @@ the Python style guide used across all Sun Lab projects.
 | `.claude/skills/api-docs/`         | API documentation style skill (shared via plugin)       |
 | `.claude/skills/cpp-style/`        | C++ code style skill (shared via plugin)                |
 | `.claude/skills/csharp-style/`     | C# code style skill (shared via plugin)                 |
+| `.claude/skills/project-layout/`   | Project directory structure skill (shared via plugin)   |
 | `.claude/skills/skill-design/`     | Skill and CLAUDE.md authoring skill (shared via plugin) |
 | `.claude-plugin/`                  | Claude Code plugin configuration                        |
 | `tests/`                           | Test suite                                              |

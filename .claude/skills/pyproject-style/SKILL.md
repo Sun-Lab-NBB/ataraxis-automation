@@ -217,19 +217,8 @@ Use environment markers for platform-conditional dependencies:
 
 ## Project layout
 
-All Sun Lab projects use the **src layout**:
-
-```text
-project-root/
-├── src/
-│   └── package_name/
-│       ├── __init__.py
-│       └── ...
-├── tests/
-├── docs/
-├── pyproject.toml
-└── ...
-```
+All Sun Lab Python projects use the **src layout**. For complete directory trees, invoke
+`/project-layout`.
 
 The wheel configuration always points to the src directory:
 
@@ -249,6 +238,7 @@ part of the distributed package.
 |---------------------|-----------------------------------------------------------------------|
 | `/python-style`     | Provides coding conventions that pyproject.toml tool configs enforce  |
 | `/readme-style`     | Provides README conventions; the `readme` field references the README |
+| `/project-layout`   | Provides complete directory trees; this skill owns wheel config       |
 | `/commit`           | Should be invoked after completing pyproject.toml changes             |
 | `/explore-codebase` | Provides project context needed when writing project-specific configs |
 

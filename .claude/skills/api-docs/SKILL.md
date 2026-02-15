@@ -51,7 +51,8 @@ Sun Lab projects follow one of three documentation archetypes based on language 
 
 ### Directory structure
 
-All projects use this exact documentation layout:
+For the full project-level directory tree, invoke `/project-layout`. The documentation-specific
+layout within each project is:
 
 ```text
 project-root/
@@ -271,6 +272,7 @@ via tox (`tox -e docs`). Use the exact templates from
 | `/python-style`     | Defines docstring and type annotation conventions consumed by autodoc |
 | `/readme-style`     | Defines README conventions; README links to hosted API docs           |
 | `/pyproject-style`  | Defines pyproject.toml conventions including documentation URL        |
+| `/project-layout`   | Provides full project directory trees; this skill owns docs/ internals|
 | `/commit`           | Should be invoked after completing documentation changes              |
 | `/explore-codebase` | Provides project context needed to identify modules for api.rst       |
 

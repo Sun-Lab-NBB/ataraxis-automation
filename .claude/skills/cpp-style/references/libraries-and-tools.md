@@ -60,40 +60,8 @@ inline constexpr bool is_same_v = is_same<T, U>::value;
 
 ### File organization
 
-PlatformIO projects follow this directory structure:
-
-```text
-project-root/
-├── .clang-format          # clang-format configuration
-├── .clang-tidy            # clang-tidy configuration
-├── platformio.ini         # PlatformIO build configuration
-├── Doxyfile               # Doxygen documentation configuration
-├── src/
-│   ├── main.cpp           # Entry point (setup/loop)
-│   └── *.h                # Custom module headers (for sl-micro-controllers)
-├── include/               # (optional) Project-specific headers
-├── lib/                   # (optional) Local libraries
-└── docs/                  # Sphinx + Doxygen documentation
-```
-
-For library projects (ataraxis-transport-layer-mc, ataraxis-micro-controller):
-
-```text
-library-root/
-├── .clang-format
-├── .clang-tidy
-├── platformio.ini
-├── Doxyfile
-├── library.json           # PlatformIO library manifest
-├── src/
-│   ├── main.cpp           # Development entry point (excluded from library)
-│   ├── transport_layer.h  # Primary library header
-│   ├── cobs_processor.h   # Supporting headers
-│   └── shared_assets.h    # Shared types and constants
-├── examples/              # Example sketches
-├── test/                  # PlatformIO unit tests
-└── docs/                  # Sphinx + Doxygen documentation
-```
+For complete directory trees for PlatformIO library and firmware projects, invoke
+`/project-layout`.
 
 ### Header-only libraries
 
@@ -391,23 +359,7 @@ built with nanobind and scikit-build-core, targeting desktop platforms (Windows,
 
 ### File organization
 
-Extension projects follow this directory structure:
-
-```text
-project-root/
-├── .clang-format              # clang-format configuration
-├── .clang-tidy                # clang-tidy configuration
-├── CMakeLists.txt             # CMake build configuration for nanobind
-├── Doxyfile                   # Doxygen documentation configuration
-├── pyproject.toml             # Python package with scikit-build-core backend
-├── src/
-│   ├── __init__.py            # Package init
-│   ├── c_extensions/
-│   │   └── module_ext.cpp     # C++ extension source
-│   └── python_wrapper/
-│       └── __init__.py        # Pure Python wrapper around C++ extension
-└── docs/                      # Sphinx + Doxygen documentation
-```
+For the complete directory tree for Python + C++ extension projects, invoke `/project-layout`.
 
 ### Naming conventions
 
