@@ -59,7 +59,7 @@ dependencies = [
     "junitparser>=4,<5",
 
     # Documentation
-    "sphinx>=8,<9",
+    "sphinx>=9,<10",
     "importlib_metadata>=8,<9",
     "sphinx-rtd-theme>=3,<4",
     "sphinx-click>=6,<7",

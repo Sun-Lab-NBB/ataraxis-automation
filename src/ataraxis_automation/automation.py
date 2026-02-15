@@ -698,6 +698,8 @@ class ProjectEnvironment:
         environment_name: str,
         python_version: str = "3.13",
         environment_directory: Path | None = None,
+        *,
+        prerelease: bool = False,
     ) -> "ProjectEnvironment":
         """Generates the mamba and uv commands used to manipulate the project- and os-specific mamba
         environment and packages them into a ProjectEnvironment instance.
@@ -709,6 +711,7 @@ class ProjectEnvironment:
             environment_directory: Optional. The absolute path to the directory used by the mamba / conda manager to
                 store Python environments. This argument only needs to be provided if the automatic (default)
                 environment resolution fails.
+            prerelease: Determines whether uv is allowed to install prerelease versions of dependencies.
 
         Returns:
             The resolved ProjectEnvironment instance.
@@ -782,14 +785,15 @@ class ProjectEnvironment:
         export_spec_command = f"mamba list -n {extended_environment_name} --use-uv --explicit > {spec_path}"
 
         # Generates dependency installation commands using uv:
+        prerelease_flag = " --prerelease=allow" if prerelease else ""
         install_dependencies_command = (
             f"uv pip install {' '.join(_resolve_dependencies(project_root))} --resolution highest "
-            f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact --prerelease=allow"
+            f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact{prerelease_flag}"
         )
         uninstall_project_command = f"uv pip uninstall {project_name} --python={target_environment_directory}"
         install_project_command = (
             f"uv pip install . --resolution highest --refresh --reinstall-package {project_name} --compile-bytecode "
-            f"--python={target_environment_directory} --strict --prerelease=allow"
+            f"--python={target_environment_directory} --strict{prerelease_flag}"
         )
 
         # Generates mamba environment manipulation commands.

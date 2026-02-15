@@ -520,10 +520,12 @@ def test_project_environment_resolve(
     assert f"test_env{os_suffix} --all --yes" in result.remove_command
     assert result.environment_name == f"test_env{os_suffix}"
 
-    # Checks dependency installation command
+    # Checks dependency installation command (prerelease disabled by default).
     assert "uv pip install" in result.install_dependencies_command
     assert '"runtime_dep==1.0"' in result.install_dependencies_command
     assert '"dev_dep==1.0"' in result.install_dependencies_command
+    assert "--prerelease=allow" not in result.install_dependencies_command
+    assert "--prerelease=allow" not in result.install_project_command
 
     # Checks other commands
     assert f"mamba env update -n test_env{os_suffix}" in result.update_command
@@ -549,6 +551,14 @@ def test_project_environment_resolve(
     result = ProjectEnvironment.resolve_project_environment(project_dir, "test_env", python_version=python_version)
     assert result.create_from_yml_command is None
     assert result.update_command is None
+
+    # Verifies that prerelease=True includes the --prerelease=allow flag in uv commands.
+    yml_path.touch()
+    result = ProjectEnvironment.resolve_project_environment(
+        project_dir, "test_env", python_version=python_version, prerelease=True
+    )
+    assert "--prerelease=allow" in result.install_dependencies_command
+    assert "--prerelease=allow" in result.install_project_command
 
 
 def test_generate_typed_marker(tmp_path) -> None:

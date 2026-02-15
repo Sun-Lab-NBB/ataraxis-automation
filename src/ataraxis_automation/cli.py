@@ -207,7 +207,15 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
         "the default environment detection procedure when it fails."
     ),
 )
-def install_project(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+@click.option(
+    "--prerelease",
+    is_flag=True,
+    default=False,
+    help="Determines whether uv is allowed to install prerelease versions of dependencies.",
+)
+def install_project(
+    environment_name: str, environment_directory: Path | None, *, prerelease: bool
+) -> None:  # pragma: no cover
     """Builds and installs the project into the specified mamba environment as a library."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -218,6 +226,7 @@ def install_project(environment_name: str, environment_directory: Path | None) -
         project_root=project_root,
         environment_name=environment_name,
         environment_directory=environment_directory,
+        prerelease=prerelease,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If not, it raises an
@@ -325,8 +334,14 @@ def uninstall_project(environment_name: str, environment_directory: Path | None)
         "the default environment detection procedure when it fails."
     ),
 )
+@click.option(
+    "--prerelease",
+    is_flag=True,
+    default=False,
+    help="Determines whether uv is allowed to install prerelease versions of dependencies.",
+)
 def create_environment(
-    environment_name: str, python_version: str, environment_directory: Path | None
+    environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
 ) -> None:  # pragma: no cover
     """Creates the project's mamba environment and installs the project dependencies into the created environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
@@ -339,6 +354,7 @@ def create_environment(
         environment_name=environment_name,
         python_version=python_version,
         environment_directory=environment_directory,
+        prerelease=prerelease,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If it is accessible
@@ -476,8 +492,14 @@ def remove_environment(environment_name: str, environment_directory: Path | None
         "the default environment detection procedure when it fails."
     ),
 )
+@click.option(
+    "--prerelease",
+    is_flag=True,
+    default=False,
+    help="Determines whether uv is allowed to install prerelease versions of dependencies.",
+)
 def provision_environment(
-    environment_name: str, python_version: str, environment_directory: Path | None
+    environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
 ) -> None:  # pragma: no cover
     """Recreates the project's mamba environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
@@ -490,6 +512,7 @@ def provision_environment(
         environment_name=environment_name,
         python_version=python_version,
         environment_directory=environment_directory,
+        prerelease=prerelease,
     )
 
     # Checks if the project's mamba environment is accessible via subprocess activation call. If it is not accessible
