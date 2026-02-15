@@ -20,6 +20,7 @@ You MUST invoke the appropriate skill before performing ANY of the following tas
 | Writing or modifying README files       | `/readme-style`    |
 | Writing or modifying pyproject.toml     | `/pyproject-style` |
 | Writing git commit messages             | `/commit`          |
+| Writing or modifying Sphinx docs files  | `/api-docs`        |
 | Writing or modifying skill files        | `/skill-design`    |
 
 This is non-negotiable. Each skill contains verification checklists that you MUST complete before submitting any work.
@@ -61,6 +62,7 @@ state to prevent integration errors.
 | `/readme-style`     | Apply Sun Lab README conventions (REQUIRED for README files)         |
 | `/pyproject-style`  | Apply Sun Lab pyproject.toml conventions (REQUIRED for pyproject)    |
 | `/commit`           | Generate style-compliant commit messages for local changes           |
+| `/api-docs`         | Apply Sun Lab API documentation conventions (REQUIRED for docs)      |
 | `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md               |
 
 ## Project Context
@@ -69,8 +71,8 @@ This is **ataraxis-automation**, a Python library that supports tox-based develo
 Sun Lab (NeuroAI) projects at Cornell University. It provides a CLI (`automation-cli`) that abstracts project
 environment manipulation and facilitates development tasks such as linting, typing, testing, documentation, and
 building. This library also serves as the shared Claude Code plugin, distributing the `/explore-codebase`,
-`/python-style`, `/readme-style`, `/pyproject-style`, `/commit`, and `/skill-design` skills to all downstream Sun Lab
-repositories.
+`/python-style`, `/readme-style`, `/pyproject-style`, `/api-docs`, `/commit`, and `/skill-design` skills to all
+downstream Sun Lab repositories.
 
 ### Key Areas
 
@@ -82,6 +84,7 @@ repositories.
 | `.claude/skills/readme-style/`     | README style skill (shared via plugin)                  |
 | `.claude/skills/commit/`           | Commit message generation skill (shared via plugin)     |
 | `.claude/skills/pyproject-style/`  | pyproject.toml style skill (shared via plugin)          |
+| `.claude/skills/api-docs/`         | API documentation style skill (shared via plugin)       |
 | `.claude/skills/skill-design/`     | Skill and CLAUDE.md authoring skill (shared via plugin) |
 | `.claude-plugin/`                  | Claude Code plugin configuration                        |
 | `tests/`                           | Test suite                                              |
@@ -143,6 +146,13 @@ repositories.
 2. Understand the OS-specific branching (`sys.platform` checks)
 3. Test changes across supported platforms (Linux, macOS, Windows)
 4. Maintain compatibility with mamba/conda and uv tooling
+
+**Modifying API documentation:**
+
+1. Invoke `/api-docs` for conventions on conf.py, RST structure, and Doxygen integration
+2. Determine the project archetype (Python-only, C++-only, or hybrid)
+3. Follow the templates in the skill's reference files for new documentation
+4. Changes to documentation affect the hosted Netlify site after rebuild
 
 **Modifying shared skills:**
 
