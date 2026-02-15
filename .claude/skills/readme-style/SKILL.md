@@ -1,10 +1,10 @@
 ---
-name: writing-readmes
+name: readme-style
 description: >-
   Applies Sun Lab README conventions when creating or updating README.md files. Covers section
-  ordering, writing style, standard sections, MCP server documentation, and codebase
-  cross-referencing. Use when writing a new README, updating an existing README, or when the user
-  asks about README conventions.
+  ordering, writing style, standard section templates, badges, MCP server documentation, CLI
+  documentation, and codebase cross-referencing. Use when writing a new README, updating an
+  existing README, or when the user asks about README conventions.
 user-invocable: true
 ---
 
@@ -12,8 +12,9 @@ user-invocable: true
 
 Applies Sun Lab conventions for README.md files.
 
-You MUST read this entire skill and apply its conventions when creating or modifying any README
-file. You MUST verify your changes against the verification checklist before submitting.
+You MUST read this entire skill and load the section templates reference before creating or
+modifying any README file. You MUST verify your changes against the verification checklist before
+submitting.
 
 ---
 
@@ -22,9 +23,10 @@ file. You MUST verify your changes against the verification checklist before sub
 **Covers:**
 - README.md section ordering and structure
 - Writing style (voice, tense, notes/warnings)
-- Standard sections (Acknowledgments, Versioning, License)
-- MCP server documentation sections
+- Standard section templates (badges, installation, developers, acknowledgments, etc.)
+- MCP server and CLI documentation sections
 - Codebase cross-referencing for technical accuracy
+- PyPI rendering compatibility
 
 **Does not cover:**
 - Python code style (invoke `/python-style`)
@@ -39,48 +41,54 @@ You MUST follow these steps when this skill is invoked.
 
 ### Step 1: Read this skill
 
-Read this entire file before making any changes. The verification checklist at the end is
-mandatory.
+Read this entire file before making any changes.
 
-### Step 2: Cross-reference the codebase
+### Step 2: Load section templates
+
+Load [section-templates.md](references/section-templates.md). This file contains the exact
+templates for every README section (badges, dependencies, installation, developers, MCP server,
+standard ending sections, etc.). You MUST use these templates when writing new sections or
+verifying existing ones.
+
+### Step 3: Cross-reference the codebase
 
 Before writing or updating technical content, verify all claims against the actual codebase. See
-the [codebase cross-referencing](#codebase-cross-referencing) section for the verification process.
+the [codebase cross-referencing](#codebase-cross-referencing) section for the verification
+process.
 
-### Step 3: Apply conventions
+### Step 4: Apply conventions
 
-Write or modify the README following all conventions below.
+Write or modify the README following all conventions from this file and the loaded templates.
 
-### Step 4: Verify compliance
+### Step 5: Verify compliance
 
-Complete the verification checklist at the end of this file. Every item must pass before submitting
-work.
+Complete the verification checklist at the end of this file. Every item must pass before
+submitting work.
 
 ---
 
 ## Section ordering
 
 README files use the following section order. Sections marked as optional may be omitted based on
-project type.
+project type. For the exact template of each section, see
+[section-templates.md](references/section-templates.md).
 
 1. **Title**: Project name as H1 heading (`# project-name`)
 2. **One-line description**: Brief summary immediately after the title
-3. **Badges**: PyPI/language badges, tooling badges, license, status (no blank line before badges)
-4. **Horizontal rule**: `___` to separate header from content
-5. **Detailed description**: Expanded explanation of the library's purpose
-6. **Features** *(optional)*: Bulleted list of key features
-7. **Table of contents**: Links to all major sections using Markdown anchors
+3. **Badges**: Standard badge set for the project type (no blank line before badges)
+4. **Horizontal rule**: `___` (triple underscore) to separate header from content
+5. **Detailed description**: Expanded explanation of the library's purpose (no heading)
+6. **Features** *(optional)*: Bulleted list of key features, ending with license type
+7. **Table of contents**: Links to all major sections using lowercase Markdown anchors
 8. **Dependencies**: External requirements and automatic installation notes
-9. **Installation**: Source and pip installation instructions
+9. **Installation**: Source and pip installation instructions with standard templates
 10. **Usage**: Detailed usage instructions with subsections
 11. **API documentation**: Link to hosted documentation
-12. **Developers** *(optional)*: Development setup and automation
+12. **Developers** *(optional)*: Development setup, automation, and troubleshooting
 13. **Versioning**: Semantic versioning statement with link to repository tags
 14. **Authors**: List of contributors with GitHub profile links
 15. **License**: License type with link to LICENSE file
 16. **Acknowledgments**: Credits to Sun lab members and dependency creators
-
-Use horizontal rules (`___`) to separate major sections.
 
 ---
 
@@ -114,34 +122,52 @@ These dependencies will be automatically resolved when the library is installed.
 The method will return a tuple of timestamps.
 ```
 
-**Notes and warnings**: Use `**Note!**` or `***Note!***` for important information. Use
-`**Warning!**`, `***Warning!***`, or `***Critical!***` for dangerous operations or essential
-requirements.
+**Notes and warnings**: Use `***Note,***` for important information. Use `***Warning!***` or
+`***Critical!***` for dangerous operations or essential requirements. Do not use GitHub-specific
+alert syntax (`> [!NOTE]`) as it does not render on PyPI.
 
 ---
 
-## Example
+## Horizontal rules
+
+Always use triple underscore (`___`) for horizontal rules between major sections. Do not use
+triple dash (`---`) or triple asterisk (`***`).
 
 ```markdown
-# sl-unity-tasks
-
-VR behavioral experiment tasks for the Sun Lab's mesoscope experiments.
-
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-
 ___
 
-This project provides infinite corridor VR environments where animals navigate through visual cue
-sequences while receiving stimuli based on behavior. The system integrates with sl-experiment for
-data acquisition via MQTT messaging.
-
-## Table of Contents
-
-- [Dependencies](#dependencies)
-- [Installation](#installation)
-- [Usage](#usage)
-...
+## Next Section
 ```
+
+---
+
+## Heading hierarchy
+
+Use a single H1 (`#`) for the project title. All sections use H2 (`##`). Subsections use H3
+(`###`). Never skip heading levels (do not jump from H2 to H4).
+
+---
+
+## Accessibility
+
+- Every image must have meaningful alt text: `![Description of the image](url)`
+- Avoid filenames as alt text (e.g., do not use `![screenshot1.png](...)`)
+- Use descriptive link text that hints at the destination; avoid "click here" patterns
+- Indicate file types for downloads: `[User Guide (PDF)](url)`
+
+---
+
+## PyPI compatibility
+
+README content must render correctly on both GitHub and PyPI. Avoid GitHub-specific Markdown
+features that do not render on PyPI:
+
+- Do not use GitHub alert syntax (`> [!NOTE]`, `> [!WARNING]`)
+- Do not use `<details>`/`<summary>` collapsible sections
+- Do not use `<picture>` elements for dark/light mode images
+- Do not use task lists (`- [x]`, `- [ ]`)
+
+Use `***Note,***` and `***Warning!***` for callouts instead.
 
 ---
 
@@ -167,100 +193,13 @@ cross-reference against the current state of the codebase to ensure accuracy.
 
 ---
 
-## Standard sections
-
-**Acknowledgments**: Use the standard format for crediting Sun lab members and dependencies:
-
-```markdown
-## Acknowledgments
-
-- All Sun lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration
-  and comments during the development of this library.
-- The creators of all other dependencies and projects listed in the
-  [pyproject.toml](pyproject.toml) file.
-```
-
-**Versioning**: Use the standard semantic versioning statement:
-
-```markdown
-## Versioning
-
-This project uses [semantic versioning](https://semver.org/). See the
-[tags on this repository](https://github.com/Sun-Lab-NBB/project-name/tags) for the available
-project releases.
-```
-
-**License**: Use the standard license statement:
-
-```markdown
-## License
-
-This project is licensed under the Apache 2.0 License: see the [LICENSE](LICENSE) file for
-details.
-```
-
----
-
-## MCP server documentation
-
-Libraries that provide MCP servers should document this functionality in the README under Usage.
-
-**Structure**: Include the following information:
-
-1. Brief description of what the MCP server exposes
-2. How to start the server (CLI command)
-3. List of available tools with brief descriptions
-4. Configuration instructions (e.g., Claude Desktop setup)
-
-**Example**:
-
-````markdown
-### MCP Server
-
-This library provides an MCP server that exposes camera discovery, video session management, and
-runtime checks for AI agent integration.
-
-#### Starting the Server
-
-Start the MCP server using the CLI:
-
-```
-axvs mcp
-```
-
-#### Available Tools
-
-| Tool                  | Description                                    |
-|-----------------------|------------------------------------------------|
-| `list_cameras`        | Discovers all compatible cameras on the system |
-| `start_video_session` | Starts a video capture session                 |
-| `stop_video_session`  | Stops the active video session                 |
-
-#### Claude Desktop Configuration
-
-Add the following to the Claude Desktop configuration file:
-
-```json
-{
-  "mcpServers": {
-    "ataraxis-video-system": {
-      "command": "axvs",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-````
-
----
-
 ## Related skills
 
-| Skill               | Relationship                                                        |
-|---------------------|---------------------------------------------------------------------|
-| `/python-style`    | Provides Python code style conventions; invoke for Python tasks     |
-| `/commit`           | Provides commit message conventions; invoke after README changes    |
-| `/explore-codebase` | Provides project context for cross-referencing README claims        |
+| Skill               | Relationship                                                     |
+|---------------------|------------------------------------------------------------------|
+| `/python-style`     | Provides Python code style conventions; invoke for Python tasks  |
+| `/commit`           | Provides commit message conventions; invoke after README changes |
+| `/explore-codebase` | Provides project context for cross-referencing README claims     |
 
 ---
 
@@ -279,18 +218,41 @@ files.**
 
 ```text
 README Style Compliance:
-- [ ] Title as H1 heading with project name
+
+Structure:
+- [ ] Title as H1 heading with project name (lowercase, hyphenated)
 - [ ] One-line description immediately after title
-- [ ] Badges for license and status indicators
-- [ ] Horizontal rule (`___`) after badges
-- [ ] Detailed description section
-- [ ] Table of contents with links to sections
+- [ ] Correct badge set for project type (see section-templates.md)
+- [ ] No blank line between description and badges
+- [ ] Horizontal rule uses `___` (not `---`) after badges
+- [ ] Detailed description section present (no heading, after horizontal rule)
+- [ ] Features section ends with license type bullet (if Features present)
+- [ ] Table of contents with lowercase Markdown anchors
+- [ ] Spelling: "Acknowledgments" (not "Acknowledgements") everywhere
+- [ ] Heading hierarchy: single H1, H2 for sections, H3 for subsections, no skips
+- [ ] Horizontal rules use `___` consistently throughout (not `---`)
+
+Content:
+- [ ] All required sections present (Dependencies, Installation, Usage, etc.)
+- [ ] Section templates followed (see section-templates.md)
+- [ ] Installation uses standard Source warning and pip/source subsections
+- [ ] Dependencies uses standard boilerplate text
+- [ ] API Documentation links to hosted docs
+- [ ] Developers section uses standard mamba/tox template (if present)
+- [ ] Standard ending sections use correct templates (Versioning, Authors, License, Acknowledgments)
+- [ ] MCP Server section titled "MCP Server" with tools table (if applicable)
+- [ ] CLI commands documented with overview table (if applicable)
+
+Style:
 - [ ] Third-person voice throughout (no "I", "we", "you")
 - [ ] Present tense as default
-- [ ] All required sections included (Dependencies, Installation, Usage, etc.)
-- [ ] Standard sections use correct templates (Acknowledgments, Versioning, License)
+- [ ] `***Note,***` / `***Warning!***` for callouts (not GitHub alerts)
+- [ ] No GitHub-specific features (alerts, details/summary, picture, task lists)
+
+Quality:
+- [ ] All images have meaningful alt text
+- [ ] Link text is descriptive (no "click here")
 - [ ] Technical descriptions cross-referenced against codebase
 - [ ] File paths and class names verified to exist
 - [ ] API examples tested against actual implementation
-- [ ] MCP server documentation included (if applicable)
 ```

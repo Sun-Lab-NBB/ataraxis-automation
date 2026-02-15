@@ -1,5 +1,5 @@
 ---
-name: exploring-codebase
+name: explore-codebase
 description: >-
   Performs in-depth codebase exploration at the start of a coding session. Builds comprehensive
   understanding of project structure, architecture, key components, and patterns. Use when starting
@@ -242,11 +242,12 @@ Exported from `__init__.py` via `__all__`:
 
 ## Related skills
 
-| Skill           | Relationship                                                        |
-|-----------------|---------------------------------------------------------------------|
-| `/python-style` | Provides coding conventions discovered during exploration           |
-| `/commit`       | Should be invoked after completing code changes informed by context |
-| `/skill-design` | Provides skill conventions when exploration reveals skill files     |
+| Skill               | Relationship                                                        |
+|---------------------|---------------------------------------------------------------------|
+| `/python-style`     | Provides coding conventions discovered during exploration           |
+| `/readme-style`     | Provides README conventions when exploration reveals README issues  |
+| `/commit`           | Should be invoked after completing code changes informed by context |
+| `/skill-design`     | Provides skill conventions when exploration reveals skill files     |
 
 ---
 

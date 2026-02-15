@@ -16,7 +16,7 @@ The skill's identifier. You MUST ensure it matches the parent directory name.
 | Required   | Yes                                                                 |
 | Max length | 64 characters                                                       |
 | Format     | Lowercase letters, digits, and hyphens only; no consecutive `--`    |
-| Convention | Gerund form (verb + -ing): `exploring-codebase`, `designing-skills` |
+| Convention | Must match parent directory name: `explore-codebase`, `commit`      |
 
 ### `description`
 

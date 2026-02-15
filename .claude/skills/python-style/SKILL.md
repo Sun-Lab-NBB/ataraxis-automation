@@ -1,5 +1,5 @@
 ---
-name: applying-python-style
+name: python-style
 description: >-
   Applies Sun Lab Python coding conventions when writing, reviewing, or refactoring code. Covers
   .py files, docstrings, type annotations, naming, formatting, error handling, imports, file

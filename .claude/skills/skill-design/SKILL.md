@@ -1,5 +1,5 @@
 ---
-name: designing-skills
+name: skill-design
 description: >-
   Generates, updates, and verifies Claude Code skill files and CLAUDE.md project instructions. Covers
   SKILL.md structure, YAML frontmatter, formatting conventions, inter-skill relationships, scope
@@ -167,7 +167,7 @@ reference including all optional fields, see
 
 ```yaml
 ---
-name: exploring-codebase
+name: explore-codebase
 description: >-
   Performs in-depth codebase exploration at the start of a coding session. Builds comprehensive
   understanding of project structure, architecture, key components, and patterns. Use at session
@@ -176,9 +176,8 @@ user-invocable: true
 ---
 ```
 
-**Name**: Gerund form (verb + -ing), lowercase with hyphens, max 64 characters. You MUST ensure
-the name matches the parent directory name. Examples: `exploring-codebase`,
-`committing-changes`, `designing-skills`.
+**Name**: Must exactly match the parent directory name. Lowercase letters, digits, and hyphens
+only, max 64 characters. Examples: `explore-codebase`, `commit`, `skill-design`.
 
 **Description**: Third person. Include what the skill does AND when to use it. End with explicit
 trigger conditions ("Use when..."). Max 1024 characters.
@@ -391,7 +390,8 @@ CLAUDE.md follows the same conventions as skill files with one difference:
 
 | Skill               | Relationship                                                          |
 |---------------------|-----------------------------------------------------------------------|
-| `/python-style`    | Provides formatting conventions that skill files must also follow     |
+| `/python-style`     | Provides formatting conventions that skill files must also follow     |
+| `/readme-style`     | Provides README conventions relevant when skills reference READMEs    |
 | `/commit`           | Should be invoked after completing skill file changes                 |
 | `/explore-codebase` | Provides project context needed when writing project-specific skills  |
 
@@ -407,8 +407,7 @@ You MUST verify your work against the appropriate checklist before submitting.
 Skill File Compliance:
 - [ ] YAML frontmatter with `name` and `description`
 - [ ] `user-invocable: true` set if skill is directly invocable via slash command
-- [ ] Name uses gerund form (verb + -ing), lowercase with hyphens
-- [ ] Name matches parent directory name
+- [ ] Name matches parent directory name exactly
 - [ ] Description in third person, includes what AND when to use (max 1024 chars)
 - [ ] Scope declaration present (what skill covers and does not cover)
 - [ ] Degrees of freedom appropriate (low for reproducible, high for creative tasks)
