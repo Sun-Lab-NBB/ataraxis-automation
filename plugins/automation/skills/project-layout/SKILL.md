@@ -268,7 +268,7 @@ Assets/
 | `/csharp-style`    | Owns file-level ordering within C# source files                          |
 | `/pyproject-style` | Owns `pyproject.toml` structure; references `src/` layout convention     |
 | `/readme-style`    | Owns `README.md` content conventions                                     |
-| `/skill-design`    | Owns `.claude/skills/` directory structure conventions                   |
+| `/skill-design`    | Owns `plugins/automation/skills/` directory structure conventions        |
 
 ---
 

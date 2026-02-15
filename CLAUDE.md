@@ -92,18 +92,18 @@ the Python style guide used across all Sun Lab projects.
 | Directory                          | Purpose                                                 |
 |------------------------------------|---------------------------------------------------------|
 | `src/ataraxis_automation/`         | Main library source code                                |
-| `.claude/skills/explore-codebase/` | Codebase exploration skill (shared via plugin)          |
-| `.claude/skills/python-style/`     | Python code style skill (shared via plugin)             |
-| `.claude/skills/readme-style/`     | README style skill (shared via plugin)                  |
-| `.claude/skills/commit/`           | Commit message generation skill (shared via plugin)     |
-| `.claude/skills/pyproject-style/`  | pyproject.toml style skill (shared via plugin)          |
-| `.claude/skills/api-docs/`         | API documentation style skill (shared via plugin)       |
-| `.claude/skills/cpp-style/`        | C++ code style skill (shared via plugin)                |
-| `.claude/skills/csharp-style/`     | C# code style skill (shared via plugin)                 |
-| `.claude/skills/project-layout/`   | Project directory structure skill (shared via plugin)   |
-| `.claude/skills/tox-config/`       | tox.ini configuration skill (shared via plugin)         |
-| `.claude/skills/skill-design/`     | Skill and CLAUDE.md authoring skill (shared via plugin) |
-| `.claude-plugin/`                  | Claude Code plugin configuration                        |
+| `plugins/automation/skills/explore-codebase/` | Codebase exploration skill (shared via plugin)          |
+| `plugins/automation/skills/python-style/`     | Python code style skill (shared via plugin)             |
+| `plugins/automation/skills/readme-style/`     | README style skill (shared via plugin)                  |
+| `plugins/automation/skills/commit/`           | Commit message generation skill (shared via plugin)     |
+| `plugins/automation/skills/pyproject-style/`  | pyproject.toml style skill (shared via plugin)          |
+| `plugins/automation/skills/api-docs/`         | API documentation style skill (shared via plugin)       |
+| `plugins/automation/skills/cpp-style/`        | C++ code style skill (shared via plugin)                |
+| `plugins/automation/skills/csharp-style/`     | C# code style skill (shared via plugin)                 |
+| `plugins/automation/skills/project-layout/`   | Project directory structure skill (shared via plugin)   |
+| `plugins/automation/skills/tox-config/`       | tox.ini configuration skill (shared via plugin)         |
+| `plugins/automation/skills/skill-design/`     | Skill and CLAUDE.md authoring skill (shared via plugin) |
+| `plugins/automation/.claude-plugin/`                  | Claude Code plugin configuration                        |
 | `tests/`                           | Test suite                                              |
 | `envs/`                            | Pre-configured development environment .yml files       |
 | `docs/`                            | Sphinx documentation source                             |
@@ -114,8 +114,8 @@ the Python style guide used across all Sun Lab projects.
   installation, and environment lifecycle management. Entry point is `automation-cli`.
 - **Automation Module** (`automation.py`): Core logic including the `ProjectEnvironment` dataclass, project directory
   resolution, dependency parsing, stub file management, and OS-specific mamba/uv command generation.
-- **Plugin Architecture** (`.claude-plugin/`): Registers this library as a Claude Code plugin, making the
-  `.claude/skills/` directory available to all downstream projects that install the plugin.
+- **Plugin Architecture** (`plugins/automation/`): Registers this library as a Claude Code marketplace plugin, making
+  the `plugins/automation/skills/` directory available to all downstream projects that install the plugin.
 - **No MCP Server**: This library does not provide an MCP server.
 
 ### Key Patterns
@@ -173,7 +173,7 @@ the Python style guide used across all Sun Lab projects.
 
 **Modifying shared skills:**
 
-1. Review the skill files in `.claude/skills/` and the plugin configuration in `.claude-plugin/plugin.json`
+1. Review the skill files in `plugins/automation/skills/` and the plugin configuration in `plugins/automation/.claude-plugin/plugin.json`
 2. Invoke `/skill-design` for conventions on frontmatter, structure, and formatting
 3. Changes to shared skills affect ALL downstream Sun Lab repositories that use the plugin
 4. Test skill changes by invoking them in this repository before committing
