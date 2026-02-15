@@ -25,9 +25,9 @@ release = importlib_metadata.version("<PROJECT_NAME>")
 extensions = [
     'sphinx.ext.autodoc',        # To build documentation from python source code docstrings.
     'sphinx.ext.napoleon',       # To read google-style docstrings (works with autodoc module).
+    'sphinx_click',              # Must load before sphinx_autodoc_typehints to avoid mock import shadowing.
     'sphinx_autodoc_typehints',  # To parse typehints into documentation
     'sphinx_rtd_theme',          # To format the documentation HTML using ReadTheDocs format.
-    'sphinx_click',              # To read docstrings and command-line arguments from click-wrapped python functions.
     'sphinx_rtd_dark_mode'       # Enables dark mode for RTD theme.
 ]
 
@@ -157,10 +157,10 @@ release = importlib_metadata.version("<PROJECT_NAME>")
 extensions = [
     'sphinx.ext.autodoc',        # To build documentation from python source code docstrings.
     'sphinx.ext.napoleon',       # To read google-style docstrings (works with autodoc module).
+    'sphinx_click',              # Must load before sphinx_autodoc_typehints to avoid mock import shadowing.
     'sphinx_autodoc_typehints',  # To parse typehints into documentation
     'breathe',                   # To read doxygen-generated xml files (to parse C++ documentation).
     'sphinx_rtd_theme',          # To format the documentation HTML using ReadTheDocs format.
-    'sphinx_click',              # To read docstrings and command-line arguments from click-wrapped python functions.
     'sphinx_rtd_dark_mode'       # Enables dark mode for RTD theme.
 ]
 

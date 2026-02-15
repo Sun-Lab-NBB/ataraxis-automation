@@ -45,7 +45,7 @@ Sun Lab projects follow one of three documentation archetypes based on language 
 
 | Archetype   | Language     | Extensions                                                | Doxygen |
 |-------------|--------------|-----------------------------------------------------------|---------|
-| Python-only | Pure Python  | autodoc, napoleon, typehints, click, rtd theme, dark mode | No      |
+| Python-only | Pure Python  | autodoc, napoleon, click, typehints, rtd theme, dark mode | No      |
 | C++-only    | Pure C++     | breathe, rtd theme, dark mode                             | Yes     |
 | Hybrid      | Python + C++ | All Python extensions + breathe                           | Yes     |
 
@@ -83,9 +83,9 @@ docs/source/doxygen/
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx_click',
     'sphinx_autodoc_typehints',
     'sphinx_rtd_theme',
-    'sphinx_click',
     'sphinx_rtd_dark_mode'
 ]
 ```
@@ -107,13 +107,18 @@ extensions = [
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx_click',
     'sphinx_autodoc_typehints',
     'breathe',
     'sphinx_rtd_theme',
-    'sphinx_click',
     'sphinx_rtd_dark_mode'
 ]
 ```
+
+**Ordering constraint:** `sphinx_click` MUST appear before `sphinx_autodoc_typehints`.
+`sphinx_autodoc_typehints` imports the `sphinx.ext.autodoc.mock` submodule at load time, which
+shadows the `mock` function that `sphinx_click` needs. Loading `sphinx_click` first ensures it
+captures the correct function binding before the submodule shadowing occurs.
 
 ### Documentation dependencies
 
