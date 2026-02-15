@@ -249,14 +249,14 @@ All definitions within a file follow this vertical ordering from top to bottom:
 2. **Imports**
 3. **Constants** (module-level `_UPPER_SNAKE_CASE` values)
 4. **Enumerations and dataclasses** (type definitions that other code depends on)
-5. **Private functions and classes** (`_` prefixed)
-6. **Public functions and classes** (no prefix)
+5. **Public functions and classes** (no prefix)
+6. **Private functions and classes** (`_` prefixed)
 
 ### Visibility ordering
 
-Private definitions appear **above** public definitions. Private helpers are implementation
-details that the public API delegates to, so placing them first allows readers to encounter them
-before the code that calls them.
+Public definitions appear **above** private definitions. This matches the C-family convention
+used across all Sun Lab projects (C#, C++), where the public API is presented first and
+implementation details follow. Readers see the interface before the helpers that support it.
 
 ### Call-hierarchy ordering
 
@@ -270,8 +270,8 @@ Enumerations and dataclasses define the types that worker functions and classes 
 must appear **above** the functions and classes that use them.
 
 **Exception — dataclass-only modules**: In files whose primary product is the dataclasses
-themselves, the order is: enumerations first, then private helper functions, then dataclasses at
-the bottom.
+themselves, the order is: enumerations first, then public helper functions, then private helper
+functions, then dataclasses at the bottom.
 
 ---
 
@@ -412,7 +412,7 @@ Python Style Compliance:
 - [ ] Local imports use direct name imports (no module imports)
 - [ ] Cross-package imports go through package __init__.py (not submodules)
 - [ ] __init__.py files have __all__ (alphabetically sorted) and console.enable()
-- [ ] Private definitions above public definitions in file
+- [ ] Public definitions above private definitions in file
 - [ ] Enums and dataclasses above worker functions and classes
 - [ ] Definitions ordered by call hierarchy or grouped by purpose
 - [ ] Inline comments use third person imperative

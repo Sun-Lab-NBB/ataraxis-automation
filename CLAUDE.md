@@ -17,6 +17,7 @@ You MUST invoke the appropriate skill before performing ANY of the following tas
 | Task                                    | Skill to invoke    |
 |-----------------------------------------|--------------------|
 | Writing or modifying Python code        | `/python-style`    |
+| Writing or modifying C# code            | `/csharp-style`    |
 | Writing or modifying README files       | `/readme-style`    |
 | Writing or modifying pyproject.toml     | `/pyproject-style` |
 | Writing git commit messages             | `/commit`          |
@@ -58,7 +59,8 @@ state to prevent integration errors.
 | Skill               | Description                                                          |
 |---------------------|----------------------------------------------------------------------|
 | `/explore-codebase` | Perform in-depth codebase exploration at session start               |
-| `/python-style`     | Apply Sun Lab Python coding conventions (REQUIRED for code)          |
+| `/python-style`     | Apply Sun Lab Python coding conventions (REQUIRED for Python code)   |
+| `/csharp-style`     | Apply Sun Lab C# coding conventions (REQUIRED for C# code)           |
 | `/readme-style`     | Apply Sun Lab README conventions (REQUIRED for README files)         |
 | `/pyproject-style`  | Apply Sun Lab pyproject.toml conventions (REQUIRED for pyproject)    |
 | `/commit`           | Generate style-compliant commit messages for local changes           |
@@ -71,8 +73,12 @@ This is **ataraxis-automation**, a Python library that supports tox-based develo
 Sun Lab (NeuroAI) projects at Cornell University. It provides a CLI (`automation-cli`) that abstracts project
 environment manipulation and facilitates development tasks such as linting, typing, testing, documentation, and
 building. This library also serves as the shared Claude Code plugin, distributing the `/explore-codebase`,
-`/python-style`, `/readme-style`, `/pyproject-style`, `/api-docs`, `/commit`, and `/skill-design` skills to all
+`/python-style`, `/csharp-style`, `/readme-style`, `/pyproject-style`, `/api-docs`, `/commit`, and `/skill-design`
+skills to all
 downstream Sun Lab repositories.
+
+**Note:** The `/csharp-style` skill applies to C# Unity projects (e.g., `sl-unity-tasks`). It enforces conventions
+consistent with the C++ and Python style guides used across all Sun Lab projects.
 
 ### Key Areas
 
@@ -85,6 +91,7 @@ downstream Sun Lab repositories.
 | `.claude/skills/commit/`           | Commit message generation skill (shared via plugin)     |
 | `.claude/skills/pyproject-style/`  | pyproject.toml style skill (shared via plugin)          |
 | `.claude/skills/api-docs/`         | API documentation style skill (shared via plugin)       |
+| `.claude/skills/csharp-style/`     | C# code style skill (shared via plugin)                 |
 | `.claude/skills/skill-design/`     | Skill and CLAUDE.md authoring skill (shared via plugin) |
 | `.claude-plugin/`                  | Claude Code plugin configuration                        |
 | `tests/`                           | Test suite                                              |
