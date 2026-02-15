@@ -244,7 +244,9 @@ Exported from `__init__.py` via `__all__`:
 
 | Skill               | Relationship                                                        |
 |---------------------|---------------------------------------------------------------------|
-| `/python-style`     | Provides coding conventions discovered during exploration           |
+| `/python-style`     | Provides Python coding conventions discovered during exploration    |
+| `/cpp-style`        | Provides C++ coding conventions discovered during exploration       |
+| `/csharp-style`     | Provides C# coding conventions discovered during exploration        |
 | `/readme-style`     | Provides README conventions when exploration reveals README issues  |
 | `/commit`           | Should be invoked after completing code changes informed by context |
 | `/skill-design`     | Provides skill conventions when exploration reveals skill files     |

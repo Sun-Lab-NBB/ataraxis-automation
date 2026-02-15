@@ -147,27 +147,9 @@ static_assert(false, "Define one of the supported microcontroller targets.");
 Sun Lab C++ projects use a shared `.clang-format` configuration based on the Google style with
 extensive customization for cross-language visual consistency with Python (Black formatter).
 
-### Key settings
-
-| Setting                               | Value           | Purpose                               |
-|---------------------------------------|-----------------|---------------------------------------|
-| `BasedOnStyle`                        | Google          | Base style foundation                 |
-| `ColumnLimit`                         | 120             | Matches Python/C# line limit          |
-| `IndentWidth`                         | 4               | Matches Python/C# indentation         |
-| `UseTab`                              | Never           | Spaces only, matching Python/C#       |
-| `BreakBeforeBraces`                   | Custom (Allman) | Opening braces on new lines           |
-| `AlignConsecutiveAssignments`         | Consecutive     | Aligns `=` in consecutive assignments |
-| `AlignTrailingComments`               | Always          | Aligns `//` comments                  |
-| `PointerAlignment`                    | Left            | `int* pointer` not `int *pointer`     |
-| `ReferenceAlignment`                  | Left            | `int& reference` not `int &reference` |
-| `AlwaysBreakTemplateDeclarations`     | Yes             | Templates on separate lines           |
-| `BinPackArguments`                    | false           | One argument per line when wrapping   |
-| `BinPackParameters`                   | false           | One parameter per line when wrapping  |
-| `SortIncludes`                        | CaseSensitive   | Automatic include sorting             |
-| `SeparateDefinitionBlocks`            | Always          | Blank lines between definitions       |
-| `NamespaceIndentation`                | All             | Indent namespace contents             |
-| `AllowShortCaseLabelsOnASingleLine`   | true            | Compact switch cases                  |
-| `AllowShortIfStatementsOnASingleLine` | AllIfsAndElse   | Compact simple conditionals           |
+The canonical `.clang-format` files are stored in `assets/embedded/` (for PlatformIO projects)
+and `assets/extension/` (for nanobind projects). The only differences between them are
+`AccessModifierOffset` and `IndentAccessModifiers`.
 
 ### Running clang-format
 
@@ -184,21 +166,8 @@ clang-format --dry-run --Werror src/*.h src/*.cpp
 ## clang-tidy configuration
 
 Sun Lab C++ projects use clang-tidy with `WarningsAsErrors: '*'`, treating all enabled warnings
-as build-breaking errors. The configuration enables checks from multiple categories.
-
-### Enabled check categories
-
-| Category              | Purpose                                                         |
-|-----------------------|-----------------------------------------------------------------|
-| `bugprone-*`          | Common bug patterns (unused return values, dangling handles)    |
-| `cert-*`              | CERT secure coding standards                                    |
-| `cppcoreguidelines-*` | C++ Core Guidelines subset (narrowing, member init, slicing)    |
-| `google-*`            | Google style checks (explicit constructors, default arguments)  |
-| `hicpp-*`             | High Integrity C++ (exception base class, multiway paths)       |
-| `misc-*`              | Miscellaneous (no recursion, unconventional assign operators)   |
-| `modernize-*`         | Modern C++ patterns (override, nullptr, auto, emplace)          |
-| `performance-*`       | Performance issues (unnecessary copies, inefficient algorithms) |
-| `readability-*`       | Code readability (const return, container size, static members) |
+as build-breaking errors. The canonical configuration is stored in `assets/.clang-tidy` and is
+shared across both embedded and extension archetypes.
 
 ### Suppressing warnings
 

@@ -52,6 +52,7 @@ Based on the task, load the appropriate reference files:
 | Writing or modifying XML docs / type usage  | [xml-docs-and-types.md](references/xml-docs-and-types.md)     |
 | Writing classes, enums, or Unity components | [class-patterns.md](references/class-patterns.md)             |
 | Using LINQ, async, IDisposable, or testing  | [libraries-and-tools.md](references/libraries-and-tools.md)   |
+| Deploying or verifying tool config files    | [assets/](assets/) directory                                  |
 | Reviewing code before submission            | [anti-patterns.md](references/anti-patterns.md)               |
 
 Load multiple references when the task spans multiple domains.
@@ -221,21 +222,9 @@ if (Mathf.Abs(measuredLength - configuredLength) > LengthComparisonEpsilon)
 
 ### Error message format
 
-Use a structured three-part format: context, constraint, actual value:
-
-```csharp
-Debug.LogError(
-    $"Unable to load segment prefab. The prefab path must point to an existing asset, "
-        + $"but no asset was found at {segmentPath}."
-);
-```
-
-- **Context**: "Unable to [action]." — what failed
-- **Constraint**: "The [parameter] must be [requirement]" — what was expected
-- **Actual value**: "but [actual state]." — what was received
-- Use `Debug.LogError()` for validation failures that prevent continuation
-- Use `Debug.LogWarning()` for non-critical issues
-- Use `Debug.Log()` for informational messages
+Use a structured format: context ("Unable to..."), constraint ("must be..."), actual value
+("but [actual state]."). Use `Debug.LogError()` for failures that prevent continuation,
+`Debug.LogWarning()` for non-critical issues, and `Debug.Log()` for informational messages.
 
 ### Null handling
 
@@ -428,11 +417,27 @@ The `.csharpierignore` file excludes Unity-generated directories (`Library/`, `T
 
 ---
 
+## Configuration files
+
+Canonical configs are stored in [assets/](assets/). When working in a C# project, verify that
+`.csharpierrc.yaml`, `.editorconfig`, and `.csharpierignore` in the project root match these:
+
+- [assets/.csharpierrc.yaml](assets/.csharpierrc.yaml)
+- [assets/.editorconfig](assets/.editorconfig)
+- [assets/.csharpierignore](assets/.csharpierignore)
+
+The `.csharpierignore` contains generic entries only. Individual projects may need additional
+project-specific entries (e.g., paths to auto-generated scripts).
+
+---
+
 ## Related skills
 
 | Skill               | Relationship                                                       |
 |---------------------|--------------------------------------------------------------------|
 | `/python-style`     | Provides Python conventions; C# conventions parallel these         |
+| `/cpp-style`        | Provides C++ conventions; C# conventions parallel these            |
+| `/project-layout`   | Provides C# Unity directory tree; invoke for project structure     |
 | `/readme-style`     | Provides README conventions; invoke for README tasks               |
 | `/commit`           | Provides commit message conventions; invoke for commit tasks       |
 | `/skill-design`     | Provides skill file conventions; invoke for skill authoring tasks  |

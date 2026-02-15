@@ -197,7 +197,9 @@ cross-reference against the current state of the codebase to ensure accuracy.
 
 | Skill               | Relationship                                                     |
 |---------------------|------------------------------------------------------------------|
-| `/python-style`     | Provides Python code style conventions; invoke for Python tasks  |
+| `/python-style`     | Provides Python conventions; invoke for Python tasks             |
+| `/cpp-style`        | Provides C++ conventions; invoke for C++ tasks                   |
+| `/csharp-style`     | Provides C# conventions; invoke for C# tasks                     |
 | `/commit`           | Provides commit message conventions; invoke after README changes |
 | `/explore-codebase` | Provides project context for cross-referencing README claims     |
 

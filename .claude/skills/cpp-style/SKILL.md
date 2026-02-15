@@ -56,6 +56,7 @@ Based on the task, load the appropriate reference files:
 | Writing classes, templates, enums, or structs | [class-patterns.md](references/class-patterns.md)             |
 | Using Arduino/PlatformIO, clang tools, tests  | [libraries-and-tools.md](references/libraries-and-tools.md)   |
 | Using nanobind extensions, CMake, GIL         | [libraries-and-tools.md](references/libraries-and-tools.md)   |
+| Deploying or verifying tool config files      | [assets/](assets/) directory                                  |
 | Reviewing code before submission              | [anti-patterns.md](references/anti-patterns.md)               |
 
 Load multiple references when the task spans multiple domains.
@@ -223,20 +224,12 @@ Use `static_assert` for compile-time constraint checking on template parameters:
 
 ```cpp
 static_assert(kPinA != kPinB, "EncoderModule PinA and PinB cannot be the same!");
-static_assert(
-    kPinA != LED_BUILTIN,
-    "The LED-connected pin is reserved for LED manipulation. Select a different Channel A pin "
-    "for the EncoderModule instance."
-);
 ```
 
 ### Error message format
 
-Use a structured format: context, constraint, actual value (when applicable):
-
-- **Context**: What was being attempted
-- **Constraint**: What was expected
-- **Actual value**: What was received (for runtime errors communicated via serial)
+Use a structured format: context ("Unable to..."), constraint ("must be..."), actual value
+("but received..."). For runtime errors, include the actual value when available.
 
 ---
 
@@ -252,15 +245,6 @@ Use a structured format: context, constraint, actual value (when applicable):
 // Resets the overflow tracker. The overflow accumulates insignificant motion between reporting
 // cycles to filter sensor noise while preserving real displacement.
 _overflow = 0;
-```
-
-### Trailing comments
-
-Trailing comments are used for aligned assignment documentation:
-
-```cpp
-static constexpr bool kOpen  = kNormallyClosed ? HIGH : LOW;   // NOLINT(*-dynamic-static-initializers)
-static constexpr bool kClose = kNormallyClosed ? LOW : HIGH;   // NOLINT(*-dynamic-static-initializers)
 ```
 
 ### What to avoid
@@ -414,6 +398,21 @@ default: return false;
 
 if (kTonePin == 255) _custom_parameters.tone_duration = 0;
 ```
+
+---
+
+## Configuration files
+
+Canonical configs are stored in [assets/](assets/). When working in a C++ project, verify that
+`.clang-format` and `.clang-tidy` in the project root match the canonical versions.
+
+- **Embedded** `.clang-format`: [assets/embedded/.clang-format](assets/embedded/.clang-format)
+- **Extension** `.clang-format`: [assets/extension/.clang-format](assets/extension/.clang-format)
+- **Shared** `.clang-tidy`: [assets/.clang-tidy](assets/.clang-tidy)
+
+The two `.clang-format` variants differ only in `AccessModifierOffset` (`0` vs `-2`) and
+`IndentAccessModifiers` (`true` vs `false`). All other settings are identical. The `.clang-tidy`
+configuration is shared across both archetypes.
 
 ---
 
