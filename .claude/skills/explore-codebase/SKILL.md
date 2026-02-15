@@ -5,7 +5,7 @@ description: >-
   understanding of project structure, architecture, key components, and patterns. Use when starting
   a new session, when asked to understand or explore the codebase, when asked "what does this project
   do", when exploring unfamiliar code, or when the user asks about project structure or architecture.
-user_invocable: true
+user-invocable: true
 ---
 
 # Codebase exploration

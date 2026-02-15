@@ -1,19 +1,19 @@
 ---
 name: designing-skills
 description: >-
-  Generates, updates, and verifies Claude Code skill files and CLAUDE.md project instructions. Covers SKILL.md
-  structure, YAML frontmatter, formatting conventions, inter-skill relationships, scope declarations, and
-  verification checklists. Use when creating new skills, modifying existing skills, updating CLAUDE.md files,
-  or when the user asks about skill conventions.
-user_invocable: true
+  Generates, updates, and verifies Claude Code skill files and CLAUDE.md project instructions. Covers
+  SKILL.md structure, YAML frontmatter, formatting conventions, inter-skill relationships, scope
+  declarations, and verification checklists. Use when creating new skills, modifying existing skills,
+  updating CLAUDE.md files, or when the user asks about skill conventions.
+user-invocable: true
 ---
 
 # Skill design
 
 Generates, updates, and verifies Claude Code skill and project instruction files.
 
-**You MUST read this entire skill before creating or modifying any skill file or CLAUDE.md.** The verification
-checklists at the end are mandatory before submitting any work.
+You MUST read this entire skill before creating or modifying any skill file or CLAUDE.md. The
+verification checklists at the end are mandatory before submitting any work.
 
 ---
 
@@ -22,7 +22,8 @@ checklists at the end are mandatory before submitting any work.
 **Covers:**
 - SKILL.md structure, YAML frontmatter, and formatting conventions
 - CLAUDE.md structure, section ordering, and formatting conventions
-- Inter-skill relationships and scope declarations
+- Skill creation workflow from scratch
+- Inter-skill relationships, scope declarations, and progressive disclosure
 - Verification checklists for skill files and project instructions
 
 **Does not cover:**
@@ -33,41 +34,46 @@ checklists at the end are mandatory before submitting any work.
 
 ---
 
-## File types
-
-This skill covers two types of Claude instruction files:
-
-| File Type | Location            | Purpose                                        |
-|-----------|---------------------|------------------------------------------------|
-| SKILL.md  | `.claude/skills/*/` | Skill-specific instructions loaded on demand   |
-| CLAUDE.md | Project root        | Project-wide instructions loaded every session |
-
----
-
 ## Design principles
 
-Effective skills are focused, composable, and verifiable. Apply these principles when designing any skill.
+Effective skills are focused, composable, and verifiable. You MUST apply these principles when
+designing any skill.
 
 ### Single responsibility
 
-Each skill addresses one well-defined concern. A skill that tries to do too much becomes difficult to maintain and
-triggers inconsistently. If a skill covers multiple unrelated tasks, split it.
+Each skill addresses one well-defined concern. A skill that tries to do too much becomes difficult
+to maintain and triggers inconsistently. If a skill covers multiple unrelated tasks, split it.
 
-**Scope declaration**: Every skill should make clear what it DOES and DOES NOT cover. This prevents scope creep and
-helps the agent select the right skill for the task.
+**Scope declaration**: Every skill must make clear what it DOES and DOES NOT cover. This prevents
+scope creep and helps the agent select the right skill for the task.
 
 ### Composability
 
-Skills should work independently and combine freely without conflicts. No skill should assume or require another
-skill's internal state. If skill A needs information from skill B, it should reference skill B explicitly rather
-than duplicating its content.
+Skills must work independently and combine freely without conflicts. No skill should assume or
+require another skill's internal state. If skill A needs information from skill B, it must
+reference skill B explicitly rather than duplicating its content.
 
-**Test**: Can this skill be invoked in isolation and still produce correct results? If not, it has a hidden
-dependency that should be made explicit.
+**Test**: Can this skill be invoked in isolation and still produce correct results? If not, it has
+a hidden dependency that must be made explicit.
+
+### Degrees of freedom
+
+Match instruction specificity to task fragility:
+
+| Level  | Format                            | When to use                                       |
+|--------|-----------------------------------|---------------------------------------------------|
+| Low    | Specific commands, few parameters | Operations that must be exactly reproduced        |
+| Medium | Pseudocode or parameterized steps | A preferred pattern exists but details may vary   |
+| High   | Text instructions                 | Multiple valid approaches; agent chooses best one |
+
+Use **low freedom** for operations that must be reproducible (commit message format, frontmatter
+structure, formatting rules). Use **high freedom** for creative or analytical tasks (exploration
+summaries, architectural analysis). Default to low freedom when in doubt — reproducibility and
+consistency are preferred over flexibility.
 
 ### Terminology consistency
 
-Every concept in a skill should have ONE canonical name used consistently:
+Every concept in a skill must have ONE canonical name used consistently:
 
 - Do not use synonyms interchangeably ("skill" vs "agent" vs "role" for the same concept)
 - Do not overload terms (using "template" to mean both a file structure and a code pattern)
@@ -75,23 +81,77 @@ Every concept in a skill should have ONE canonical name used consistently:
 
 ### Verifiability
 
-A skill is verifiable when its output can be checked against concrete criteria. Every skill should include a
-verification checklist that the agent completes before submitting work. Checklists prevent subjective quality
-assessments and ensure consistent compliance.
+A skill is verifiable when its output can be checked against concrete criteria. Every skill must
+include a verification checklist that the agent completes before submitting work. Checklists
+prevent subjective quality assessments and ensure consistent compliance.
 
 ### Progressive disclosure
 
-Keep SKILL.md under 500 lines. Split detailed reference material into separate files:
+Keep SKILL.md under 500 lines. Move detailed reference material into separate files that the agent
+loads on demand. See [progressive-disclosure.md](references/progressive-disclosure.md) for
+concrete patterns and directory structure conventions.
+
+---
+
+## Skill creation workflow
+
+You MUST follow these steps when creating a new skill from scratch.
+
+### Step 1: Define the skill's purpose
+
+Identify a single, well-defined concern the skill will address. Write a one-sentence description
+of what the skill does. If the description requires "and" to connect unrelated concerns, consider
+splitting into multiple skills.
+
+### Step 2: Declare scope and triggers
+
+Write the scope declaration (Covers / Does not cover) and the YAML description with explicit
+trigger conditions. The description is the primary mechanism the agent uses to decide when to
+invoke the skill, so trigger conditions must be specific and comprehensive.
+
+**Good triggers:** "Use when the user asks to commit", "Use when writing new Python code",
+"Use when the user invokes /skill-name".
+
+**Bad triggers:** "Use when appropriate", "Use for coding tasks".
+
+### Step 3: Determine degrees of freedom
+
+For each aspect of the skill's behavior, decide the appropriate freedom level:
+
+- **Low freedom** for operations that must be exactly reproducible (formatting rules, field specs)
+- **Medium freedom** for preferred patterns with room for adaptation (workflow steps)
+- **High freedom** for creative or analytical tasks (exploration, summarization)
+
+### Step 4: Create the directory structure
 
 ```text
 skill-name/
-├── SKILL.md              # Main instructions (loaded when triggered)
-├── REFERENCE.md          # Detailed reference (loaded as needed)
-└── EXAMPLES.md           # Usage examples (loaded as needed)
+├── SKILL.md                  # Main instructions (always loaded)
+└── references/               # Detailed material (loaded on demand)
+    └── detailed-rules.md     # Only if SKILL.md would exceed 500 lines
 ```
 
-Reference supplementary files using standard Markdown links: `[REFERENCE.md](REFERENCE.md)`. References should be
-one level deep from SKILL.md (no chains of references to references).
+Add `references/`, `examples/`, `scripts/`, or `assets/` directories only when needed. Do NOT
+create README.md, CHANGELOG.md, or other auxiliary documentation files. The skill directory must
+contain only what the agent needs to execute the task.
+
+### Step 5: Write the SKILL.md
+
+Follow the SKILL.md conventions below. You MUST include:
+
+1. YAML frontmatter with all required fields
+2. One-sentence description
+3. Scope declaration
+4. Workflow or main content
+5. Related skills table (if applicable)
+6. Proactive behavior (if applicable, before verification checklist)
+7. Verification checklist
+
+### Step 6: Validate and test
+
+Run through the verification checklist at the end of this skill. Then invoke the new skill in the
+current repository to verify it produces correct behavior. Test with both explicit invocation
+(`/skill-name`) and contextual descriptions to confirm the trigger conditions work.
 
 ---
 
@@ -99,8 +159,11 @@ one level deep from SKILL.md (no chains of references to references).
 
 ### YAML frontmatter
 
-Every SKILL.md requires YAML frontmatter with `name` and `description`. Add `user_invocable: true` for skills that
-the user can invoke directly via `/skill-name`.
+Every SKILL.md requires YAML frontmatter with `name` and `description`. For the complete field
+reference including all optional fields, see
+[frontmatter-reference.md](references/frontmatter-reference.md).
+
+**Required fields:**
 
 ```yaml
 ---
@@ -109,17 +172,20 @@ description: >-
   Performs in-depth codebase exploration at the start of a coding session. Builds comprehensive
   understanding of project structure, architecture, key components, and patterns. Use at session
   start or when the user asks to understand the codebase.
-user_invocable: true
+user-invocable: true
 ---
 ```
 
-**Name**: Use gerund form (verb + -ing), lowercase with hyphens. Examples: `exploring-codebase`,
-`applying-sun-lab-style`, `committing-changes`, `designing-skills`.
+**Name**: Gerund form (verb + -ing), lowercase with hyphens, max 64 characters. You MUST ensure
+the name matches the parent directory name. Examples: `exploring-codebase`,
+`committing-changes`, `designing-skills`.
 
-**Description**: Write in third person. Include both what the skill does and when to use it. End with explicit
-trigger conditions ("Use when...").
+**Description**: Third person. Include what the skill does AND when to use it. End with explicit
+trigger conditions ("Use when..."). Max 1024 characters.
 
-### Structure template
+**`user-invocable`**: Set to `true` for skills invokable via `/skill-name`. Defaults to `true`.
+
+### Structure
 
 A well-structured skill follows this layout:
 
@@ -132,7 +198,7 @@ Brief description of the skill's purpose (one sentence).
 
 ## Scope
 
-What this skill covers and what it does NOT cover. Explicit boundaries prevent scope creep.
+What this skill covers and what it does NOT cover.
 
 ---
 
@@ -154,19 +220,23 @@ Table of skills this skill interacts with and how.
 
 ---
 
+## Proactive behavior
+
+When the agent should proactively offer to invoke this skill (before verification checklist).
+
+---
+
 ## Verification checklist
 
 Mandatory checklist the agent completes before submitting work.
 ```
 
-Not every skill requires all sections. Omit sections that do not apply, but always include the workflow (or
-equivalent main content) and verification checklist.
+Not every skill requires all sections. Omit sections that do not apply, but always include the
+workflow (or equivalent main content) and verification checklist.
 
 ### Scope declarations
 
-Every skill should declare its boundaries. This prevents the agent from drifting outside the skill's purpose.
-
-**Example:**
+Every skill must declare its boundaries using the Covers / Does not cover format:
 
 ```markdown
 ## Scope
@@ -195,35 +265,14 @@ When a skill relates to other skills, declare the relationship explicitly using 
 | `/explore-codebase` | Provides project context that informs implementation skills |
 ```
 
-This helps the agent understand the skill ecosystem and suggest appropriate next steps.
-
 ### Proactive behavior
 
-Skills may declare when the agent should proactively offer to invoke them. Place this guidance in a dedicated
-section at the end of the skill, before the verification checklist.
-
-**Example:**
-
-```markdown
-## Proactive behavior
-
-After completing substantial code changes, proactively offer to generate a commit message.
-Do NOT invoke automatically. Always present the suggestion and wait for user approval.
-```
+Skills may declare when the agent should proactively offer to invoke them. Place this in a
+dedicated section at the end of the skill, before the verification checklist.
 
 ### Workflow chaining
 
 When a skill's workflow naturally leads to another skill, document this as a final workflow step.
-
-**Example:**
-
-```markdown
-### Step 4: Suggest next steps
-
-After completing the implementation, suggest:
-- `/commit` to commit the changes
-- Running tests if applicable
-```
 
 ---
 
@@ -231,8 +280,8 @@ After completing the implementation, suggest:
 
 ### Line length
 
-All skill and asset Markdown files must adhere to the **120 character line limit**. This matches the Python code
-formatting standard.
+All skill and reference Markdown files must adhere to the **120 character line limit**. This
+matches the Python code formatting standard.
 
 - Wrap prose text at 120 characters
 - Break long sentences at natural boundaries (after punctuation, between clauses)
@@ -243,24 +292,14 @@ formatting standard.
 
 Use **pretty table formatting** with proper column alignment:
 
-**Good:**
-
 ```markdown
-| Field  | Type  | Required | Description                              |
-|--------|-------|----------|------------------------------------------|
-| `name` | str   | Yes      | Visual identifier (e.g., 'A', 'Gray')    |
-| `code` | int   | Yes      | Unique uint8 code for MQTT communication |
+| Field  | Type | Required | Description                              |
+|--------|------|----------|------------------------------------------|
+| `name` | str  | Yes      | Visual identifier (e.g., 'A', 'Gray')    |
+| `code` | int  | Yes      | Unique uint8 code for MQTT communication |
 ```
 
-**Avoid:**
-
-```markdown
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `name` | str | Yes | Visual identifier |
-```
-
-**Rules:**
+Rules:
 
 1. Align all `|` characters vertically
 2. Size each column to fit its widest cell, but no wider
@@ -287,14 +326,18 @@ def process_data() -> None:
 
 ### Section organization
 
-Separate major sections with horizontal rules (`---`). Use `##` for major sections and `###` for subsections.
+Separate major sections with horizontal rules (`---`). Use `##` for major sections and `###` for
+subsections.
 
 ### Voice
 
 Skill files use two voice styles:
 
-- **Descriptive content**: Third person imperative. Example: "Extracts zone positions from configuration files."
-- **Agent directives**: Second person with "You MUST", "You should". Example: "You MUST use the Task tool."
+- **Descriptive content**: Third person imperative. Example: "Extracts zone positions from
+  configuration files."
+- **Agent directives**: Second person with "You MUST", "You should". Example: "You MUST use the
+  Task tool." This deliberate use of strong directives ensures reproducible, consistent behavior
+  across sessions and is an intentional project convention.
 
 ### Sentence case
 
@@ -304,41 +347,43 @@ Use sentence case for all section headers ("Verification checklist", not "Verifi
 
 ## CLAUDE.md conventions
 
-The `CLAUDE.md` file at the project root provides project-wide instructions loaded at the start of every session.
+The `CLAUDE.md` file at the project root provides project-wide instructions loaded at the start of
+every session. For the complete CLAUDE.md reference including import syntax, modular rules, and
+quality criteria, see [claude-md-reference.md](references/claude-md-reference.md). For common
+mistakes, see [anti-patterns.md](references/anti-patterns.md).
 
 ### Structure
 
-CLAUDE.md files use the following section order:
+CLAUDE.md files use the following section order (omit sections that do not apply):
 
 1. **Title**: `# Claude Code Instructions`
-2. **Session Start Behavior**: What Claude should do at session start
-3. **Style Guide Compliance**: Required style conventions
-4. **Cross-Referenced Library Verification**: Dependencies and version checking (if applicable)
-5. **Available Skills**: List of project skills with descriptions
-6. **MCP Server**: MCP server documentation (if applicable)
-7. **Downstream Library Integration**: Related libraries and coordination (if applicable)
-8. **Project Context**: Architecture, key areas, patterns, and standards
+2. **Session start behavior**: What the agent should do at session start
+3. **Style guide compliance**: Required style conventions
+4. **Cross-referenced library verification**: Dependencies and version checking
+5. **Available skills**: Table of project skills with descriptions
+6. **MCP server**: MCP server documentation
+7. **Downstream library integration**: Related libraries and coordination
+8. **Project context**: Architecture, key areas, patterns, and standards
 
 ### Formatting rules
 
-CLAUDE.md follows the same formatting conventions as skill files:
+CLAUDE.md follows the same conventions as skill files with one difference:
 
-- **Line length**: 120 characters maximum
-- **Tables**: Pretty formatting with aligned columns
-- **Code blocks**: Include language identifiers
-- **Section separators**: Use `##` headings (no horizontal rules between sections)
+- **Section separators**: Use `##` headings without horizontal rules between sections
 
 ### Voice
 
 - **Descriptive content**: Third person. Example: "This library provides shared assets..."
-- **Agent directives**: Second person with emphasis. Example: "You MUST invoke the `/sun-lab-style` skill..."
+- **Agent directives**: Second person with emphasis. Example: "You MUST invoke the `/sun-lab-style`
+  skill..."
 
 ### Content guidelines
 
 - Keep CLAUDE.md focused on project-specific instructions
 - Reference skills rather than duplicating their content
-- Include workflow guidance for common tasks (e.g., adding new components)
+- Include workflow guidance for common tasks
 - Document integration points with other libraries
+- Only include instructions the agent cannot infer from code inspection alone
 
 ---
 
@@ -354,17 +399,19 @@ CLAUDE.md follows the same formatting conventions as skill files:
 
 ## Verification checklist
 
-**You MUST verify your work against the appropriate checklist before submitting.**
+You MUST verify your work against the appropriate checklist before submitting.
 
 ### Skill files (SKILL.md)
 
 ```text
 Skill File Compliance:
 - [ ] YAML frontmatter with `name` and `description`
-- [ ] `user_invocable: true` set if skill is directly invocable via slash command
+- [ ] `user-invocable: true` set if skill is directly invocable via slash command
 - [ ] Name uses gerund form (verb + -ing), lowercase with hyphens
-- [ ] Description in third person, includes what AND when to use
+- [ ] Name matches parent directory name
+- [ ] Description in third person, includes what AND when to use (max 1024 chars)
 - [ ] Scope declaration present (what skill covers and does not cover)
+- [ ] Degrees of freedom appropriate (low for reproducible, high for creative tasks)
 - [ ] All lines ≤ 120 characters (tables/code blocks may exceed for clarity)
 - [ ] Tables use pretty formatting with aligned columns
 - [ ] Major sections separated with horizontal rules (`---`)
@@ -373,10 +420,11 @@ Skill File Compliance:
 - [ ] Second person for agent directives ("You MUST...")
 - [ ] Sentence case for section headers
 - [ ] SKILL.md under 500 lines (split to reference files if needed)
-- [ ] References one level deep from SKILL.md
+- [ ] References one level deep from SKILL.md (no chains)
 - [ ] Inter-skill references documented if applicable
 - [ ] Verification checklist included
 - [ ] Terminology consistent (no synonyms or overloaded terms)
+- [ ] No auxiliary documentation files (README.md, CHANGELOG.md, etc.)
 ```
 
 ### Project instructions (CLAUDE.md)
@@ -390,7 +438,10 @@ CLAUDE.md Compliance:
 - [ ] Third person for descriptive content
 - [ ] Second person with emphasis for directives ("You MUST...")
 - [ ] Sections follow recommended order (Session Start, Style Guide, Skills, etc.)
+- [ ] Uses `##` headings without horizontal rules between sections
 - [ ] Workflow guidance included for common extension tasks
 - [ ] Technical claims cross-referenced against codebase
 - [ ] New skills listed in Available Skills table
+- [ ] No personality instructions or generic advice
+- [ ] No stale references to removed files or features
 ```

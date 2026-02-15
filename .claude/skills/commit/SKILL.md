@@ -4,7 +4,7 @@ description: >-
   Drafts Sun Lab style-compliant git commit messages by analyzing all local changes relative to the active branch.
   Use when the user asks to commit, when completing a coding task that should be committed, or when the user invokes
   /commit. Proactively offer to draft a commit message after completing substantial code changes.
-user_invocable: true
+user-invocable: true
 ---
 
 # Commit
