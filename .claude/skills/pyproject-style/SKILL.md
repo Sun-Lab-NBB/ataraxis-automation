@@ -239,6 +239,7 @@ part of the distributed package.
 | `/python-style`     | Provides coding conventions that pyproject.toml tool configs enforce  |
 | `/readme-style`     | Provides README conventions; the `readme` field references the README |
 | `/project-layout`   | Provides complete directory trees; this skill owns wheel config       |
+| `/tox-config`       | Consumes dependency groups for tox environments; co-evolves with deps |
 | `/commit`           | Should be invoked after completing pyproject.toml changes             |
 | `/explore-codebase` | Provides project context needed when writing project-specific configs |
 

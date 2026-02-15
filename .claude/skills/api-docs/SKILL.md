@@ -210,6 +210,9 @@ dependencies directly to downstream project pyproject.toml files.
 
 ### tox.ini docs environment
 
+For the complete tox.ini conventions and all other environment definitions, invoke `/tox-config`.
+The docs-specific patterns are summarized here for convenience.
+
 **Python-only projects** (no external Doxygen dependency):
 
 ```ini
@@ -273,6 +276,7 @@ via tox (`tox -e docs`). Use the exact templates from
 | `/readme-style`     | Defines README conventions; README links to hosted API docs           |
 | `/pyproject-style`  | Defines pyproject.toml conventions including documentation URL        |
 | `/project-layout`   | Provides full project directory trees; this skill owns docs/ internals|
+| `/tox-config`       | Owns full tox.ini conventions; this skill documents docs env patterns|
 | `/commit`           | Should be invoked after completing documentation changes              |
 | `/explore-codebase` | Provides project context needed to identify modules for api.rst       |
 

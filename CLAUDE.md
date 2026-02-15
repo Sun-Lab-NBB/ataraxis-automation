@@ -24,6 +24,7 @@ You MUST invoke the appropriate skill before performing ANY of the following tas
 | Writing git commit messages             | `/commit`           |
 | Writing or modifying Sphinx docs files  | `/api-docs`         |
 | Creating or verifying project structure | `/project-layout`   |
+| Writing or modifying tox.ini files      | `/tox-config`       |
 | Writing or modifying skill files        | `/skill-design`     |
 
 This is non-negotiable. Each skill contains verification checklists that you MUST complete before submitting any work.
@@ -69,6 +70,7 @@ state to prevent integration errors.
 | `/commit`           | Generate style-compliant commit messages for local changes           |
 | `/api-docs`         | Apply Sun Lab API documentation conventions (REQUIRED for docs)      |
 | `/project-layout`   | Apply Sun Lab project directory structure conventions                 |
+| `/tox-config`       | Apply Sun Lab tox.ini conventions (REQUIRED for tox configuration)   |
 | `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md               |
 
 ## Project Context
@@ -78,7 +80,7 @@ Sun Lab (NeuroAI) projects at Cornell University. It provides a CLI (`automation
 environment manipulation and facilitates development tasks such as linting, typing, testing, documentation, and
 building. This library also serves as the shared Claude Code plugin, distributing the `/explore-codebase`,
 `/python-style`, `/cpp-style`, `/csharp-style`, `/readme-style`, `/pyproject-style`, `/api-docs`, `/project-layout`,
-`/commit`, and `/skill-design` skills to all downstream Sun Lab repositories.
+`/tox-config`, `/commit`, and `/skill-design` skills to all downstream Sun Lab repositories.
 
 **Note:** The `/cpp-style` skill applies to both C++ embedded projects (e.g., `ataraxis-transport-layer-mc`,
 `ataraxis-micro-controller`, `sl-micro-controllers`) and C++ Python extension projects (e.g., `ataraxis-time`). The
@@ -99,6 +101,7 @@ the Python style guide used across all Sun Lab projects.
 | `.claude/skills/cpp-style/`        | C++ code style skill (shared via plugin)                |
 | `.claude/skills/csharp-style/`     | C# code style skill (shared via plugin)                 |
 | `.claude/skills/project-layout/`   | Project directory structure skill (shared via plugin)   |
+| `.claude/skills/tox-config/`       | tox.ini configuration skill (shared via plugin)         |
 | `.claude/skills/skill-design/`     | Skill and CLAUDE.md authoring skill (shared via plugin) |
 | `.claude-plugin/`                  | Claude Code plugin configuration                        |
 | `tests/`                           | Test suite                                              |
