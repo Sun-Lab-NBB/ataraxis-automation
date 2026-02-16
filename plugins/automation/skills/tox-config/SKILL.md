@@ -73,7 +73,7 @@ Collect the project-specific values:
 | `{version}`        | Current ataraxis-automation release   | `7.1.0`                   |
 | Python versions    | `requires-python` in `pyproject.toml` | `py312, py313, py314`     |
 | `basepython`       | Earliest supported Python version     | `py312`                   |
-| `--python_version` | Latest supported Python version       | `3.14`                    |
+| `--python-version` | Latest supported Python version       | `3.14`                    |
 
 ### Step 4: Apply conventions
 
@@ -301,8 +301,10 @@ envlist = docs
 ### Environment management (install, uninstall, create, remove, provision, export, import)
 
 - All use `skip_install = true` and `deps = ataraxis-automation=={version}`.
-- All call `automation-cli` subcommands with `--environment_name {env_abbr}_dev`.
-- `create` and `provision` also pass `--python_version` set to the latest supported version.
+- All call `automation-cli` subcommands with `--environment-name {env_abbr}_dev`.
+- `create` and `provision` also pass `--python-version` set to the latest supported version.
+- `create`, `provision`, and `install` accept `{posargs:}` to allow passing additional flags at
+  invocation time (e.g., `--prerelease` to enable prerelease package installation).
 - `export` has `depends = uninstall`.
 - `install` has `depends` listing the full pipeline (lint, stubs, test, coverage, docs, export).
 - These environments are defined in the file but NOT included in `envlist` (except `install`,
@@ -330,13 +332,13 @@ appear in tox.ini.
 The test environment Python version matrix MUST match the `requires-python` range in
 `pyproject.toml`:
 
-| Project type | `requires-python` | Test matrix                  | `basepython` | `--python_version` |
+| Project type | `requires-python` | Test matrix                  | `basepython` | `--python-version` |
 |--------------|-------------------|------------------------------|--------------|--------------------|
 | Core library | `>=3.12,<3.15`    | `{py312, py313, py314}-test` | `py312`      | `3.14`             |
 | Application  | `>=3.14,<3.15`    | `{py314}-test`               | `py314`      | `3.14`             |
 
 - `basepython` is set to the **earliest** supported version (controls lint/mypy ruleset).
-- `--python_version` in `create`/`provision` is set to the **latest** supported version.
+- `--python-version` in `create`/`provision` is set to the **latest** supported version.
 
 ---
 
@@ -445,8 +447,8 @@ Build Environment:
 - [ ] C++ extension projects use cibuildwheel for wheel
 
 Environment Management:
-- [ ] --environment_name uses correct abbreviation with _dev suffix
-- [ ] --python_version set to latest supported version
+- [ ] --environment-name uses correct abbreviation with _dev suffix
+- [ ] --python-version set to latest supported version
 - [ ] export depends on uninstall
 - [ ] install depends on the full pipeline
 

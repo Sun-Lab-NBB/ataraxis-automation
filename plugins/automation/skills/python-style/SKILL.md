@@ -118,7 +118,7 @@ Exception: Single positional arguments for obvious cases like `range(4)`, `len(a
 
 ## Error handling
 
-Use `console.error` from `ataraxis_base_utilities`:
+In projects that depend on `ataraxis-base-utilities`, use `console.error` for error reporting:
 
 ```python
 from ataraxis_base_utilities import console
@@ -132,13 +132,20 @@ def process_data(self, data: NDArray[np.float32], threshold: float) -> None:
         console.error(message=message, error=ValueError)
 ```
 
+In projects that do not depend on `ataraxis-base-utilities`, use standard `raise` with the same
+message format:
+
+```python
+raise ValueError(message)
+```
+
 ### Error message format
 
 - Start with context: "Unable to [action] using [input]."
 - Explain the constraint: "The [parameter] must be [constraint]"
 - Show actual value: "but got {value}."
 - Use f-strings for interpolation
-- Always assign the message to a `message` variable before passing to `console.error()`
+- Always assign the message to a `message` variable before passing to `console.error()` or `raise`
 
 ---
 
@@ -212,16 +219,17 @@ Package `__init__.py` files define the public API:
 See the `documentation <https://project-api-docs.netlify.app/>`_ for the description of
 available assets.
 
-Authors: Author Name <email@cornell.edu>
+Authors: Author Name (Handle)
 """
-
-from ataraxis_base_utilities import console
 
 from .module_one import ClassOne, function_one
 from .module_two import ClassTwo, ClassThree
 
-if not console.enabled:
-    console.enable()
+# Optional, per-library choice:
+# from ataraxis_base_utilities import console
+#
+# if not console.enabled:
+#     console.enable()
 
 __all__ = [
     "ClassOne",
@@ -233,11 +241,14 @@ __all__ = [
 
 ### Rules
 
-- **Module docstring**: Imperative mood ("Provides..."), include documentation link and authors
-- **Console initialization**: Every top-level `__init__.py` must enable the global `console`
+- **Module docstring**: Imperative mood ("Provides..."), include documentation link and authors.
+  Email addresses in the `Authors:` line are optional and omitted by default
+- **Console initialization**: Enabling the global `console` in the top-level `__init__.py` is a
+  per-library choice, not a strict requirement. If `console.echo()` is called elsewhere in the
+  library without `console.enable()` present, verify with the user whether this is intentional
 - **Explicit `__all__`**: Every `__init__.py` must declare `__all__` with all public API members
 - **Alphabetical sorting**: Sort `__all__` entries alphabetically
-- **No logic**: `__init__.py` files contain only imports, `console.enable()`, and `__all__`
+- **No logic**: `__init__.py` files contain only imports, optional `console.enable()`, and `__all__`
 
 ---
 
@@ -403,7 +414,7 @@ Python Style Compliance:
 - [ ] Full words used (no abbreviations like `pos`, `idx`, `val`)
 - [ ] Private members use `_underscore` prefix
 - [ ] Keyword arguments used for function calls
-- [ ] Error handling uses console.error() (no bare raise statements)
+- [ ] Error handling uses console.error() when ataraxis-base-utilities is available (else raise)
 - [ ] Double quotes used for all strings (enforced by ruff)
 - [ ] F-strings used exclusively (no % formatting or .format())
 - [ ] Lines under 120 characters
@@ -411,7 +422,8 @@ Python Style Compliance:
 - [ ] Import sorting delegated to ruff (do not manually reorder)
 - [ ] Local imports use direct name imports (no module imports)
 - [ ] Cross-package imports go through package __init__.py (not submodules)
-- [ ] __init__.py files have __all__ (alphabetically sorted) and console.enable()
+- [ ] __init__.py files have __all__ (alphabetically sorted); console.enable() is a per-library choice
+- [ ] If console.echo() is used without console.enable() anywhere, verify intent with user
 - [ ] Public definitions above private definitions in file
 - [ ] Enums and dataclasses above worker functions and classes
 - [ ] Definitions ordered by call hierarchy or grouped by purpose
@@ -430,7 +442,7 @@ Python Style Compliance:
 - [ ] Two blank lines between top-level definitions
 - [ ] Trailing commas in multi-line structures
 
-Ataraxis Library Preferences:
+Ataraxis Library Preferences (when ataraxis-base-utilities is a dependency):
 - [ ] Console output uses console.echo() instead of print() (exception: tabulate/formatted tables)
 - [ ] Error handling uses console.error() instead of raise
 - [ ] List conversion uses ensure_list() instead of manual type checks

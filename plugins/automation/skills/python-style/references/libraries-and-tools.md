@@ -6,12 +6,14 @@ Conventions for ataraxis libraries, Numba, Click CLI, testing, and linting in Su
 
 ## Ataraxis library preferences
 
-Sun Lab projects use a suite of ataraxis libraries that provide standardized, high-performance utilities. **Always
-prefer these libraries** over standard library alternatives or reimplementation for their designated tasks.
+Sun Lab projects use a suite of ataraxis libraries that provide standardized, high-performance utilities. **Prefer
+these libraries** over standard library alternatives or reimplementation for their designated tasks when the project
+depends on them. Projects that do not depend on `ataraxis-base-utilities` (such as `ataraxis-automation` itself) should
+use standard Python patterns (`raise`, `print()`, `click.echo()`) instead.
 
 ### Console output (ataraxis-base-utilities)
 
-Use `console.echo()` for **all console output** instead of `print()`:
+In projects that depend on `ataraxis-base-utilities`, use `console.echo()` for console output instead of `print()`:
 
 ```python
 from ataraxis_base_utilities import console
@@ -27,8 +29,10 @@ print("Processing frame 1 of 100...")  # Wrong - use console.echo()
 
 **Log levels**: `DEBUG`, `INFO` (default), `SUCCESS`, `WARNING`, `ERROR`, `CRITICAL`
 
-The global `console` instance is pre-configured and shared across all Sun Lab projects. Call `console.enable()` at
-application entry points if needed.
+The global `console` instance is pre-configured and shared across Sun Lab projects that depend on
+`ataraxis-base-utilities`. Whether to call `console.enable()` in the top-level `__init__.py` is a per-library choice.
+If `console.echo()` is called in a library that does not have `console.enable()` anywhere, verify with the user
+whether this is intentional.
 
 **Exception**: Use `print()` or `click.echo()` when output requires specific formatting that would be disrupted by
 console's line-width formatting, such as tables created with `tabulate` or manually aligned ASCII tables:
@@ -240,19 +244,19 @@ np.save(f"frame_{i}.npy", data)  # Wrong - blocks acquisition
 
 ### Quick reference table
 
-| Task                    | Use This                    | Not This                                |
-|-------------------------|-----------------------------|-----------------------------------------|
-| Console output          | `console.echo()`            | `print()` (exception: formatted tables) |
-| Error handling          | `console.error()`           | `raise Exception()`                     |
-| Convert to list         | `ensure_list()`             | Manual type checking                    |
-| Batch iteration         | `chunk_iterable()`          | Manual slicing                          |
-| Precision timing        | `PrecisionTimer`            | `time.time()`, `time.perf_counter()`    |
-| Delays                  | `PrecisionTimer.delay()`    | `time.sleep()`                          |
-| Timestamps              | `get_timestamp()`           | `datetime.now().strftime()`             |
-| Time unit conversion    | `convert_time()`            | Manual division/multiplication          |
-| YAML serialization      | `YamlConfig` subclass       | `yaml.dump()`/`yaml.load()`             |
-| Inter-process arrays    | `SharedMemoryArray`         | `multiprocessing.Array`                 |
-| High-throughput logging | `DataLogger` + `LogPackage` | Direct file writes                      |
+| Task                    | Use This                    | Not This                                                        |
+|-------------------------|-----------------------------|-----------------------------------------------------------------|
+| Console output          | `console.echo()`            | `print()` (when base-utilities unavailable or formatted tables) |
+| Error handling          | `console.error()`           | `raise` (when base-utilities unavailable)                       |
+| Convert to list         | `ensure_list()`             | Manual type checking                                            |
+| Batch iteration         | `chunk_iterable()`          | Manual slicing                                                  |
+| Precision timing        | `PrecisionTimer`            | `time.time()`, `time.perf_counter()`                            |
+| Delays                  | `PrecisionTimer.delay()`    | `time.sleep()`                                                  |
+| Timestamps              | `get_timestamp()`           | `datetime.now().strftime()`                                     |
+| Time unit conversion    | `convert_time()`            | Manual division/multiplication                                  |
+| YAML serialization      | `YamlConfig` subclass       | `yaml.dump()`/`yaml.load()`                                     |
+| Inter-process arrays    | `SharedMemoryArray`         | `multiprocessing.Array`                                         |
+| High-throughput logging | `DataLogger` + `LogPackage` | Direct file writes                                              |
 
 ---
 
@@ -336,9 +340,10 @@ def discover_cameras(interface: str) -> None:
 
 ### Output formatting
 
-- Use `console.echo()` for standard CLI output
-- Use `print()` or `click.echo()` only for pre-formatted tables (tabulate, manually aligned ASCII)
-- Use `console.error()` for error reporting with proper error types
+- Use `console.echo()` for standard CLI output when `ataraxis-base-utilities` is available
+- Use `print()` or `click.echo()` for projects that do not depend on `ataraxis-base-utilities`, or
+  for pre-formatted tables (tabulate, manually aligned ASCII)
+- Use `console.error()` for error reporting when available; otherwise use standard `raise`
 
 ### Entry points
 

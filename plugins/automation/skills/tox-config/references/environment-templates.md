@@ -242,12 +242,14 @@ depends =
 description =
     Builds and installs the project into its development mamba environment.
 commands =
-    automation-cli install-project --environment_name {env_abbr}_dev
+    automation-cli install-project --environment-name {env_abbr}_dev {posargs:}
 ```
 
 **Parameterization:**
 - `depends`: Must list the complete pipeline that should pass before final installation.
 - `{env_abbr}_dev`: The project's environment abbreviation (e.g., `axbu_dev`).
+- `{posargs:}`: Allows passing additional flags at invocation time (e.g., `--prerelease` to
+  enable prerelease package installation).
 
 ### uninstall environment
 
@@ -258,7 +260,7 @@ deps = ataraxis-automation=={version}
 description =
     Uninstalls the project from its development mamba environment.
 commands =
-    automation-cli uninstall-project --environment_name {env_abbr}_dev
+    automation-cli uninstall-project --environment-name {env_abbr}_dev
 ```
 
 ### create environment
@@ -271,11 +273,13 @@ description =
     Creates the project's development mamba environment using the requested python version and
     installs runtime and development project dependencies extracted from the pyproject.toml file.
 commands =
-    automation-cli create-environment --environment_name {env_abbr}_dev --python_version 3.14
+    automation-cli create-environment --environment-name {env_abbr}_dev --python-version 3.14 {posargs:}
 ```
 
 **Parameterization:**
-- `--python_version`: Set to the latest Python version in the supported range.
+- `--python-version`: Set to the latest Python version in the supported range.
+- `{posargs:}`: Allows passing additional flags at invocation time (e.g., `--prerelease` to
+  enable prerelease package installation).
 
 ### remove environment
 
@@ -286,7 +290,7 @@ deps = ataraxis-automation=={version}
 description =
     Removes the project's development mamba environment.
 commands =
-    automation-cli remove-environment --environment_name {env_abbr}_dev
+    automation-cli remove-environment --environment-name {env_abbr}_dev
 ```
 
 ### provision environment
@@ -299,7 +303,7 @@ description =
     Provisions the project's development mamba environment by removing and (re)creating the
     environment.
 commands =
-    automation-cli provision-environment --environment_name {env_abbr}_dev --python_version 3.14
+    automation-cli provision-environment --environment-name {env_abbr}_dev --python-version 3.14 {posargs:}
 ```
 
 ### export environment
@@ -313,7 +317,7 @@ description =
     Exports the project's development mamba environment to the 'envs' project directory as a
     .yml file and as a spec.txt with revision history.
 commands =
-    automation-cli export-environment --environment_name {env_abbr}_dev
+    automation-cli export-environment --environment-name {env_abbr}_dev
 ```
 
 ### import environment
@@ -326,7 +330,7 @@ description =
     Creates or updates the project's development mamba environment using the .yml file stored in
     the 'envs' project directory.
 commands =
-    automation-cli import-environment --environment_name {env_abbr}_dev
+    automation-cli import-environment --environment-name {env_abbr}_dev
 ```
 
 ---

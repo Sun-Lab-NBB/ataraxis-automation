@@ -87,24 +87,26 @@ requires-python = ">=3.14,<3.15"
 
 ### authors and maintainers
 
-Authors lists contributors. Maintainers includes the active maintainer with email:
+Authors lists contributors. Maintainers includes the active maintainer with an optional email:
 
 ```toml
 authors = [
-    { name = "Ivan Kondratyev" },
+    { name = "Author Name" },
 ]
 maintainers = [
-    { name = "Ivan Kondratyev", email = "ik278@cornell.edu" },
+    { name = "Maintainer Name", email = "maintainer@example.com" },
 ]
 ```
+
+The email field in `maintainers` is optional. When present, use any valid email address.
 
 For multi-author projects, list all contributors:
 
 ```toml
 authors = [
-    { name = "Ivan Kondratyev" },
-    { name = "Kushaan Gupta" },
-    { name = "Yuantao Deng" },
+    { name = "Author One" },
+    { name = "Author Two" },
+    { name = "Author Three" },
 ]
 ```
 
