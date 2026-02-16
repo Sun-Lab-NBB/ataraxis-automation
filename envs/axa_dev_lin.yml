@@ -108,8 +108,7 @@ dependencies:
     - snowballstemmer==3.0.1
     - sphinx-autodoc-typehints==3.6.2
     - sphinx-click==6.2.0
-    - sphinx-rtd-dark-mode==1.3.0
-    - sphinx_rtd_theme==3.1.0
+    - furo==2025.12.19
     - sphinxcontrib-applehelp==2.0.0
     - sphinxcontrib-devhelp==2.0.0
     - sphinxcontrib-htmlhelp==2.1.0

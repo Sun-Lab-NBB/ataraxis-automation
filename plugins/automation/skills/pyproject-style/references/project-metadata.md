@@ -247,7 +247,7 @@ dependencies = [
 
     # Documentation
     "sphinx>=8,<9",
-    "sphinx-rtd-theme>=3,<4",
+    "furo>=2024,<2027",
 
     # Linting and Stub Generation
     "mypy>=1,<2",

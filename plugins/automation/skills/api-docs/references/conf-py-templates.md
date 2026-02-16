@@ -27,8 +27,6 @@ extensions = [
     'sphinx.ext.napoleon',       # To read google-style docstrings (works with autodoc module).
     'sphinx_click',              # Must load before sphinx_autodoc_typehints to avoid mock import shadowing.
     'sphinx_autodoc_typehints',  # To parse typehints into documentation
-    'sphinx_rtd_theme',          # To format the documentation HTML using ReadTheDocs format.
-    'sphinx_rtd_dark_mode'       # Enables dark mode for RTD theme.
 ]
 
 templates_path = ['_templates']
@@ -58,11 +56,8 @@ typehints_formatter = None
 typehints_use_signature = False
 typehints_use_signature_return = False
 
-# Disables the dark mode by default.
-default_dark_mode = False
-
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'sphinx_rtd_theme'  # Directs sphinx to use RTD theme
+html_theme = 'furo'
 ```
 
 ### Placeholders
@@ -93,19 +88,14 @@ release = '<VERSION>'
 # -- General configuration ---------------------------------------------------
 extensions = [
     'breathe',             # To read doxygen-generated xml files (to parse C++ documentation).
-    'sphinx_rtd_theme',    # To format the documentation HTML using ReadTheDocs format.
-    'sphinx_rtd_dark_mode' # Enables dark mode for RTD theme.
 ]
 
 # Breathe configuration
 breathe_projects = {"<PROJECT_NAME>": "./doxygen/xml"}
 breathe_default_project = "<PROJECT_NAME>"
 
-# Disables the dark mode by default.
-default_dark_mode = False
-
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'sphinx_rtd_theme'  # Directs sphinx to use RTD theme
+html_theme = 'furo'
 ```
 
 ### Optional: preprocessor macros
@@ -160,8 +150,6 @@ extensions = [
     'sphinx_click',              # Must load before sphinx_autodoc_typehints to avoid mock import shadowing.
     'sphinx_autodoc_typehints',  # To parse typehints into documentation
     'breathe',                   # To read doxygen-generated xml files (to parse C++ documentation).
-    'sphinx_rtd_theme',          # To format the documentation HTML using ReadTheDocs format.
-    'sphinx_rtd_dark_mode'       # Enables dark mode for RTD theme.
 ]
 
 templates_path = ['_templates']
@@ -195,11 +183,8 @@ typehints_formatter = None
 typehints_use_signature = False
 typehints_use_signature_return = False
 
-# Disables the dark mode by default.
-default_dark_mode = False
-
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'sphinx_rtd_theme'  # Directs sphinx to use RTD theme
+html_theme = 'furo'
 ```
 
 ### Placeholders
