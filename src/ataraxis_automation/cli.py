@@ -22,8 +22,8 @@ from .automation import (  # pragma: no cover
 )
 
 # Defines minimum and maximum token lengths used when verifying PYPI tokens.
-_MINIMUM_PYPI_TOKEN_LENGTH = 100  # pragma: no cover
-_MAXIMUM_PYPI_TOKEN_LENGTH = 500  # pragma: no cover
+_MINIMUM_PYPI_TOKEN_LENGTH: int = 100  # pragma: no cover
+_MAXIMUM_PYPI_TOKEN_LENGTH: int = 500  # pragma: no cover
 
 # Ensures that displayed CLICK help messages are formatted according to the lab standard.
 CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}  # pragma: no cover
@@ -79,7 +79,7 @@ def process_stubs() -> None:  # pragma: no cover
         raise RuntimeError(format_message(message))
 
     # Moves the stubs to the appropriate source code directories
-    move_stubs(stubs_dir=stubs_path, library_root=library_root)
+    move_stubs(stubs_directory=stubs_path, library_root=library_root)
     shutil.rmtree(stubs_path)  # Removes the /stubs directory once all stubs are moved
     message = "Stubs successfully distributed to appropriate source code directories."
     click.echo(colorize_message(message, color="green"))
@@ -606,9 +606,9 @@ def import_environment(environment_name: str, environment_directory: Path | None
 
     # If the environment cannot be activated (likely does not exist) and the environment .yml file is found inside /envs
     # directory, uses .yml file to create a new environment.
-    if not environment.environment_exists() and environment.create_from_yml_command is not None:
+    if not environment.environment_exists() and environment.create_from_yaml_command is not None:
         try:
-            subprocess.run(environment.create_from_yml_command, shell=True, check=True)
+            subprocess.run(environment.create_from_yaml_command, shell=True, check=True)
             message: str = (
                 f"'{environment.environment_name}' mamba environment imported (created) from existing .yml file."
             )
@@ -685,7 +685,7 @@ def export_environment(environment_name: str, environment_directory: Path | None
 
     # Exports environment as a .yml file
     try:
-        subprocess.run(environment.export_yml_command, shell=True, check=True)
+        subprocess.run(environment.export_yaml_command, shell=True, check=True)
         message = f"'{environment.environment_name}' mamba environment exported to /envs as a .yml file."
         click.echo(colorize_message(message, color="green"))
     except subprocess.CalledProcessError:

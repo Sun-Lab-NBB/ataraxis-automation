@@ -45,7 +45,7 @@ class ProjectEnvironment:
     """Stores the command used to deactivate any current environment and switch to the base environment."""
     create_command: str
     """Stores the command used to generate a minimally-configured mamba environment."""
-    create_from_yml_command: str | None
+    create_from_yaml_command: str | None
     """Stores the command used to create a new mamba environment from an existing .yml file."""
     remove_command: str
     """Stores the command used to remove (delete) the project's mamba environment."""
@@ -53,7 +53,7 @@ class ProjectEnvironment:
     """Stores the command used to install all project dependencies into the project's mamba environment using uv."""
     update_command: str | None
     """Stores the command used to update an already existing mamba environment using an existing .yml file."""
-    export_yml_command: str
+    export_yaml_command: str
     """Stores the command used to export the project's mamba environment to a .yml file."""
     export_spec_command: str
     """Stores the command used to export the project's mamba environment to a spec.txt file with revision history."""
@@ -94,10 +94,11 @@ class ProjectEnvironment:
         Raises:
             RuntimeError: If the host OS is unsupported, mamba or uv is not accessible, or the mamba environments
                 directory cannot be resolved and no manual override is provided.
-            ValueError: If the project name cannot be extracted from pyproject.toml or duplicate dependencies are found.
+            ValueError: If the project name cannot be extracted from pyproject.toml or duplicate dependencies are
+                found.
         """
         # Gets the environment name with the appropriate os-extension and the paths to the .yml and /spec files.
-        extended_environment_name, yml_path, spec_path = _resolve_environment_files(project_root, environment_name)
+        extended_environment_name, yaml_path, spec_path = _resolve_environment_files(project_root, environment_name)
 
         # Gets the name of the project from the pyproject.toml file.
         project_name = _resolve_project_name(project_root=project_root)
@@ -116,45 +117,45 @@ class ProjectEnvironment:
                 # If no manual override is available, re-raises the original error.
                 raise
 
-        # Generates commands that depend on the host OS type. Relies on resolve_environment_files() method to err if the
-        # host is running an unsupported OS, as the OS versions evaluated below are the same as used by
+        # Generates commands that depend on the host OS type. Relies on resolve_environment_files() method to err if
+        # the host is running an unsupported OS, as the OS versions evaluated below are the same as used by
         # resolve_environment_files(). Also generates the list of platform-specific dependencies.
 
         # WINDOWS
         if "_win" in extended_environment_name:
             # .yml export
-            export_yml_command = (
-                f'mamba env export --name {extended_environment_name} --use-uv | findstr -v "prefix" > {yml_path}'
+            export_yaml_command = (
+                f'mamba env export --name {extended_environment_name} --use-uv | findstr -v "prefix" > {yaml_path}'
             )
 
             # Mamba environment activation and deactivation commands. Still uses 'conda' for activation due to more
             # streamlined behavior and no performance downsides.
-            conda_init = "call conda.bat >NUL 2>&1"  # Redirects stdout and stderr to null to remove unnecessary text
+            conda_initialization_command = "call conda.bat >NUL 2>&1"  # Redirects stdout and stderr to null
 
         # LINUX
         elif "_lin" in extended_environment_name:
             # .yml export
-            export_yml_command = (
-                f"mamba env export --name {extended_environment_name} --use-uv | head -n -1 > {yml_path}"
+            export_yaml_command = (
+                f"mamba env export --name {extended_environment_name} --use-uv | head -n -1 > {yaml_path}"
             )
 
             # Conda environment activation command
-            conda_init = ". $(conda info --base)/etc/profile.d/conda.sh"
+            conda_initialization_command = ". $(conda info --base)/etc/profile.d/conda.sh"
 
-        # OSx
+        # MACOS
         else:
             # .yml export
-            export_yml_command = (
+            export_yaml_command = (
                 f"mamba env export --name {extended_environment_name} --use-uv | tail -r | "
-                f"tail -n +2 | tail -r > {yml_path}"
+                f"tail -n +2 | tail -r > {yaml_path}"
             )
 
             # Conda environment activation command.
-            conda_init = ". $(conda info --base)/etc/profile.d/conda.sh"
+            conda_initialization_command = ". $(conda info --base)/etc/profile.d/conda.sh"
 
-        # Resolves activation and deactivation commands using the resolved 'conda_init' command.
-        activate_command = f"{conda_init} && conda activate {target_environment_directory}"
-        deactivate_command = f"{conda_init} && conda deactivate"
+        # Resolves activation and deactivation commands using the resolved conda initialization command.
+        activate_command = f"{conda_initialization_command} && conda activate {target_environment_directory}"
+        deactivate_command = f"{conda_initialization_command} && conda deactivate"
 
         # Generates the spec.txt export command, which is the same for all OS versions (unlike .yml export).
         export_spec_command = f"mamba list -n {extended_environment_name} --use-uv --explicit > {spec_path}"
@@ -172,10 +173,10 @@ class ProjectEnvironment:
         )
 
         # Generates mamba environment manipulation commands.
-        # Creation (base) generates a minimal mamba environment. It is expected that mamba and uv dependencies are added
-        # via separate dependency commands generated above. Note, installs the latest versions of tox, uv, and tox-uv
-        # with the expectation that dependency installation commands use --reinstall to override the versions of these
-        # packages as necessary.
+        # Creation (base) generates a minimal mamba environment. It is expected that mamba and uv dependencies
+        # are added via separate dependency commands generated above. Note, installs the latest versions of tox, uv,
+        # and tox-uv with the expectation that dependency installation commands use --reinstall to override the
+        # versions of these packages as necessary.
         create_command: str = (
             f"mamba create -n {extended_environment_name} python={python_version} uv tox tox-uv --yes "
             f"--retry-clean-cache --pyc --use-uv"
@@ -184,19 +185,19 @@ class ProjectEnvironment:
 
         # Resolves .yml based commands. These commands are set to valid string-commands only if the .yml file for the
         # project's environment exists and to None otherwise.
-        yml_create_command: str | None = None
+        yaml_create_command: str | None = None
         update_command: str | None = None
-        if yml_path.exists():
-            yml_create_command = f"mamba env create -f {yml_path} --yes --retry-clean-cache --pyc --use-uv"
-            update_command = f"mamba env update -n {extended_environment_name} -f {yml_path}  --yes --prune --use-uv"
+        if yaml_path.exists():
+            yaml_create_command = f"mamba env create -f {yaml_path} --yes --retry-clean-cache --pyc --use-uv"
+            update_command = f"mamba env update -n {extended_environment_name} -f {yaml_path} --yes --prune --use-uv"
 
         return cls(
             activate_command=activate_command,
             deactivate_command=deactivate_command,
-            export_yml_command=export_yml_command,
+            export_yaml_command=export_yaml_command,
             export_spec_command=export_spec_command,
             create_command=create_command,
-            create_from_yml_command=yml_create_command,
+            create_from_yaml_command=yaml_create_command,
             remove_command=remove_command,
             install_dependencies_command=install_dependencies_command,
             update_command=update_command,
@@ -207,7 +208,7 @@ class ProjectEnvironment:
         )
 
     def environment_exists(self) -> bool:
-        """Returns True if the environment can be activated (exists) and False otherwise."""
+        """Determines whether the environment can be activated (exists)."""
         # Verifies that the project- and os-specific mamba environment can be activated.
         try:
             subprocess.run(
@@ -255,7 +256,7 @@ def colorize_message(message: str, color: str, *, wrap: bool = True) -> str:
     if wrap:
         message = format_message(message)
 
-    return click.style(message, fg=color)
+    return click.style(text=message, fg=color)
 
 
 def resolve_project_directory() -> Path:
@@ -280,8 +281,8 @@ def resolve_project_directory() -> Path:
     }
     if not all(item.exists() for item in required_items):
         message: str = (
-            f"Unable to confirm that ataraxis automation CLI has been called from the root directory of a valid Python "
-            f"project. This CLI expects that the current working directory is set to the root directory of the "
+            f"Unable to confirm that ataraxis automation CLI has been called from the root directory of a valid "
+            f"Python project. This CLI expects that the current working directory is set to the root directory of the "
             f"project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
             f"directory is set to {project_dir}, which does not contain at least one of the required files."
         )
@@ -365,7 +366,7 @@ def generate_typed_marker(library_root: Path) -> None:
             click.echo(colorize_message(message, color="white"), color=True)
 
 
-def move_stubs(stubs_dir: Path, library_root: Path) -> None:
+def move_stubs(stubs_directory: Path, library_root: Path) -> None:
     """Moves typing stub (.pyi) files from the 'stubs' directory to the appropriate level(s) of the library directory
     tree.
 
@@ -377,7 +378,7 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
         file. This subdirectory is considered to be the library root in the 'stubs' directory structure.
 
     Args:
-        stubs_dir: The absolute path to the project's "stubs" directory.
+        stubs_directory: The absolute path to the project's "stubs" directory.
         library_root: The absolute path to the root library directory.
     """
     # Compiles regex patterns once to optimize the cycles below
@@ -387,14 +388,16 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
     # Verifies the 'stubs' directory structure and finds the library name. To do so, first generates a set of all
     # subdirectories under /stubs that also have an __init__.pyi file.
     valid_subdirectories = [
-        sub_dir for sub_dir in stubs_dir.iterdir() if sub_dir.is_dir() and sub_dir.joinpath("__init__.pyi").exists()
+        sub_dir
+        for sub_dir in stubs_directory.iterdir()
+        if sub_dir.is_dir() and sub_dir.joinpath("__init__.pyi").exists()
     ]
 
     # Expects that the process above yields a single output directory. Otherwise, raises a RuntimeError.
     if len(valid_subdirectories) != 1:
         message: str = (
             f"Unable to move the generated stub files to appropriate levels of the library source code directory. "
-            f"Expected exactly one subdirectory with __init__.pyi in '{stubs_dir}', but found "
+            f"Expected exactly one subdirectory with __init__.pyi in '{stubs_directory}', but found "
             f"{len(valid_subdirectories)}."
         )
         raise RuntimeError(format_message(message))
@@ -449,13 +452,8 @@ def move_stubs(stubs_dir: Path, library_root: Path) -> None:
                     click.echo(colorize_message(message, color="white"), color=True)
             # If the group has multiple files, keeps the one with the highest copy number
             else:
-                # Extracts copy number for sorting (assigns 0 if no number is present)
-                def get_copy_number(path: Path) -> int:
-                    match = copy_pattern.search(path.name)
-                    return int(match.group(1)) if match else 0
-
                 # Sorts by copy number in the descending order and keeps the first item
-                group.sort(key=get_copy_number, reverse=True)
+                group.sort(key=lambda path: _get_copy_number(path, copy_pattern=copy_pattern), reverse=True)
                 kept_file = group[0]
 
                 # Removes all duplicates
@@ -506,6 +504,20 @@ def verify_pypirc(file_path: Path) -> bool:
         and config_validator.get("pypi", "username") == "__token__"
         and config_validator.get("pypi", "password").startswith("pypi-")
     )
+
+
+def _get_copy_number(path: Path, copy_pattern: re.Pattern[str]) -> int:
+    """Extracts the copy number from a stub file path name for duplicate sorting.
+
+    Args:
+        path: The path to the stub file to extract the copy number from.
+        copy_pattern: The compiled regex pattern used to match copy number suffixes.
+
+    Returns:
+        The extracted copy number, or 0 if no copy number is present.
+    """
+    match = copy_pattern.search(path.name)
+    return int(match.group(1)) if match else 0
 
 
 def _get_base_name(dependency: str) -> str:
@@ -587,7 +599,7 @@ def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
     pyproject_path: Path = project_root.joinpath("pyproject.toml")
 
     # Opens pyproject.toml and parses its contents
-    with Path.open(pyproject_path, "rb") as toml_file:
+    with pyproject_path.open(mode="rb") as toml_file:
         pyproject_data = tomli.load(toml_file)
 
     # Extracts runtime dependencies from the main 'project' metadata section.
@@ -651,7 +663,7 @@ def _resolve_project_name(project_root: Path) -> str:
 
     # Reads and parses the pyproject.toml file
     try:
-        with Path.open(pyproject_path, "rb") as toml_file:
+        with pyproject_path.open(mode="rb") as toml_file:
             pyproject_data: dict[str, Any] = tomli.load(toml_file)
     except tomli.TOMLDecodeError as e:
         message: str = (
@@ -677,6 +689,9 @@ def _resolve_project_name(project_root: Path) -> str:
 
 def _resolve_mamba_environments_directory() -> Path:
     """Returns the absolute path to the local mamba environments directory.
+
+    Returns:
+        The absolute path to the mamba environments directory.
 
     Raises:
         RuntimeError: If mamba (via miniforge) is not installed and/or initialized.
@@ -712,9 +727,9 @@ def _resolve_mamba_environments_directory() -> Path:
             # root of a mamba environment manager.
             if current.joinpath("conda-meta").exists():
                 # In a mamba environment, the /envs folder will be found directly under the root
-                envs_path = current.joinpath("envs")
-                if envs_path.exists():
-                    return envs_path
+                environments_path = current.joinpath("envs")
+                if environments_path.exists():
+                    return environments_path
 
                 # Otherwise, navigates up to find envs
                 if current.parent.name == "envs":
@@ -725,31 +740,31 @@ def _resolve_mamba_environments_directory() -> Path:
     # Method 2: Tries to find mamba by locating mamba/conda executable (mamba uses CONDA_EXE).
     mamba_executable = os.environ.get("CONDA_EXE")
     if mamba_executable:
-        envs_dir = Path(mamba_executable).parents[1].joinpath("envs")
-        if envs_dir.exists():
-            return envs_dir
+        environments_directory = Path(mamba_executable).parents[1].joinpath("envs")
+        if environments_directory.exists():
+            return environments_directory
 
     # Method 3: Checks the standard miniforge3 installation location.
     home = Path.home()
 
     # Standard miniforge3 location on Unix-like systems
-    miniforge_envs = home.joinpath("miniforge3", "envs")
-    if miniforge_envs.exists():
-        return miniforge_envs
+    miniforge_environments = home.joinpath("miniforge3", "envs")
+    if miniforge_environments.exists():
+        return miniforge_environments
 
     # On Windows, also checks the AppData location
     if sys.platform == "win32":
         # First try: constructs the path from user's home directory
-        windows_miniforge_envs = home.joinpath("AppData", "Local", "miniforge3", "envs")
-        if windows_miniforge_envs.exists():
-            return windows_miniforge_envs
+        windows_miniforge_environments = home.joinpath("AppData", "Local", "miniforge3", "envs")
+        if windows_miniforge_environments.exists():
+            return windows_miniforge_environments
 
         # Fallback: uses LOCALAPPDATA environment variable
         local_appdata = os.environ.get("LOCALAPPDATA")
         if local_appdata:
-            windows_miniforge_envs = Path(local_appdata).joinpath("miniforge3", "envs")
-            if windows_miniforge_envs.exists():
-                return windows_miniforge_envs
+            windows_miniforge_environments = Path(local_appdata).joinpath("miniforge3", "envs")
+            if windows_miniforge_environments.exists():
+                return windows_miniforge_environments
 
     # If this point is reached, miniforge is not installed and/or initialized. Raises an error.
     message: str = (
@@ -793,16 +808,16 @@ def _resolve_environment_files(project_root: Path, environment_base_name: str) -
         raise RuntimeError(format_message(message))
 
     # Resolves the absolute path to the 'envs' directory.
-    envs_dir: Path = project_root.joinpath("envs")
+    environments_directory: Path = project_root.joinpath("envs")
 
     # Selects the environment name according to the host OS and constructs the path to the environment .yml and spec
     # files using the generated name.
     os_suffix = _SUPPORTED_PLATFORMS[os_name]
-    env_name: str = f"{environment_base_name}{os_suffix}"
-    yml_path: Path = envs_dir.joinpath(f"{env_name}.yml")
-    spec_path: Path = envs_dir.joinpath(f"{env_name}_spec.txt")
+    environment_name: str = f"{environment_base_name}{os_suffix}"
+    yaml_path: Path = environments_directory.joinpath(f"{environment_name}.yml")
+    spec_path: Path = environments_directory.joinpath(f"{environment_name}_spec.txt")
 
-    return env_name, yml_path, spec_path
+    return environment_name, yaml_path, spec_path
 
 
 def _check_package_engines() -> None:

@@ -184,8 +184,6 @@ project developer. If possible, use the pip installation method described below.
    [git clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository).
 2. `cd` into the root directory of the project using your CLI of choice.
 3. Run `pip install .` to install the project and its dependencies.
-4. Optionally, run the tests to verify the installation was successful (see
-   [Developers](#developers)).
 ```
 
 ### pip subsection

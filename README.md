@@ -1,6 +1,7 @@
 # ataraxis-automation
 
-Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun (NeuroAI) lab projects.
+Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun 
+(NeuroAI) lab projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-automation)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-automation)
@@ -67,25 +68,28 @@ ___
 ### Source
 
 ***Note,*** installation from source is ***highly discouraged*** for anyone who is not an active project developer.
+If possible, use the pip installation method described below.
 
-1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the
-   [stable releases](https://github.com/Sun-Lab-NBB/ataraxis-automation/tags) that include precompiled binary and source
-   code distribution (sdist) wheels.
-2. If the downloaded distribution is stored as a compressed archive, unpack it using the appropriate decompression tool.
-3. `cd` to the root directory of the prepared project distribution.
-4. Run `python -m pip install .` to install the project. Alternatively, if using a distribution with precompiled
-   binaries, use `python -m pip install WHEEL_PATH`, replacing 'WHEEL_PATH' with the path to the wheel file.
+1. Download this repository to the local machine using the preferred method, such as
+   [git clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository).
+2. `cd` into the root directory of the project.
+3. Run `pip install .` to install the project and its dependencies.
 
 ### pip
 
-Use the following command to install the library using pip: `pip install ataraxis-automation`.
+Use the following command to install the library and all of its dependencies via
+[pip](https://pip.pypa.io/en/stable/):
+
+```
+pip install ataraxis-automation
+```
 
 ___
 
 ## Usage
 ***Note,*** the library expects the managed project to use a specific configuration and file structure. If any CLI
-command terminates with an error, read all information printed in the terminal to determine whether the error is due to
-an invalid project configuration or file structure.
+command terminates with an error, the terminal output describes whether the error is due to an invalid project
+configuration or file structure.
 
 ### Automation Command-Line Interface
 All library functions designed to be called by end-users are exposed through the 'automation-cli' Command Line

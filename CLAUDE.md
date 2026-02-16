@@ -1,6 +1,6 @@
 # Claude Code Instructions
 
-## Session Start Behavior
+## Session start behavior
 
 At the beginning of each coding session, before making any code changes, you should build a comprehensive
 understanding of the codebase by invoking the `/explore-codebase` skill.
@@ -10,7 +10,7 @@ This ensures you:
 - Follow existing patterns and conventions
 - Don't introduce inconsistencies or break integrations
 
-## Style Guide Requirements
+## Style guide requirements
 
 You MUST invoke the appropriate skill before performing ANY of the following tasks:
 
@@ -30,7 +30,7 @@ You MUST invoke the appropriate skill before performing ANY of the following tas
 This is non-negotiable. Each skill contains verification checklists that you MUST complete before submitting any work.
 Failure to invoke the appropriate skill results in style violations.
 
-## Cross-Referenced Library Verification
+## Cross-referenced library verification
 
 Sun Lab projects often depend on other `ataraxis-*` or `sl-*` libraries. These libraries may be stored locally in the
 same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`).
@@ -57,7 +57,7 @@ same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`
 **Why this matters**: Skills and documentation may reference outdated APIs. Always verify against the actual library
 state to prevent integration errors.
 
-## Available Skills
+## Available skills
 
 | Skill               | Description                                                          |
 |---------------------|----------------------------------------------------------------------|
@@ -73,7 +73,7 @@ state to prevent integration errors.
 | `/tox-config`       | Apply Sun Lab tox.ini conventions (REQUIRED for tox configuration)   |
 | `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md               |
 
-## Project Context
+## Project context
 
 This is **ataraxis-automation**, a Python library that supports tox-based development automation pipelines used by all
 Sun Lab (NeuroAI) projects at Cornell University. It provides a CLI (`automation-cli`) that abstracts project
@@ -87,7 +87,7 @@ building. This library also serves as the shared Claude Code plugin, distributin
 `/csharp-style` skill applies to C# Unity projects (e.g., `sl-unity-tasks`). Both enforce conventions consistent with
 the Python style guide used across all Sun Lab projects.
 
-### Key Areas
+### Key areas
 
 | Directory                          | Purpose                                                 |
 |------------------------------------|---------------------------------------------------------|
@@ -118,7 +118,7 @@ the Python style guide used across all Sun Lab projects.
   the `plugins/automation/skills/` directory available to all downstream projects that install the plugin.
 - **No MCP Server**: This library does not provide an MCP server.
 
-### Key Patterns
+### Key patterns
 
 - **Multi-OS Support**: Detects Windows, Linux, and macOS via `sys.platform` and generates platform-specific commands
   for mamba and uv operations.
@@ -129,7 +129,7 @@ the Python style guide used across all Sun Lab projects.
 - **ProjectEnvironment Dataclass**: Encapsulates all environment commands (create, remove, install, export, etc.) into
   a single frozen dataclass.
 
-### Core Components
+### Core components
 
 | Component            | File             | Purpose                                            |
 |----------------------|------------------|----------------------------------------------------|
@@ -141,14 +141,14 @@ the Python style guide used across all Sun Lab projects.
 | verify_pypirc        | `automation.py`  | Validates PyPI token configuration                 |
 | format_message       | `automation.py`  | Wraps text at 120 characters for CLI output        |
 
-### Code Standards
+### Code standards
 
 - MyPy strict mode with full type annotations
 - Google-style docstrings
 - 120 character line limit
 - See `/python-style` for complete conventions
 
-### Workflow Guidance
+### Workflow guidance
 
 **Modifying CLI commands:**
 
@@ -173,7 +173,8 @@ the Python style guide used across all Sun Lab projects.
 
 **Modifying shared skills:**
 
-1. Review the skill files in `plugins/automation/skills/` and the plugin configuration in `plugins/automation/.claude-plugin/plugin.json`
+1. Review the skill files in `plugins/automation/skills/` and the plugin configuration in
+   `plugins/automation/.claude-plugin/plugin.json`
 2. Invoke `/skill-design` for conventions on frontmatter, structure, and formatting
 3. Changes to shared skills affect ALL downstream Sun Lab repositories that use the plugin
 4. Test skill changes by invoking them in this repository before committing
