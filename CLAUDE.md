@@ -78,9 +78,7 @@ state to prevent integration errors.
 This is **ataraxis-automation**, a Python library that supports tox-based development automation pipelines used by all
 Sun Lab (NeuroAI) projects at Cornell University. It provides a CLI (`automation-cli`) that abstracts project
 environment manipulation and facilitates development tasks such as linting, typing, testing, documentation, and
-building. This library also serves as the shared Claude Code plugin, distributing the `/explore-codebase`,
-`/python-style`, `/cpp-style`, `/csharp-style`, `/readme-style`, `/pyproject-style`, `/api-docs`, `/project-layout`,
-`/tox-config`, `/commit`, and `/skill-design` skills to all downstream Sun Lab repositories.
+building.
 
 **Note:** The `/cpp-style` skill applies to both C++ embedded projects (e.g., `ataraxis-transport-layer-mc`,
 `ataraxis-micro-controller`, `sl-micro-controllers`) and C++ Python extension projects (e.g., `ataraxis-time`). The
@@ -89,24 +87,12 @@ the Python style guide used across all Sun Lab projects.
 
 ### Key areas
 
-| Directory                                     | Purpose                                                 |
-|-----------------------------------------------|---------------------------------------------------------|
-| `src/ataraxis_automation/`                    | Main library source code                                |
-| `plugins/automation/skills/explore-codebase/` | Codebase exploration skill (shared via plugin)          |
-| `plugins/automation/skills/python-style/`     | Python code style skill (shared via plugin)             |
-| `plugins/automation/skills/readme-style/`     | README style skill (shared via plugin)                  |
-| `plugins/automation/skills/commit/`           | Commit message generation skill (shared via plugin)     |
-| `plugins/automation/skills/pyproject-style/`  | pyproject.toml style skill (shared via plugin)          |
-| `plugins/automation/skills/api-docs/`         | API documentation style skill (shared via plugin)       |
-| `plugins/automation/skills/cpp-style/`        | C++ code style skill (shared via plugin)                |
-| `plugins/automation/skills/csharp-style/`     | C# code style skill (shared via plugin)                 |
-| `plugins/automation/skills/project-layout/`   | Project directory structure skill (shared via plugin)   |
-| `plugins/automation/skills/tox-config/`       | tox.ini configuration skill (shared via plugin)         |
-| `plugins/automation/skills/skill-design/`     | Skill and CLAUDE.md authoring skill (shared via plugin) |
-| `plugins/automation/.claude-plugin/`          | Claude Code plugin configuration                        |
-| `tests/`                                      | Test suite                                              |
-| `envs/`                                       | Pre-configured development environment .yml files       |
-| `docs/`                                       | Sphinx documentation source                             |
+| Directory                  | Purpose                                           |
+|----------------------------|---------------------------------------------------|
+| `src/ataraxis_automation/` | Main library source code                          |
+| `tests/`                   | Test suite                                        |
+| `envs/`                    | Pre-configured development environment .yml files |
+| `docs/`                    | Sphinx documentation source                       |
 
 ### Architecture
 
@@ -114,8 +100,6 @@ the Python style guide used across all Sun Lab projects.
   installation, and environment lifecycle management. Entry point is `automation-cli`.
 - **Automation Module** (`automation.py`): Core logic including the `ProjectEnvironment` dataclass, project directory
   resolution, dependency parsing, stub file management, and OS-specific mamba/uv command generation.
-- **Plugin Architecture** (`plugins/automation/`): Registers this library as a Claude Code marketplace plugin, making
-  the `plugins/automation/skills/` directory available to all downstream projects that install the plugin.
 - **No MCP Server**: This library does not provide an MCP server.
 
 ### Key patterns
@@ -171,10 +155,5 @@ the Python style guide used across all Sun Lab projects.
 3. Follow the templates in the skill's reference files for new documentation
 4. Changes to documentation affect the hosted Netlify site after rebuild
 
-**Modifying shared skills:**
-
-1. Review the skill files in `plugins/automation/skills/` and the plugin configuration in
-   `plugins/automation/.claude-plugin/plugin.json`
-2. Invoke `/skill-design` for conventions on frontmatter, structure, and formatting
-3. Changes to shared skills affect ALL downstream Sun Lab repositories that use the plugin
-4. Test skill changes by invoking them in this repository before committing
+**Note:** Claude Code skills have been moved to the main
+[ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. Skill modifications should be made there.
