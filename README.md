@@ -1,7 +1,6 @@
 # ataraxis-automation
 
-Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun
-(NeuroAI) lab projects.
+Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-automation)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-automation)
@@ -19,9 +18,7 @@ ___
 Upon installation into a Python environment, this library exposes a command-line interface (automation-cli) used by the
 [tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation suite that comes with every Sun
 Lab project. The CLI abstracts the project's environment manipulation and facilitates mundane development tasks, such as
-linting, typing, and documenting the source code API. This library also serves as a
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin marketplace, distributing a set of agentic skills
-that enforce Sun Lab development conventions across all downstream projects.
+linting, typing, and documenting the source code API.
 
 ___
 
@@ -30,7 +27,6 @@ ___
 - Supports Windows, Linux, and macOS.
 - Optimized for runtime speed by using mamba and uv for all environment management tasks.
 - Compliments the extensive suite of tox environments and tasks used by all Sun lab projects to streamline development.
-- Exports agentic skills for Claude Code that enforce coding style, documentation, and project structure conventions.
 - Apache 2.0 License.
 
 ___
@@ -40,7 +36,6 @@ ___
 - [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Claude Code Skills](#claude-code-skills)
 - [API Documentation](#api-documentation)
 - [Developers](#developers)
 - [Versioning](#versioning)
@@ -460,53 +455,10 @@ ___
 
 ## Claude Code Skills
 
-This library serves as a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin marketplace, distributing
-a set of agentic skills that enforce Sun Lab development conventions across all downstream projects. These skills
-provide Claude Code with project-specific knowledge about coding style, documentation format, commit messages, project
-structure, and more.
-
-### Available Skills
-
-| Skill               | Description                                                      |
-|---------------------|------------------------------------------------------------------|
-| `/explore-codebase` | Performs in-depth codebase exploration at the start of a session |
-| `/python-style`     | Applies Sun Lab Python coding conventions                        |
-| `/cpp-style`        | Applies Sun Lab C++ coding conventions                           |
-| `/csharp-style`     | Applies Sun Lab C# coding conventions                            |
-| `/readme-style`     | Applies Sun Lab README conventions                               |
-| `/pyproject-style`  | Applies Sun Lab pyproject.toml conventions                       |
-| `/api-docs`         | Applies Sun Lab API documentation conventions                    |
-| `/project-layout`   | Applies Sun Lab project directory structure conventions          |
-| `/tox-config`       | Applies Sun Lab tox.ini conventions                              |
-| `/commit`           | Drafts style-compliant git commit messages                       |
-| `/skill-design`     | Generates, updates, and verifies skill files and CLAUDE.md       |
-
-### Installing for Claude Code
-
-Claude Code supports plugin installation through its built-in marketplace system. To install the skills provided by
-this library:
-
-1. Open Claude Code and add the ataraxis marketplace by running: 
-`/plugin marketplace add Sun-Lab-NBB/ataraxis-automation`
-2. Install the automation plugin from the marketplace:
-`/plugin install automation@ataraxis`
-
-Alternatively, use the interactive plugin manager by running `/plugin`, navigating to the **Discover** tab, and
-selecting the `automation` plugin.
-
-***Note,*** the plugin can be installed at different scopes depending on the intended use:
-- **user** (default): Available across all projects for the current user.
-- **project**: Shared with all developers via version control (stored in `.claude/settings.json`).
-- **local**: Project-specific and gitignored (stored in `.claude/settings.local.json`).
-
-To specify a scope during installation, use the CLI form: `claude plugin install automation@ataraxis --scope project`
-
-### Compatibility
-
-These skills are designed for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the official CLI tool from
-Anthropic. The plugin marketplace system is a Claude Code feature and is not currently available in other Claude
-distributions such as Claude Desktop or the Claude web interface. However, the skill files themselves are plain Markdown
-and can be referenced manually in any context that supports custom instructions or system prompts.
+The Ataraxis project also exports agentic skills that enforce Sun Lab development conventions across all downstream 
+via the main [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. See the
+[Claude Code Skills](https://github.com/Sun-Lab-NBB/ataraxis#claude-code-skills) section of the ataraxis README for
+available skills and installation instructions.
 
 ___
 

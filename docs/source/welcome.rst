@@ -1,8 +1,7 @@
 Welcome to ataraxis-automation API documentation page
 =====================================================
 
-Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun
-(NeuroAI) lab projects.
+Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects.
 
 This library is part of the broader 'Ataraxis' science-automation project, developed in the
 `Sun (NeuroAI) lab <https://neuroai.github.io/sunlab/>`_ at Cornell University.
