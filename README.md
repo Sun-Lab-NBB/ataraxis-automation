@@ -64,21 +64,18 @@ ___
 ### Source
 
 ***Note,*** installation from source is ***highly discouraged*** for anyone who is not an active project developer.
-If possible, use the pip installation method described below.
 
-1. Download this repository to the local machine using the preferred method, such as
-   [git clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository).
-2. `cd` into the root directory of the project.
-3. Run `pip install .` to install the project and its dependencies.
+1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the
+   [stable releases](https://github.com/Sun-Lab-NBB/ataraxis-automation/tags) that include precompiled binary and
+   source code distribution (sdist) wheels.
+2. If the downloaded distribution is stored as a compressed archive, unpack it using the appropriate decompression tool.
+3. `cd` to the root directory of the prepared project distribution.
+4. Run `pip install .` to install the project and its dependencies.
 
 ### pip
 
 Use the following command to install the library and all of its dependencies via
-[pip](https://pip.pypa.io/en/stable/):
-
-```
-pip install ataraxis-automation
-```
+[pip](https://pip.pypa.io/en/stable/): `pip install ataraxis-automation`
 
 ___
 
@@ -317,7 +314,6 @@ These tasks were added to automate repetitive tasks associated with managing pro
 development. They assume that there is a validly configured mamba distribution installed and accessible from the
 shell of the machine that calls these commands.
 
-
 #### Install
 Shell command: `tox -e install`
 
@@ -530,10 +526,10 @@ To expedite the task's runtime, use the `tox --parallel` command to run some tas
 
 ### Automation Troubleshooting
 
-Many packages used in 'tox' automation pipelines (uv, mypy, ruff) and 'tox' itself may experience runtime failures. In
-most cases, this is related to their caching behavior. If an unintelligible error is encountered with
-any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually
-or via a CLI command typically solves the issue.
+Many packages used in `tox` automation pipelines (uv, mypy, ruff) and `tox` itself may experience runtime failures. In
+most cases, this is related to their caching behavior. If an unintelligible error is encountered with any of the
+automation components, deleting the corresponding cache directories (`.tox`, `.ruff_cache`, `.mypy_cache`, etc.)
+manually or via a CLI command typically resolves the issue.
 
 ___
 
