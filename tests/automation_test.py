@@ -26,6 +26,17 @@ def project_dir(tmp_path: Path) -> Path:
     return project_dir
 
 
+@pytest.fixture
+def clean_mamba_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
+    """Clears all env vars that _resolve_mamba_environments_directory() checks."""
+    monkeypatch.delenv("CONDA_PREFIX", raising=False)
+    monkeypatch.delenv("CONDA_DEFAULT_ENV", raising=False)
+    monkeypatch.delenv("CONDA_EXE", raising=False)
+    monkeypatch.delenv("LOCALAPPDATA", raising=False)
+    monkeypatch.setattr(sys, "executable", "/usr/bin/python3")
+    return monkeypatch
+
+
 def _error_format(message: str) -> str:
     """Formats the input message to match the default Console format and escapes it using re, so that it can be used to
     verify raised exceptions.
@@ -797,3 +808,278 @@ def test_project_environment_exists(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(subprocess, "run", mock_run_failure)
     assert env.environment_exists() is False
+
+
+# ---- Group 1: resolve_project_environment() fallback (lines 113-118) ----
+
+
+def test_resolve_project_environment_with_manual_override(
+    project_dir: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Verifies that resolve_project_environment() uses the manual override when automatic resolution fails."""
+    pyproject_content = """
+[project]
+name = "test-project"
+dependencies = ["dep1==1.0"]
+
+[dependency-groups]
+dev = ["dev_dep==1.0"]
+"""
+    project_dir.joinpath("pyproject.toml").write_text(pyproject_content)
+
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(aa, "_check_package_engines", lambda: None)
+
+    def mock_resolve_mamba() -> Path:
+        raise RuntimeError("Mamba not found")
+
+    monkeypatch.setattr(aa, "_resolve_mamba_environments_directory", mock_resolve_mamba)
+
+    override_dir = tmp_path / "custom_envs"
+    override_dir.mkdir()
+
+    result = ProjectEnvironment.resolve_project_environment(
+        project_root=project_dir,
+        environment_name="test_env",
+        environment_directory=override_dir,
+    )
+
+    assert result.environment_directory == override_dir / "test_env_lin"
+
+
+def test_resolve_project_environment_reraise_without_override(
+    project_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verifies that resolve_project_environment() re-raises RuntimeError when no override is provided."""
+    pyproject_content = """
+[project]
+name = "test-project"
+dependencies = ["dep1==1.0"]
+
+[dependency-groups]
+dev = ["dev_dep==1.0"]
+"""
+    project_dir.joinpath("pyproject.toml").write_text(pyproject_content)
+
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(aa, "_check_package_engines", lambda: None)
+
+    def mock_resolve_mamba() -> Path:
+        raise RuntimeError("Mamba not found")
+
+    monkeypatch.setattr(aa, "_resolve_mamba_environments_directory", mock_resolve_mamba)
+
+    with pytest.raises(RuntimeError, match="Mamba not found"):
+        ProjectEnvironment.resolve_project_environment(
+            project_root=project_dir,
+            environment_name="test_env",
+        )
+
+
+# ---- Group 2: _resolve_dependencies() legacy path (lines 634-641) ----
+
+
+def test_resolve_dependencies_optional_dependencies_fallback(project_dir: Path) -> None:
+    """Verifies that _resolve_dependencies() falls back to [project.optional-dependencies] when [dependency-groups]
+    is not present.
+    """
+    pyproject_content = """
+[project]
+dependencies = ["dep1==1.0"]
+
+[project.optional-dependencies]
+dev = ["dev_dep1>=2.0", "dev_dep2<3.0"]
+"""
+    _write_pyproject_toml(project_dir=project_dir, content=pyproject_content)
+
+    result = aa._resolve_dependencies(project_root=project_dir)
+    assert set(result) == {'"dep1==1.0"', '"dev_dep1>=2.0"', '"dev_dep2<3.0"'}
+
+
+def test_resolve_dependencies_no_dev_dependencies(project_dir: Path) -> None:
+    """Verifies that _resolve_dependencies() works correctly when only runtime dependencies are defined."""
+    pyproject_content = """
+[project]
+dependencies = ["dep1==1.0", "dep2>=2.0"]
+"""
+    _write_pyproject_toml(project_dir=project_dir, content=pyproject_content)
+
+    result = aa._resolve_dependencies(project_root=project_dir)
+    assert set(result) == {'"dep1==1.0"', '"dep2>=2.0"'}
+
+
+# ---- Group 3: _resolve_mamba_environments_directory() methods (lines 716-776) ----
+
+
+def test_resolve_mamba_envs_via_executable_envs_dir(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
+    """Verifies _resolve_mamba_environments_directory() finds envs/ by ascending from a miniforge executable."""
+    # Create: tmp_path/miniforge3/envs/myenv/bin/python
+    envs_dir = tmp_path / "miniforge3" / "envs"
+    python_dir = envs_dir / "myenv" / "bin"
+    python_dir.mkdir(parents=True)
+    python_exe = python_dir / "python"
+    python_exe.touch()
+
+    clean_mamba_env.setattr(sys, "executable", str(python_exe))
+
+    result = aa._resolve_mamba_environments_directory()
+    assert result == envs_dir
+
+
+def test_resolve_mamba_envs_via_executable_conda_meta(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
+    """Verifies _resolve_mamba_environments_directory() finds envs/ via conda-meta in a miniforge root."""
+    # Create: tmp_path/miniforge3/{conda-meta/, envs/, bin/python}
+    miniforge_root = tmp_path / "miniforge3"
+    miniforge_root.joinpath("conda-meta").mkdir(parents=True)
+    miniforge_root.joinpath("envs").mkdir()
+    python_dir = miniforge_root / "bin"
+    python_dir.mkdir()
+    python_exe = python_dir / "python"
+    python_exe.touch()
+
+    clean_mamba_env.setattr(sys, "executable", str(python_exe))
+
+    result = aa._resolve_mamba_environments_directory()
+    assert result == miniforge_root / "envs"
+
+
+def test_resolve_mamba_envs_via_executable_conda_meta_parent_envs(
+    tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch
+) -> None:
+    """Verifies _resolve_mamba_environments_directory() uses the parent envs/ directory when conda-meta is found in a
+    named environment that lacks its own envs/ subdirectory.
+    """
+    # Create: tmp_path/miniforge3/envs/myenv/{conda-meta/, bin/python}
+    envs_dir = tmp_path / "miniforge3" / "envs"
+    myenv_dir = envs_dir / "myenv"
+    myenv_dir.joinpath("conda-meta").mkdir(parents=True)
+    python_dir = myenv_dir / "bin"
+    python_dir.mkdir()
+    python_exe = python_dir / "python"
+    python_exe.touch()
+
+    clean_mamba_env.setattr(sys, "executable", str(python_exe))
+
+    result = aa._resolve_mamba_environments_directory()
+    assert result == envs_dir
+
+
+def test_resolve_mamba_envs_via_conda_exe(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
+    """Verifies _resolve_mamba_environments_directory() resolves envs/ via the CONDA_EXE environment variable."""
+    # Create: tmp_path/miniforge3/{bin/mamba, envs/}
+    miniforge_root = tmp_path / "miniforge3"
+    miniforge_root.joinpath("bin").mkdir(parents=True)
+    mamba_exe = miniforge_root / "bin" / "mamba"
+    mamba_exe.touch()
+    miniforge_root.joinpath("envs").mkdir()
+
+    clean_mamba_env.setenv("CONDA_EXE", str(mamba_exe))
+
+    result = aa._resolve_mamba_environments_directory()
+    assert result == miniforge_root / "envs"
+
+
+def test_resolve_mamba_envs_via_standard_location(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
+    """Verifies _resolve_mamba_environments_directory() finds envs/ at the standard ~/miniforge3/envs location."""
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+    fake_home.joinpath("miniforge3", "envs").mkdir(parents=True)
+
+    clean_mamba_env.setattr(Path, "home", staticmethod(lambda: fake_home))
+    clean_mamba_env.setattr(sys, "platform", "linux")
+
+    result = aa._resolve_mamba_environments_directory()
+    assert result == fake_home / "miniforge3" / "envs"
+
+
+def test_resolve_mamba_envs_via_windows_appdata(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
+    """Verifies _resolve_mamba_environments_directory() finds envs/ at the Windows AppData/Local location."""
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+    # Only create at AppData/Local level (not at home/miniforge3 which would be caught by method 3)
+    fake_home.joinpath("AppData", "Local", "miniforge3", "envs").mkdir(parents=True)
+
+    clean_mamba_env.setattr(Path, "home", staticmethod(lambda: fake_home))
+    clean_mamba_env.setattr(sys, "platform", "win32")
+
+    result = aa._resolve_mamba_environments_directory()
+    assert result == fake_home / "AppData" / "Local" / "miniforge3" / "envs"
+
+
+def test_resolve_mamba_envs_via_windows_localappdata(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
+    """Verifies _resolve_mamba_environments_directory() finds envs/ via the LOCALAPPDATA environment variable."""
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+    # No miniforge3/envs at home or AppData/Local level
+    local_appdata_dir = tmp_path / "localappdata"
+    local_appdata_dir.joinpath("miniforge3", "envs").mkdir(parents=True)
+
+    clean_mamba_env.setattr(Path, "home", staticmethod(lambda: fake_home))
+    clean_mamba_env.setattr(sys, "platform", "win32")
+    clean_mamba_env.setenv("LOCALAPPDATA", str(local_appdata_dir))
+
+    result = aa._resolve_mamba_environments_directory()
+    assert result == local_appdata_dir / "miniforge3" / "envs"
+
+
+def test_resolve_mamba_envs_failure_linux(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
+    """Verifies _resolve_mamba_environments_directory() raises RuntimeError when no resolution method works on
+    Linux.
+    """
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+
+    clean_mamba_env.setattr(Path, "home", staticmethod(lambda: fake_home))
+    clean_mamba_env.setattr(sys, "platform", "linux")
+
+    message = (
+        "Unable to resolve the path to the mamba environments directory. This version of ataraxis-automation expects "
+        "that mamba is installed via miniforge3, following the deprecation of mambaforge. Make sure miniforge3 is "
+        "installed and initialized before using ataraxis-automation cli. Install from: "
+        "https://github.com/conda-forge/miniforge"
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        aa._resolve_mamba_environments_directory()
+
+
+def test_resolve_mamba_envs_failure_windows(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
+    """Verifies _resolve_mamba_environments_directory() raises RuntimeError after exhausting all Windows resolution
+    paths.
+    """
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+
+    clean_mamba_env.setattr(Path, "home", staticmethod(lambda: fake_home))
+    clean_mamba_env.setattr(sys, "platform", "win32")
+
+    message = (
+        "Unable to resolve the path to the mamba environments directory. This version of ataraxis-automation expects "
+        "that mamba is installed via miniforge3, following the deprecation of mambaforge. Make sure miniforge3 is "
+        "installed and initialized before using ataraxis-automation cli. Install from: "
+        "https://github.com/conda-forge/miniforge"
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        aa._resolve_mamba_environments_directory()
+
+
+# ---- Group 4: move_stubs() single-file rename (lines 446-452) ----
+
+
+def test_move_stubs_single_file_with_copy_number(project_dir: Path) -> None:
+    """Verifies that move_stubs() correctly renames a single stub file that has an OSX copy number suffix."""
+    stubs_directory = project_dir / "stubs"
+    library_root = project_dir / "src" / "library"
+    stubs_directory.mkdir()
+    library_root.mkdir(parents=True)
+
+    stub_lib_dir = stubs_directory / "library"
+    stub_lib_dir.mkdir()
+    stub_lib_dir.joinpath("__init__.pyi").touch()
+    stub_lib_dir.joinpath("module 1.pyi").touch()
+
+    aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
+
+    # The "module 1.pyi" file should be renamed to "module.pyi"
+    assert (library_root / "module.pyi").exists()
+    assert not (library_root / "module 1.pyi").exists()
+    assert (library_root / "__init__.pyi").exists()
