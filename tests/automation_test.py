@@ -85,7 +85,6 @@ def test_resolve_library_root(project_dir: Path, init_location: str, expected: s
 
 def test_resolve_library_root_error(project_dir: Path) -> None:
     """Verifies the error-handling behavior of the resolve_library_root() function."""
-
     # Verifies the method correctly fails when __init__.py is not found under /src or any subdirectory directly under
     # src
     message: str = (
@@ -116,7 +115,6 @@ def test_resolve_library_root_error(project_dir: Path) -> None:
 
 def test_resolve_environment_files(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies the functionality of the _resolve_environment_files() function."""
-
     os.chdir(project_dir)  # Ensures working directory is set to the project directory
     environment_base_name: str = "test_env"
 
