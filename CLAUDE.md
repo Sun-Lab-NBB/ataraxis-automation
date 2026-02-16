@@ -59,19 +59,19 @@ state to prevent integration errors.
 
 ## Available skills
 
-| Skill               | Description                                                          |
-|---------------------|----------------------------------------------------------------------|
-| `/explore-codebase` | Perform in-depth codebase exploration at session start               |
-| `/python-style`     | Apply Sun Lab Python coding conventions (REQUIRED for Python code)   |
-| `/cpp-style`        | Apply Sun Lab C++ coding conventions (REQUIRED for C++ code)         |
-| `/csharp-style`     | Apply Sun Lab C# coding conventions (REQUIRED for C# code)           |
-| `/readme-style`     | Apply Sun Lab README conventions (REQUIRED for README files)         |
-| `/pyproject-style`  | Apply Sun Lab pyproject.toml conventions (REQUIRED for pyproject)    |
-| `/commit`           | Generate style-compliant commit messages for local changes           |
-| `/api-docs`         | Apply Sun Lab API documentation conventions (REQUIRED for docs)      |
-| `/project-layout`   | Apply Sun Lab project directory structure conventions                 |
-| `/tox-config`       | Apply Sun Lab tox.ini conventions (REQUIRED for tox configuration)   |
-| `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md               |
+| Skill               | Description                                                        |
+|---------------------|--------------------------------------------------------------------|
+| `/explore-codebase` | Perform in-depth codebase exploration at session start             |
+| `/python-style`     | Apply Sun Lab Python coding conventions (REQUIRED for Python code) |
+| `/cpp-style`        | Apply Sun Lab C++ coding conventions (REQUIRED for C++ code)       |
+| `/csharp-style`     | Apply Sun Lab C# coding conventions (REQUIRED for C# code)         |
+| `/readme-style`     | Apply Sun Lab README conventions (REQUIRED for README files)       |
+| `/pyproject-style`  | Apply Sun Lab pyproject.toml conventions (REQUIRED for pyproject)  |
+| `/commit`           | Generate style-compliant commit messages for local changes         |
+| `/api-docs`         | Apply Sun Lab API documentation conventions (REQUIRED for docs)    |
+| `/project-layout`   | Apply Sun Lab project directory structure conventions              |
+| `/tox-config`       | Apply Sun Lab tox.ini conventions (REQUIRED for tox configuration) |
+| `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md             |
 
 ## Project context
 
@@ -89,9 +89,9 @@ the Python style guide used across all Sun Lab projects.
 
 ### Key areas
 
-| Directory                          | Purpose                                                 |
-|------------------------------------|---------------------------------------------------------|
-| `src/ataraxis_automation/`         | Main library source code                                |
+| Directory                                     | Purpose                                                 |
+|-----------------------------------------------|---------------------------------------------------------|
+| `src/ataraxis_automation/`                    | Main library source code                                |
 | `plugins/automation/skills/explore-codebase/` | Codebase exploration skill (shared via plugin)          |
 | `plugins/automation/skills/python-style/`     | Python code style skill (shared via plugin)             |
 | `plugins/automation/skills/readme-style/`     | README style skill (shared via plugin)                  |
@@ -103,10 +103,10 @@ the Python style guide used across all Sun Lab projects.
 | `plugins/automation/skills/project-layout/`   | Project directory structure skill (shared via plugin)   |
 | `plugins/automation/skills/tox-config/`       | tox.ini configuration skill (shared via plugin)         |
 | `plugins/automation/skills/skill-design/`     | Skill and CLAUDE.md authoring skill (shared via plugin) |
-| `plugins/automation/.claude-plugin/`                  | Claude Code plugin configuration                        |
-| `tests/`                           | Test suite                                              |
-| `envs/`                            | Pre-configured development environment .yml files       |
-| `docs/`                            | Sphinx documentation source                             |
+| `plugins/automation/.claude-plugin/`          | Claude Code plugin configuration                        |
+| `tests/`                                      | Test suite                                              |
+| `envs/`                                       | Pre-configured development environment .yml files       |
+| `docs/`                                       | Sphinx documentation source                             |
 
 ### Architecture
 
