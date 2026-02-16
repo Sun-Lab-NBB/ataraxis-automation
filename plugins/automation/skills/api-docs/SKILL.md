@@ -45,9 +45,9 @@ Sun Lab projects follow one of three documentation archetypes based on language 
 
 | Archetype   | Language     | Extensions                                                | Doxygen |
 |-------------|--------------|-----------------------------------------------------------|---------|
-| Python-only | Pure Python  | autodoc, napoleon, click, typehints, rtd theme, dark mode | No      |
-| C++-only    | Pure C++     | breathe, rtd theme, dark mode                             | Yes     |
-| Hybrid      | Python + C++ | All Python extensions + breathe                           | Yes     |
+| Python-only | Pure Python  | autodoc, napoleon, click, typehints, furo theme            | No      |
+| C++-only    | Pure C++     | breathe, furo theme                                        | Yes     |
+| Hybrid      | Python + C++ | All Python extensions + breathe                            | Yes     |
 
 ### Directory structure
 
@@ -85,8 +85,6 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx_click',
     'sphinx_autodoc_typehints',
-    'sphinx_rtd_theme',
-    'sphinx_rtd_dark_mode'
 ]
 ```
 
@@ -95,8 +93,6 @@ extensions = [
 ```python
 extensions = [
     'breathe',
-    'sphinx_rtd_theme',
-    'sphinx_rtd_dark_mode'
 ]
 ```
 
@@ -110,8 +106,6 @@ extensions = [
     'sphinx_click',
     'sphinx_autodoc_typehints',
     'breathe',
-    'sphinx_rtd_theme',
-    'sphinx_rtd_dark_mode'
 ]
 ```
 
@@ -187,8 +181,8 @@ dependencies directly to downstream project pyproject.toml files.
 - Napoleon is configured for Google-style docstrings only (`napoleon_numpy_docstring = False`).
 - All Napoleon and `sphinx_autodoc_typehints` settings MUST match the templates exactly. See
   [conf-py-templates.md](references/conf-py-templates.md) for the full settings.
-- Dark mode is disabled by default (`default_dark_mode = False`).
-- The HTML theme is always `sphinx_rtd_theme`.
+- The HTML theme is always `furo`. Furo provides built-in light/dark mode toggling with no
+  additional extensions required.
 
 ### api.rst rules
 
@@ -314,8 +308,7 @@ API Documentation Compliance:
 - [ ] Napoleon configured for Google-style only (numpy disabled)
 - [ ] All sphinx_autodoc_typehints settings present and correct (Python/hybrid)
 - [ ] Breathe configuration present and correct (C++/hybrid)
-- [ ] html_theme set to 'sphinx_rtd_theme'
-- [ ] default_dark_mode set to False
+- [ ] html_theme set to 'furo'
 - [ ] index.rst includes welcome.rst and has toctree with api
 - [ ] welcome.rst follows template with correct project name and description
 - [ ] welcome.rst includes Sun lab and GitHub repository links
