@@ -10,11 +10,23 @@ files.
 ```markdown
 # project-name
 
-Brief one-sentence description of what the library does.
+Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects.
 ```
 
 The title must match the repository and package name (lowercase, hyphenated). The one-line
-description is a single sentence summarizing the library's purpose.
+description MUST be the bare project description — the same sentence used in all other canonical
+description locations for the project archetype. No language prefix ("A Python library that...")
+and no project name prefix ("project-name is...").
+
+The canonical description locations vary by archetype:
+
+| Archetype              | Canonical locations                                             |
+|------------------------|-----------------------------------------------------------------|
+| Python-only            | `pyproject.toml`, `__init__.py`, `welcome.rst`, `README.md`    |
+| Python + C++ extension | `pyproject.toml`, `__init__.py`, `welcome.rst`, `README.md`    |
+| C++ PlatformIO library | `library.json`, `welcome.rst`, `README.md`                     |
+| C++ PlatformIO firmware| `welcome.rst`, `README.md`                                     |
+| C# Unity               | `README.md`                                                    |
 
 ---
 
@@ -71,10 +83,12 @@ ___
 ## Detailed description
 
 An expanded explanation of the library's purpose, typically 2-4 sentences. Placed immediately
-after the horizontal rule with no section heading:
+after the horizontal rule under a `## Detailed Description` heading:
 
 ```markdown
 ___
+
+## Detailed Description
 
 This library provides the shared automation pipeline for all Sun Lab Python projects. It abstracts
 project environment manipulation and facilitates development tasks such as linting, typing,

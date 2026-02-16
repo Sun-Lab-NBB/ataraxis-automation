@@ -1,6 +1,6 @@
 # ataraxis-automation
 
-A Python library that supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects.
+Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun (NeuroAI) lab projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-automation)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-automation)
@@ -15,10 +15,12 @@ ___
 
 ## Detailed Description
 
-Upon installation into a Python environment, this library exposes a command-line interface (automation-cli) used by the 
-[tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation suite that comes with every Sun 
-Lab project. The CLI abstracts the project’s environment manipulation and facilitates mundane development tasks, such as
-linting, typing, and documenting the source code API.
+Upon installation into a Python environment, this library exposes a command-line interface (automation-cli) used by the
+[tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation suite that comes with every Sun
+Lab project. The CLI abstracts the project's environment manipulation and facilitates mundane development tasks, such as
+linting, typing, and documenting the source code API. This library also serves as a
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin marketplace, distributing a set of agentic skills
+that enforce Sun Lab development conventions across all downstream projects.
 
 ___
 
@@ -27,6 +29,7 @@ ___
 - Supports Windows, Linux, and macOS.
 - Optimized for runtime speed by using mamba and uv for all environment management tasks.
 - Compliments the extensive suite of tox environments and tasks used by all Sun lab projects to streamline development.
+- Exports agentic skills for Claude Code that enforce coding style, documentation, and project structure conventions.
 - Apache 2.0 License.
 
 ___
@@ -36,24 +39,25 @@ ___
 - [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Claude Code Skills](#claude-code-skills)
 - [API Documentation](#api-documentation)
 - [Developers](#developers)
 - [Versioning](#versioning)
 - [Authors](#authors)
 - [License](#license)
-- [Acknowledgements](#Acknowledgments)
+- [Acknowledgments](#acknowledgments)
 
 ___
 
 ## Dependencies
 
-- [miniforge3](https://github.com/conda-forge/miniforge). This library expects that a miniforge3 distribution is 
-  used to install and export the [mamba](https://github.com/mamba-org/mamba) environment manager to the host-system’s 
+- [miniforge3](https://github.com/conda-forge/miniforge). This library expects that a miniforge3 distribution is
+  used to install and export the [mamba](https://github.com/mamba-org/mamba) environment manager to the host-system's
   PATH variable.
 - [uv](https://docs.astral.sh/uv/). This library uses uv as the main package management engine and expects that uv is
-  available from the system’s base Python environment.
+  available from the system's base Python environment.
 
-***Note!*** Developers should see the [Developers](#developers) section for information on installing additional 
+***Note,*** developers should see the [Developers](#developers) section for information on installing additional
 development dependencies.
 
 ___
@@ -62,74 +66,74 @@ ___
 
 ### Source
 
-Note, installation from source is ***highly discouraged*** for anyone who is not an active project developer.
+***Note,*** installation from source is ***highly discouraged*** for anyone who is not an active project developer.
 
-1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the 
+1. Download this repository to the local machine using the preferred method, such as git-cloning. Use one of the
    [stable releases](https://github.com/Sun-Lab-NBB/ataraxis-automation/tags) that include precompiled binary and source
    code distribution (sdist) wheels.
 2. If the downloaded distribution is stored as a compressed archive, unpack it using the appropriate decompression tool.
-3. ```cd``` to the root directory of the prepared project distribution.
-4. Run ```python -m pip install .``` to install the project. Alternatively, if using a distribution with precompiled
-   binaries, use ```python -m pip install WHEEL_PATH```, replacing 'WHEEL_PATH' with the path to the wheel file.
+3. `cd` to the root directory of the prepared project distribution.
+4. Run `python -m pip install .` to install the project. Alternatively, if using a distribution with precompiled
+   binaries, use `python -m pip install WHEEL_PATH`, replacing 'WHEEL_PATH' with the path to the wheel file.
 
 ### pip
 
-Use the following command to install the library using pip: ```pip install ataraxis-automation```.
+Use the following command to install the library using pip: `pip install ataraxis-automation`.
 
 ___
 
 ## Usage
-*__Note!__* The library expects the managed project to use a specific configuration and file structure. If any CLI 
-command terminates with an error, read all information printed in the terminal to determine whether the error is due to 
+***Note,*** the library expects the managed project to use a specific configuration and file structure. If any CLI
+command terminates with an error, read all information printed in the terminal to determine whether the error is due to
 an invalid project configuration or file structure.
 
 ### Automation Command-Line Interface
-All library functions designed to be called by end-users are exposed through the 'automation-cli' Command Line 
+All library functions designed to be called by end-users are exposed through the 'automation-cli' Command Line
 Interface (CLI). This CLI is automatically exposed by installing the library into a Python environment.
 
 #### Automation-CLI
-All functions supplied by the library are accessible by calling ```automation-cli``` from a Python environment where 
+All functions supplied by the library are accessible by calling `automation-cli` from a Python environment where
 the library is installed. For example:
-- Use ```automation-cli --help``` to verify that the CLI is available and to see the list of supported commands.
-- Use ```automation-cli COMMAND-NAME --help``` to display additional information about a specific command. For example:
-  ```automation-cli import-environment --help```.
+- Use `automation-cli --help` to verify that the CLI is available and to see the list of supported commands.
+- Use `automation-cli COMMAND-NAME --help` to display additional information about a specific command. For example:
+  `automation-cli import-environment --help`.
 
 #### Tox Integration
-This library is intended to be used via [tox](https://tox.wiki/en/latest/user_guide.html) tasks (environments). To use 
-any of the exposed CLI’s commands as part of a tox environment, add it to the 'commands' section of the tox.ini:
+This library is intended to be used via [tox](https://tox.wiki/en/latest/user_guide.html) tasks (environments). To use
+any of the exposed CLI's commands as part of a tox environment, add it to the 'commands' section of the tox.ini:
 ```
 [testenv:create]
 deps =
-    ataraxis-automation==7.0.0
+    ataraxis-automation==8.0.0
 commands =
-    automation-cli create-environment --environment_name axa_dev --python_version 3.14
+    automation-cli create-environment --environment-name axa_dev --python-version 3.14
 ```
 
-See the [tox.ini file](tox.ini) configuration file for the most up-to-date project development automation 
+See the [tox.ini file](tox.ini) configuration file for the most up-to-date project development automation
 suite used in the Sun lab. For the most up-to-date C-extension project automation suite, see the tox.ini file of the
 [ataraxis-time](https://github.com/Sun-Lab-NBB/ataraxis-time) library.
 
 #### Additional Command Arguments
-*__Note!__* Many sub-commands of the CLI have additional flags and arguments that can be used to further customize
-their runtime. Consult the [API documentation](#api-documentation) for the list of additional runtime flags for all 
+***Note,*** many sub-commands of the CLI have additional flags and arguments that can be used to further customize
+their runtime. Consult the [API documentation](#api-documentation) for the list of additional runtime flags for all
 supported CLI commands.
 
 ### Supported Checkout Tox Tasks
 This library is tightly linked to the environments defined in the [tox.ini file](tox.ini) configuration file.
 
-***Warning!*** Commands listed in this section may and frequently are modified based on the specific needs of each 
-Sun lab project. This section is *__not__* a replacement for studying the tox.ini file for each Sun lab project.
+***Warning!*** Commands listed in this section may and frequently are modified based on the specific needs of each
+Sun lab project. This section is ***not*** a replacement for studying the tox.ini file for each Sun lab project.
 
-Most commands in this section are designed to be executed together as part of the ```tox``` CLI command. These commands
-are referred to as 'checkout' tasks and must run successfully for any pull request candidate before it is merged into 
+Most commands in this section are designed to be executed together as part of the `tox` CLI command. These commands
+are referred to as 'checkout' tasks and must run successfully for any pull request candidate before it is merged into
 the main branch of each Sun lab project.
 
 #### Lint
-Shell command: ```tox -e lint```
+Shell command: `tox -e lint`
 
-Uses [ruff](https://github.com/astral-sh/ruff) and [mypy](https://github.com/python/mypy) to statically analyze and, 
-where possible, fix code formatting, typing, and problematic use patterns. As part of its runtime, this task uses 
-automation-cli to remove existing stub (.pyi) files from the source directories, as they sometimes interfere with 
+Uses [ruff](https://github.com/astral-sh/ruff) and [mypy](https://github.com/python/mypy) to statically analyze and,
+where possible, fix code formatting, typing, and problematic use patterns. As part of its runtime, this task uses
+automation-cli to remove existing stub (.pyi) files from the source directories, as they sometimes interfere with
 type-checking.
 
 Example tox.ini section:
@@ -138,7 +142,7 @@ Example tox.ini section:
 description =
     Runs static code formatting, style, and typing checkers. Follows the configuration defined in the pyproject.toml
     file.
-extras = dev
+dependency_groups = dev
 basepython = py312
 commands =
     automation-cli purge-stubs
@@ -148,18 +152,18 @@ commands =
 ```
 
 #### Stubs
-Shell command: ```tox -e stubs```
+Shell command: `tox -e stubs`
 
 Uses [stubgen](https://mypy.readthedocs.io/en/stable/stubgen.html) to generate stub (.pyi) files and distributes them
-via automation-cli to the appropriate levels of the project’s source code hierarchy. As part of this process, 
-automation-cli also ensures that there is a 'py.typed' marker file in the highest library directory. This is required 
+via automation-cli to the appropriate levels of the project's source code hierarchy. As part of this process,
+automation-cli also ensures that there is a 'py.typed' marker file in the highest library directory. This is required
 for type-checkers like mypy to recognize the library as 'typed' and process it during type-checking tasks.
 
 Example tox.ini section:
 ```
 description = Generates the py.typed marker and the .pyi stub files using the project's wheel distribution.
 depends = lint
-extras = dev
+dependency_groups = dev
 commands =
     automation-cli process-typed-markers
     stubgen -o stubs --include-private -p ataraxis_automation -v
@@ -169,12 +173,12 @@ commands =
 ```
 
 #### Test
-Shell command: ```tox -e pyXXX-test``` 
+Shell command: `tox -e pyXXX-test`
 
-This task is executed for all python versions supported by each project. For example, ataraxis-automation supports 
-versions 3.12, 3.13, and 3.14. Therefore, it has ```tox -e py312-test```, ```tox -e py313-test```, and 
-```tox -e py314-test``` as valid 'test' tasks. These tasks build the project in an isolated environment and 
-run the project’s unit and integration tests to verify that the project works as expected for each supported python 
+This task is executed for all python versions supported by each project. For example, ataraxis-automation supports
+versions 3.12, 3.13, and 3.14. Therefore, it has `tox -e py312-test`, `tox -e py313-test`, and
+`tox -e py314-test` as valid 'test' tasks. These tasks build the project in an isolated environment and
+run the project's unit and integration tests to verify that the project works as expected for each supported python
 version.
 
 Example tox.ini section:
@@ -184,7 +188,7 @@ package = wheel
 description =
     Runs unit and integration tests for each of the python versions listed in the task name and aggregates test coverage
     data. Uses 'loadgroup' balancing and all logical cores to optimize task runtime speed.
-extras = dev
+dependency_groups = dev
 setenv = COVERAGE_FILE = reports{/}.coverage.{envname}
 commands =
     pytest --import-mode=append --cov=ataraxis_automation --cov-config=pyproject.toml --cov-report=xml \
@@ -192,9 +196,9 @@ commands =
 ```
 
 #### Coverage
-Shell command: ```tox -e coverage``` 
+Shell command: `tox -e coverage`
 
-This task is used in conjunction with the 'test' task. It aggregates code coverage data for different python versions 
+This task is used in conjunction with the 'test' task. It aggregates code coverage data for different python versions
 and compiles it into an HTML report accessible by opening PROJECT_ROOT/reports/coverage_html/index.html in a browser.
 
 Example tox.ini section:
@@ -204,7 +208,7 @@ skip_install = true
 description =
     Combines test-coverage data from multiple test runs (for different python versions) into a single html file. The
     file can be viewed by loading the 'reports/coverage_html/index.html'.
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 setenv = COVERAGE_FILE = reports/.coverage
 depends = {py312, py313, py314}-test
 commands =
@@ -215,11 +219,11 @@ commands =
 ```
 
 #### Docs
-Shell command: ```tox -e docs```
+Shell command: `tox -e docs`
 
-Uses [Sphinx](https://www.sphinx-doc.org/en/master/) to automatically parse docstrings from source code and build the 
-API documentation for the project. This task relies on the configuration files stored inside the 
-PROJECT_ROOT/docs/source directory to define the generated documentation format. Built documentation can be viewed by 
+Uses [Sphinx](https://www.sphinx-doc.org/en/master/) to automatically parse docstrings from source code and build the
+API documentation for the project. This task relies on the configuration files stored inside the
+PROJECT_ROOT/docs/source directory to define the generated documentation format. Built documentation can be viewed by
 opening PROJECT_ROOT/docs/build/html/index.html in a browser.
 
 Example tox.ini section for a pure-python project:
@@ -228,16 +232,16 @@ description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 commands =
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
 ```
 
-*__Note!__* C-extension projects use a slightly modified version of this task that uses
-[Doxygen](https://www.doxygen.nl/) to parse doxygen-styled docstrings used in the C-code and 
-[breathe](https://breathe.readthedocs.io/en/latest/) to convert doxygen-generated XML files for C-code into a 
-Sphinx-compatible format. This allows C-extension projects to include both Python and C/C++ API documentation in the 
-same .html file. To support this behavior, the tox.ini file must include an additional command: ```doxygen Doxyfile```.
+***Note,*** C-extension projects use a slightly modified version of this task that uses
+[Doxygen](https://www.doxygen.nl/) to parse doxygen-styled docstrings used in the C-code and
+[breathe](https://breathe.readthedocs.io/en/latest/) to convert doxygen-generated XML files for C-code into a
+Sphinx-compatible format. This allows C-extension projects to include both Python and C/C++ API documentation in the
+same .html file. To support this behavior, the tox.ini file must include an additional command: `doxygen Doxyfile`.
 
 Example tox.ini section for a C-extension project:
 ```
@@ -245,20 +249,20 @@ description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 commands =
     doxygen Doxyfile
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
 ```
 
 #### Build
-Shell command: ```tox -e build```
+Shell command: `tox -e build`
 
-This task builds a source-code distribution (sdist) and a binary distribution (wheel) for the project. These 
-distributions can then be uploaded to GitHub or PyPI or shared with the intended audience through any other means. 
-Pure-python projects use [hatchling](https://hatch.pypa.io/latest/) and [build](https://build.pypa.io/en/stable/) to 
-generate one source-code and one binary distribution. C-extension projects use 
-[cibuildwheel](https://cibuildwheel.pypa.io/en/stable/) to compile the C-code for all supported platforms and 
+This task builds a source-code distribution (sdist) and a binary distribution (wheel) for the project. These
+distributions can then be uploaded to GitHub or PyPI or shared with the intended audience through any other means.
+Pure-python projects use [hatchling](https://hatch.pypa.io/latest/) and [build](https://build.pypa.io/en/stable/) to
+generate one source-code and one binary distribution. C-extension projects use
+[cibuildwheel](https://cibuildwheel.pypa.io/en/stable/) to compile the C-code for all supported platforms and
 architectures, building many binary distribution files alongside source-code distribution generated via build.
 
 Example tox.ini section for a pure-python project:
@@ -266,7 +270,7 @@ Example tox.ini section for a pure-python project:
 [testenv:build]
 skip_install = true
 description = Builds the project's source code distribution (sdist) and binary distribution (wheel).
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 allowlist_externals = docker
 commands =
     python -m build . --sdist
@@ -278,9 +282,9 @@ Example tox.ini section for a C-extension project:
 [testenv:build]
 skip-install = true
 description =
-    Builds the project's source code distribution (sdist) and compiles and assembles binary wheels for all 
+    Builds the project's source code distribution (sdist) and compiles and assembles binary wheels for all
     supported platform architectures.
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 allowlist_externals = docker
 commands =
     python -m build . --sdist
@@ -288,19 +292,19 @@ commands =
 ```
 
 #### Upload
-Shell command: ```tox -e upload```
+Shell command: `tox -e upload`
 
-Uploads the sdist and wheel files created by the 'build' task to [PyPI](https://pypi.org/). When this task runs for the 
+Uploads the sdist and wheel files created by the 'build' task to [PyPI](https://pypi.org/). When this task runs for the
 first time, it uses automation-cli to generate a .pypirc file and store the user-provided PyPI API token in that file.
 This allows reusing the token for later uploads, streamlining the process. Once uploaded, the project (library) becomes
-a valid target for ```pio install LIBRARYNAME``` commands.
+a valid target for `pip install LIBRARYNAME` commands.
 
 Example tox.ini section:
 ```
 [testenv:upload]
 skip_install = true
 description = Uses twine to upload all files inside the project's 'dist' directory to PyPI.
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 allowlist_externals = distutils
 commands =
     automation-cli acquire-pypi-token {posargs:}
@@ -308,21 +312,22 @@ commands =
 ```
 
 ### Supported Mamba Environment Manipulation Tox Tasks
-These tasks were added to automate repetitive tasks associated with managing project mamba environments during 
+These tasks were added to automate repetitive tasks associated with managing project mamba environments during
 development. They assume that there is a validly configured mamba distribution installed and accessible from the
 shell of the machine that calls these commands.
 
 
 #### Install
-Shell command: ```tox -e install```
+Shell command: `tox -e install`
 
-Installs the project into its development mamba environment.
+Installs the project into its development mamba environment. To allow installing prerelease packages, use
+`tox -e install -- --prerelease`.
 
 Example tox.ini section:
 ```
 [testenv:install]
 skip_install = true
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 depends =
     lint
     stubs
@@ -330,13 +335,13 @@ depends =
     coverage
     docs
     export
-description = Builds and installs the project into the its' development mamba environment.
+description = Builds and installs the project into its development mamba environment.
 commands =
-    automation-cli install-project --environment_name axa_dev
+    automation-cli install-project --environment-name axa_dev
 ```
 
 #### Uninstall
-Shell command: ```tox -e uninstall```
+Shell command: `tox -e uninstall`
 
 Removes the project from its development mamba environment.
 
@@ -344,111 +349,165 @@ Example tox.ini section:
 ```
 [testenv:uninstall]
 skip_install = true
-deps = ataraxis-automation==7.0.0
-description = Uninstalls the project from its' development mamba environment.
+deps = ataraxis-automation==8.0.0
+description = Uninstalls the project from its development mamba environment.
 commands =
-    automation-cli uninstall-project --environment_name axa_dev
+    automation-cli uninstall-project --environment-name axa_dev
 ```
 
 #### Create
-Shell command: ```tox -e create```
+Shell command: `tox -e create`
 
-Creates the project’s development mamba environment and installs project dependencies listed in the pyproject.toml file 
-into the environment. This task is intended to be used when setting up project development environments for new 
-platforms and architectures. The task assumes that all dependencies are stored using the Sun Lab format: inside the 
-general 'dependencies' section and the optional 'dev' dependency section.
+Creates the project's development mamba environment and installs project dependencies listed in the pyproject.toml file
+into the environment. This task is intended to be used when setting up project development environments for new
+platforms and architectures. The task assumes that all dependencies are stored using the Sun Lab format: inside the
+general 'dependencies' section and the optional 'dev' dependency section. To allow installing prerelease packages, use
+`tox -e create -- --prerelease`.
 
 Example tox.ini section:
 ```
 [testenv:create]
 skip_install = true
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 description =
-    Creates the project's development mamba environment using the requested python version and installs runtime and 
+    Creates the project's development mamba environment using the requested python version and installs runtime and
     development project dependencies extracted from the pyproject.toml file.
 commands =
-    automation-cli create-environment --environment_name axa_dev --python_version 3.14
+    automation-cli create-environment --environment-name axa_dev --python-version 3.14
 ```
 
 #### Remove
-Shell command: ```tox -e remove```
+Shell command: `tox -e remove`
 
-Removes the project’s development mamba environment. Primarily, this task is intended to be used to clean the local 
-system after project development is finished. Note; to reset the environment, it is advised to use the 'provision' task 
+Removes the project's development mamba environment. Primarily, this task is intended to be used to clean the local
+system after project development is finished. Note; to reset the environment, it is advised to use the 'provision' task
 instead (see below).
 
 Example tox.ini section:
 ```
 [testenv:remove]
 skip_install = true
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 description = Removes the project's development mamba environment.
 commands =
-    automation-cli remove-environment --environment_name axa_dev
+    automation-cli remove-environment --environment-name axa_dev
 ```
 
 #### Provision
-Shell command: ```tox -e provsion```
+Shell command: `tox -e provision`
 
-This task is a combination of the 'remove' and 'create' tasks. It is designed to reset the project’s development 
-environment by recreating it from scratch. This is used to both reset and actualize project development environments 
-to match the latest version of the pyproject.toml file dependency specification.
+This task is a combination of the 'remove' and 'create' tasks. It is designed to reset the project's development
+environment by recreating it from scratch. This is used to both reset and actualize project development environments
+to match the latest version of the pyproject.toml file dependency specification. To allow installing prerelease
+packages, use `tox -e provision -- --prerelease`.
 
 Example tox.ini section:
 ```
 [testenv:provision]
 skip_install = true
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 description = Provisions the project's development mamba environment by removing and (re)creating the environment.
 commands =
-    automation-cli provision-environment --environment_name axa_dev --python_version 3.14
+    automation-cli provision-environment --environment-name axa_dev --python-version 3.14
 ```
 
 #### Export
-Shell command: ```tox -e export```
+Shell command: `tox -e export`
 
-Exports the project’s development environment as a .yml and spec.txt file. This task is used before distributing new 
+Exports the project's development environment as a .yml and spec.txt file. This task is used before distributing new
 versions of the project to allow the target audience to generate an identical copy of the development environment using
-the generated .yml and spec.txt files. While 'create' and 'provision' tasks make this largely obsolete, this 
+the generated .yml and spec.txt files. While 'create' and 'provision' tasks make this largely obsolete, this
 functionality is maintained for all Sun lab projects.
 
 Example tox.ini section:
 ```
 [testenv:export]
 skip_install = true
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 description =
     Exports the project's development mamba environment to the 'envs' project directory as a .yml file and as a
     spec.txt with revision history.
 commands =
-    automation-cli export-environment --environment_name axa_dev
+    automation-cli export-environment --environment-name axa_dev
 ```
 
 #### Import
-Shell command: ```tox -e import```
+Shell command: `tox -e import`
 
-Imports the project’s development environment from it’s '.yml' file. If the environment does not exist, this 
-creates an identical copy of the environment stored in the .yml file. If the environment already exists, it is updated 
-using the '.yml' file. The update process is configured to prune any unused packages not found inside the '.yml' file.
+Imports the project's development environment from its .yml file. If the environment does not exist, this
+creates an identical copy of the environment stored in the .yml file. If the environment already exists, it is updated
+using the .yml file. The update process is configured to prune any unused packages not found inside the .yml file.
 
 Example tox.ini section:
 ```
 [testenv:import]
 skip_install = true
-deps = ataraxis-automation==7.0.0
+deps = ataraxis-automation==8.0.0
 description =
-    Creates or updates the project's development mamba environment using the .yml file stored in the 'envs' project 
+    Creates or updates the project's development mamba environment using the .yml file stored in the 'envs' project
     directory.
 commands =
-    automation-cli import-environment --environment_name axa_dev
+    automation-cli import-environment --environment-name axa_dev
 ```
+
+___
+
+## Claude Code Skills
+
+This library serves as a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin marketplace, distributing
+a set of agentic skills that enforce Sun Lab development conventions across all downstream projects. These skills
+provide Claude Code with project-specific knowledge about coding style, documentation format, commit messages, project
+structure, and more.
+
+### Available Skills
+
+| Skill               | Description                                                      |
+|---------------------|------------------------------------------------------------------|
+| `/explore-codebase` | Performs in-depth codebase exploration at the start of a session |
+| `/python-style`     | Applies Sun Lab Python coding conventions                        |
+| `/cpp-style`        | Applies Sun Lab C++ coding conventions                           |
+| `/csharp-style`     | Applies Sun Lab C# coding conventions                            |
+| `/readme-style`     | Applies Sun Lab README conventions                               |
+| `/pyproject-style`  | Applies Sun Lab pyproject.toml conventions                       |
+| `/api-docs`         | Applies Sun Lab API documentation conventions                    |
+| `/project-layout`   | Applies Sun Lab project directory structure conventions          |
+| `/tox-config`       | Applies Sun Lab tox.ini conventions                              |
+| `/commit`           | Drafts style-compliant git commit messages                       |
+| `/skill-design`     | Generates, updates, and verifies skill files and CLAUDE.md       |
+
+### Installing for Claude Code
+
+Claude Code supports plugin installation through its built-in marketplace system. To install the skills provided by
+this library:
+
+1. Open Claude Code and add the ataraxis marketplace by running: 
+`/plugin marketplace add Sun-Lab-NBB/ataraxis-automation`
+2. Install the automation plugin from the marketplace:
+`/plugin install automation@ataraxis`
+
+Alternatively, use the interactive plugin manager by running `/plugin`, navigating to the **Discover** tab, and
+selecting the `automation` plugin.
+
+***Note,*** the plugin can be installed at different scopes depending on the intended use:
+- **user** (default): Available across all projects for the current user.
+- **project**: Shared with all developers via version control (stored in `.claude/settings.json`).
+- **local**: Project-specific and gitignored (stored in `.claude/settings.local.json`).
+
+To specify a scope during installation, use the CLI form: `claude plugin install automation@ataraxis --scope project`
+
+### Compatibility
+
+These skills are designed for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the official CLI tool from
+Anthropic. The plugin marketplace system is a Claude Code feature and is not currently available in other Claude
+distributions such as Claude Desktop or the Claude web interface. However, the skill files themselves are plain Markdown
+and can be referenced manually in any context that supports custom instructions or system prompts.
 
 ___
 
 ## API Documentation
 
 See the [API documentation](https://ataraxis-automation-api-docs.netlify.app/) for the
-detailed description of the methods and classes exposed by components of this library. __*Note*__ the documentation
+detailed description of the methods and classes exposed by components of this library. ***Note,*** the documentation
 also includes a list of all command-line interface functions and their arguments.
 
 ___
@@ -459,55 +518,55 @@ This section provides installation, dependency, and build-system instructions fo
 
 ### Installing the Project
 
-***Note!*** This installation method requires **mamba version 2.3.2 or above**. Currently, all Sun lab automation 
+***Note,*** this installation method requires **mamba version 2.3.2 or above**. Currently, all Sun lab automation
 pipelines require that mamba is installed through the [miniforge3](https://github.com/conda-forge/miniforge) installer.
 
 1. Download this repository to the local machine using the preferred method, such as git-cloning.
 2. If the downloaded distribution is stored as a compressed archive, unpack it using the appropriate decompression tool.
-3. ```cd``` to the root directory of the prepared project distribution.
-4. Install the core Sun lab development dependencies into the ***base*** mamba environment via the 
-   ```mamba install tox uv tox-uv``` command.
-5. Use the ```tox -e create``` command to create the project-specific development environment followed by 
-   ```tox -e install``` command to install the project into that environment as a library.
+3. `cd` to the root directory of the prepared project distribution.
+4. Install the core Sun lab development dependencies into the ***base*** mamba environment via the
+   `mamba install tox uv tox-uv` command.
+5. Use the `tox -e create` command to create the project-specific development environment followed by
+   `tox -e install` command to install the project into that environment as a library.
 
 ### Additional Dependencies
 
 In addition to installing the project and all user dependencies, install the following dependencies:
 
-1. [Python](https://www.python.org/downloads/) distributions, one for each version supported by the developed project. 
-   Currently, this library supports the three latest stable versions. It is recommended to use a tool like 
+1. [Python](https://www.python.org/downloads/) distributions, one for each version supported by the developed project.
+   Currently, this library supports the three latest stable versions. It is recommended to use a tool like
    [pyenv](https://github.com/pyenv/pyenv) to install and manage the required versions.
 2. [Doxygen](https://doxygen.nl/), if the project uses C-extensions. This is necessary to build the API documentation
    for the C-code portion of the project.
 
 ### Development Automation
 
-This project comes with a fully configured set of automation pipelines implemented using 
-[tox](https://tox.wiki/en/latest/user_guide.html). Check the [tox.ini file](tox.ini) for details about 
-the available pipelines and their implementation. Alternatively, call ```tox list``` from the root directory of the 
-project to see the list of available tasks. __*Note*__, automation pipelines for this library have been modified from 
-the implementation used in all other projects, as they require this library to support their runtime. To avoid circular 
-dependencies, the pipelines for this library always compile and install the library from source code before running 
+This project comes with a fully configured set of automation pipelines implemented using
+[tox](https://tox.wiki/en/latest/user_guide.html). Check the [tox.ini file](tox.ini) for details about
+the available pipelines and their implementation. Alternatively, call `tox list` from the root directory of the
+project to see the list of available tasks. ***Note,*** automation pipelines for this library have been modified from
+the implementation used in all other projects, as they require this library to support their runtime. To avoid circular
+dependencies, the pipelines for this library always compile and install the library from source code before running
 each automation task.
 
-**Note!** All pull requests for this project have to successfully complete the ```tox``` task before being merged. 
-To expedite the task’s runtime, use the ```tox --parallel``` command to run some tasks in-parallel.
+***Note,*** all pull requests for this project have to successfully complete the `tox` task before being merged.
+To expedite the task's runtime, use the `tox --parallel` command to run some tasks in-parallel.
 
 ### Automation Troubleshooting
 
-Many packages used in 'tox' automation pipelines (uv, mypy, ruff) and 'tox' itself may experience runtime failures. In 
-most cases, this is related to their caching behavior. If an unintelligible error is encountered with 
-any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually 
+Many packages used in 'tox' automation pipelines (uv, mypy, ruff) and 'tox' itself may experience runtime failures. In
+most cases, this is related to their caching behavior. If an unintelligible error is encountered with
+any of the automation components, deleting the corresponding .cache (.tox, .ruff_cache, .mypy_cache, etc.) manually
 or via a CLI command typically solves the issue.
 
 ___
 
 ## Versioning
 
-This project uses [semantic versioning](https://semver.org/). See the 
+This project uses [semantic versioning](https://semver.org/). See the
 [tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-automation/tags) or the available project releases.
 
----
+___
 
 ## Authors
 
@@ -525,9 +584,9 @@ ___
 
 - All Sun lab [members](https://neuroai.github.io/sunlab/people) for providing the inspiration and comments during the
   development of this library.
-- [click](https://github.com/pallets/click/) project for providing the low-level command-line-interface functionality 
+- [click](https://github.com/pallets/click/) project for providing the low-level command-line-interface functionality
   for this project.
-- The teams behind [pip](https://github.com/pypa/pip), [uv](https://github.com/astral-sh/uv), 
-  [conda](https://conda.org/), [mamba](https://github.com/mamba-org/mamba) and [tox](https://github.com/tox-dev/tox), 
+- The teams behind [pip](https://github.com/pypa/pip), [uv](https://github.com/astral-sh/uv),
+  [conda](https://conda.org/), [mamba](https://github.com/mamba-org/mamba) and [tox](https://github.com/tox-dev/tox),
   which form the backbone of Sun lab automation pipelines.
 - The creators of all other dependencies and projects listed in the [pyproject.toml](pyproject.toml) file.

@@ -150,7 +150,7 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
             token
             and token.startswith("pypi-")
             and _MINIMUM_PYPI_TOKEN_LENGTH <= len(token) <= _MAXIMUM_PYPI_TOKEN_LENGTH
-            and len(token[5:]) > 0
+            and token[5:]
             and re.match(r"^[A-Za-z0-9\-_]+=*$", token[5:])
             and " " not in token
             and "\n" not in token

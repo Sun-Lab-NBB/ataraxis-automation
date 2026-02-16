@@ -217,7 +217,8 @@ Package `__init__.py` files define the public API:
 """Provides assets for processing and analyzing neural imaging data.
 
 See the `documentation <https://project-api-docs.netlify.app/>`_ for the description of
-available assets.
+available assets. See the `source code repository <https://github.com/Sun-Lab-NBB/project-name>`_
+for more details.
 
 Authors: Author Name (Handle)
 """
@@ -241,8 +242,10 @@ __all__ = [
 
 ### Rules
 
-- **Module docstring**: Imperative mood ("Provides..."), include documentation link and authors.
-  Email addresses in the `Authors:` line are optional and omitted by default
+- **Module docstring**: The first line MUST be the bare project description — the same sentence
+  used in all other canonical description locations (`pyproject.toml`, `welcome.rst`, `README.md`)
+  with no language or project name prefix. Include documentation link, source repository link,
+  and authors. Email addresses in the `Authors:` line are optional and omitted by default
 - **Console initialization**: Enabling the global `console` in the top-level `__init__.py` is a
   per-library choice, not a strict requirement. If `console.echo()` is called elsewhere in the
   library without `console.enable()` present, verify with the user whether this is intentional

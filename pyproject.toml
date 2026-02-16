@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ataraxis-automation"
 version = "8.0.0"
-description = "Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
+description = "Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun (NeuroAI) lab projects."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -38,7 +38,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
     # Typing
-    "Typing :: Typed"
+    "Typing :: Typed",
 ]
 
 # Runtime project dependencies. This list includes both the dependencies necessary to run the ataraxis-automation CLIs
@@ -171,7 +171,6 @@ combine-as-imports = true          # Combines multiple "as" imports for the same
 force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line (after combining for package)
 force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close
 length-sort = true                 # Places shorter imports first
-
 
 [tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true       # Ignores unused *args and **kwargs

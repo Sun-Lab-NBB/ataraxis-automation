@@ -207,7 +207,9 @@ dependencies directly to downstream project pyproject.toml files.
 ### welcome.rst rules
 
 - Title format: `Welcome to PROJECT_NAME API documentation page` with matching `=` underline.
-- First paragraph: one-sentence project description.
+- First paragraph: the bare project description — the same sentence used in all other canonical
+  description locations for the project archetype (e.g., `pyproject.toml`, `__init__.py`,
+  `README.md`, or `library.json`). No language or project name prefix.
 - Second paragraph: standard Ataraxis project attribution with Sun (NeuroAI) lab link.
 - Third paragraph: standard disclaimer that the site contains API docs only, with link to
   GitHub repository.

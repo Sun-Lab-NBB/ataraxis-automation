@@ -44,7 +44,7 @@ project-specific values.
 Welcome to <PROJECT_NAME> API documentation page
 =================================================
 
-<PROJECT_NAME> is <PROJECT_DESCRIPTION>.
+<PROJECT_DESCRIPTION>
 
 This library is part of the broader 'Ataraxis' science-automation project, developed in the
 `Sun (NeuroAI) lab <https://neuroai.github.io/sunlab/>`_ at Cornell University.
@@ -59,15 +59,18 @@ GitHub repository for installation instructions and library usage examples:
 
 **Rules:**
 - The title underline (`=`) MUST match the exact character length of the title text.
-- `<PROJECT_DESCRIPTION>` starts lowercase (continues the sentence "PROJECT is...").
+- `<PROJECT_DESCRIPTION>` is the bare project description — the same sentence used in all other
+  canonical description locations for the project archetype (e.g., `pyproject.toml`, `__init__.py`,
+  `README.md`, or `library.json`). No language prefix ("A Python library that...") and no project
+  name prefix ("project-name is...").
 - The GitHub URL uses the `Sun-Lab-NBB` organization.
 
 ### Placeholders
 
-| Placeholder             | Description                            | Example                                 |
-|-------------------------|----------------------------------------|-----------------------------------------|
-| `<PROJECT_NAME>`        | Project name matching pyproject.toml   | `ataraxis-time`                         |
-| `<PROJECT_DESCRIPTION>` | One-sentence description, starts lower | `a Python library that provides timers` |
+| Placeholder             | Description                              | Example                             |
+|-------------------------|------------------------------------------|-------------------------------------|
+| `<PROJECT_NAME>`        | Project name matching pyproject.toml     | `ataraxis-time`                     |
+| `<PROJECT_DESCRIPTION>` | Bare project description, imperative     | `Provides high-precision timers...` |
 
 ---
 

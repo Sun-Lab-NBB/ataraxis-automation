@@ -37,10 +37,19 @@ __version__ = version("package-name")
 
 ### description
 
-A single sentence describing the project's purpose:
+A single sentence describing the project's purpose. The description MUST use bare form — no
+language prefix ("A Python library that...") and no project name prefix ("project-name is...").
+Start directly with an imperative verb (e.g., "Supports...", "Provides...", "Manages...").
+
+This exact description MUST be used verbatim in every canonical description location that exists
+for the project archetype. For Python projects, these are:
+1. `pyproject.toml` `description` field
+2. Top-level `__init__.py` module docstring (first line)
+3. `docs/source/welcome.rst` first paragraph
+4. `README.md` one-line description (immediately after the title)
 
 ```toml
-description = "Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
+description = "Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun (NeuroAI) lab projects."
 ```
 
 ### readme
