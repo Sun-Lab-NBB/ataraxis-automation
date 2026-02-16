@@ -1,6 +1,6 @@
 # ataraxis-automation
 
-Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun 
+Supports tox-based development automation pipelines and provides agentic skills for Claude Code used by other Sun
 (NeuroAI) lab projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-automation)
@@ -58,8 +58,9 @@ ___
 - [uv](https://docs.astral.sh/uv/). This library uses uv as the main package management engine and expects that uv is
   available from the system's base Python environment.
 
-***Note,*** developers should see the [Developers](#developers) section for information on installing additional
-development dependencies.
+For users, all other library dependencies are installed automatically by all supported installation methods.
+For developers, see the [Developers](#developers) section for information on installing additional development
+dependencies.
 
 ___
 
@@ -142,7 +143,7 @@ type-checking.
 
 Example tox.ini section:
 ```
-[testenv: lint]
+[testenv:lint]
 description =
     Runs static code formatting, style, and typing checkers. Follows the configuration defined in the pyproject.toml
     file.
@@ -165,6 +166,7 @@ for type-checkers like mypy to recognize the library as 'typed' and process it d
 
 Example tox.ini section:
 ```
+[testenv:stubs]
 description = Generates the py.typed marker and the .pyi stub files using the project's wheel distribution.
 depends = lint
 dependency_groups = dev
@@ -187,7 +189,7 @@ version.
 
 Example tox.ini section:
 ```
-[testenv: {py312, py313, py314}-test]
+[testenv:{py312, py313, py314}-test]
 package = wheel
 description =
     Runs unit and integration tests for each of the python versions listed in the task name and aggregates test coverage
@@ -518,7 +520,8 @@ ___
 
 ## Developers
 
-This section provides installation, dependency, and build-system instructions for project developers.
+This section provides installation, dependency, and build-system instructions for the developers that want to modify
+the source code of this library.
 
 ### Installing the Project
 
@@ -545,16 +548,33 @@ In addition to installing the project and all user dependencies, install the fol
 
 ### Development Automation
 
-This project comes with a fully configured set of automation pipelines implemented using
-[tox](https://tox.wiki/en/latest/user_guide.html). Check the [tox.ini file](tox.ini) for details about
-the available pipelines and their implementation. Alternatively, call `tox list` from the root directory of the
-project to see the list of available tasks. ***Note,*** automation pipelines for this library have been modified from
-the implementation used in all other projects, as they require this library to support their runtime. To avoid circular
-dependencies, the pipelines for this library always compile and install the library from source code before running
-each automation task.
+This project uses `tox` for development automation. The following tox environments are available:
+
+| Environment          | Description                                                  |
+|----------------------|--------------------------------------------------------------|
+| `lint`               | Runs ruff formatting, ruff linting, and mypy type checking   |
+| `stubs`              | Generates py.typed marker and .pyi stub files                |
+| `{py312,...}-test`   | Runs the test suite via pytest for each supported Python     |
+| `coverage`           | Aggregates test coverage into an HTML report                 |
+| `docs`               | Builds the API documentation via Sphinx                      |
+| `build`              | Builds sdist and wheel distributions                         |
+| `upload`             | Uploads distributions to PyPI via twine                      |
+| `install`            | Builds and installs the project into its mamba environment   |
+| `uninstall`          | Uninstalls the project from its mamba environment            |
+| `create`             | Creates the project's mamba development environment          |
+| `remove`             | Removes the project's mamba development environment          |
+| `provision`          | Recreates the mamba environment from scratch                 |
+| `export`             | Exports the mamba environment as .yml and spec.txt files     |
+| `import`             | Creates or updates the mamba environment from a .yml file    |
+
+Run any environment using `tox -e ENVIRONMENT`. For example, `tox -e lint`.
+
+***Note,*** automation pipelines for this library have been modified from the implementation used in all other
+projects, as they require this library to support their runtime. To avoid circular dependencies, the pipelines for
+this library always compile and install the library from source code before running each automation task.
 
 ***Note,*** all pull requests for this project have to successfully complete the `tox` task before being merged.
-To expedite the task's runtime, use the `tox --parallel` command to run some tasks in-parallel.
+To expedite the task's runtime, use the `tox --parallel` command to run some tasks in parallel.
 
 ### Automation Troubleshooting
 
@@ -568,7 +588,7 @@ ___
 ## Versioning
 
 This project uses [semantic versioning](https://semver.org/). See the
-[tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-automation/tags) or the available project releases.
+[tags on this repository](https://github.com/Sun-Lab-NBB/ataraxis-automation/tags) for the available project releases.
 
 ___
 

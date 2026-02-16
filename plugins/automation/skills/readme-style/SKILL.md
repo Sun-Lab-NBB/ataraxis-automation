@@ -75,7 +75,7 @@ project type. For the exact template of each section, see
 
 1. **Title**: Project name as H1 heading (`# project-name`)
 2. **One-line description**: Bare project description, identical across all canonical locations for the archetype
-3. **Badges**: Standard badge set for the project type (no blank line before badges)
+3. **Badges**: Standard badge set for the project type (blank line separates description from badges)
 4. **Horizontal rule**: `___` (triple underscore) to separate header from content
 5. **Detailed description**: Expanded explanation of the library's purpose (`## Detailed Description`)
 6. **Features** *(optional)*: Bulleted list of key features, ending with license type
@@ -225,7 +225,7 @@ Structure:
 - [ ] Title as H1 heading with project name (lowercase, hyphenated)
 - [ ] One-line description immediately after title (bare, matches all canonical description locations)
 - [ ] Correct badge set for project type (see section-templates.md)
-- [ ] No blank line between description and badges
+- [ ] Blank line between description and badges
 - [ ] Horizontal rule uses `___` (not `---`) after badges
 - [ ] Detailed description section present (`## Detailed Description` heading, after horizontal rule)
 - [ ] Features section ends with license type bullet (if Features present)

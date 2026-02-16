@@ -34,8 +34,8 @@ The canonical description locations vary by archetype:
 
 ### Python libraries
 
-Python libraries use the following 8 badges in this exact order. There must be no blank line
-between the one-line description and the first badge.
+Python libraries use the following 8 badges in this exact order. A blank line must separate
+the one-line description from the first badge.
 
 ```markdown
 ![PyPI - Version](https://img.shields.io/pypi/v/PACKAGE-NAME)
