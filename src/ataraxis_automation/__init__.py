@@ -11,6 +11,7 @@ from .automation import (
     ProjectEnvironment,
     move_stubs,
     delete_stubs,
+    robust_rmtree,
     verify_pypirc,
     format_message,
     colorize_message,
@@ -28,5 +29,6 @@ __all__ = [
     "move_stubs",
     "resolve_library_root",
     "resolve_project_directory",
+    "robust_rmtree",
     "verify_pypirc",
 ]

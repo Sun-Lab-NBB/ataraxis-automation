@@ -5,6 +5,9 @@ exposed by the 'cli' module. Implements the logic of all automation tasks.
 import os
 import re
 import sys
+import stat
+import time
+import shutil
 from typing import Any
 from pathlib import Path
 import textwrap
@@ -25,6 +28,12 @@ _SUPPORTED_PLATFORMS: dict[str, str] = {
 
 # Stores the module-level compiled regex pattern for extracting package base names.
 _BASE_NAME_PATTERN: re.Pattern[str] = re.compile(r"^([a-zA-Z0-9_.-]+)")
+
+# Stores the maximum number of retry attempts for file operations that may fail due to transient Windows file locks.
+_FILE_RETRY_COUNT: int = 5
+
+# Stores the initial delay in seconds between file operation retry attempts. Each subsequent retry doubles the delay.
+_FILE_RETRY_INITIAL_DELAY: float = 0.5
 
 
 @dataclass(frozen=True)
@@ -361,7 +370,7 @@ def generate_typed_marker(library_root: Path) -> None:
     # Removes py.typed from all subdirectories
     for path in library_root.rglob("py.typed"):
         if path != root_py_typed:
-            path.unlink()
+            _unlink_with_retry(path)
             message = f"Removed no longer needed py.typed marker file {path}."
             click.echo(colorize_message(message, color="white"), color=True)
 
@@ -417,10 +426,10 @@ def move_stubs(stubs_directory: Path, library_root: Path) -> None:
         destination_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Removes the old .pyi file if it already exists
-        destination_path.unlink(missing_ok=True)
+        _unlink_with_retry(destination_path, missing_ok=True)
 
         # Moves the stub file to its destination directory using rename (this is more efficient than shutil.move)
-        stub_path.rename(destination_path)
+        _rename_with_retry(stub_path, destination_path)
 
         message = f"Moved stub file from /stubs to /src: {destination_path.name}."
         click.echo(colorize_message(message, color="white"), color=True)
@@ -447,7 +456,7 @@ def move_stubs(stubs_directory: Path, library_root: Path) -> None:
                 file_path = group[0]
                 if file_path.name != base_name:
                     new_path = file_path.with_name(base_name)
-                    file_path.rename(new_path)
+                    _rename_with_retry(file_path, new_path)
                     message = f"Renamed stub file in {directory_path}: {file_path.name} -> {base_name}."
                     click.echo(colorize_message(message, color="white"), color=True)
             # If the group has multiple files, keeps the one with the highest copy number
@@ -458,14 +467,14 @@ def move_stubs(stubs_directory: Path, library_root: Path) -> None:
 
                 # Removes all duplicates
                 for file_to_remove in group[1:]:
-                    file_to_remove.unlink()
+                    _unlink_with_retry(file_to_remove)
                     message = f"Removed duplicate .pyi file in {directory_path}: {file_to_remove.name}."
                     click.echo(colorize_message(message, color="white"), color=True)
 
                 # Renames the kept file to remove copy number if needed
                 if kept_file.name != base_name:
                     new_path = kept_file.with_name(base_name)
-                    kept_file.rename(new_path)
+                    _rename_with_retry(kept_file, new_path)
                     message = f"Renamed stub file in {directory_path}: {kept_file.name} -> {base_name}."
                     click.echo(colorize_message(message, color="white"), color=True)
 
@@ -479,7 +488,7 @@ def delete_stubs(library_root: Path) -> None:
     # Iterates over all .pyi files in the directory tree and removes them.
     pyi_file: Path
     for pyi_file in library_root.rglob("*.pyi"):
-        pyi_file.unlink()
+        _unlink_with_retry(pyi_file)
         click.echo(colorize_message(f"Removed stub file: {pyi_file.name}.", color="white"), color=True)
 
 
@@ -504,6 +513,128 @@ def verify_pypirc(file_path: Path) -> bool:
         and config_validator.get("pypi", "username") == "__token__"
         and config_validator.get("pypi", "password").startswith("pypi-")
     )
+
+
+def robust_rmtree(path: Path) -> None:
+    """Removes a directory tree with retry logic to handle transient Windows file locks.
+
+    On Windows, antivirus scanners, the Search Indexer, and recently-exited processes can hold file handles briefly
+    after the calling process has finished with them. This function wraps ``shutil.rmtree()`` with an ``onerror``
+    handler that clears read-only attributes and an outer retry loop with exponential backoff to tolerate these
+    transient locks. On non-Windows platforms, calls ``shutil.rmtree()`` directly with no retry overhead.
+
+    Args:
+        path: The absolute path to the directory tree to remove.
+
+    Raises:
+        PermissionError: If the directory cannot be removed after exhausting all retry attempts on Windows, or
+            immediately on non-Windows platforms.
+    """
+    # On non-Windows platforms, file locks are advisory, so no retry logic is needed.
+    if sys.platform != "win32":
+        shutil.rmtree(path)
+        return
+
+    # On Windows, retries with exponential backoff to tolerate transient file locks.
+    delay = _FILE_RETRY_INITIAL_DELAY
+    for attempt in range(_FILE_RETRY_COUNT):
+        try:
+            shutil.rmtree(path, onerror=_rmtree_onerror)
+        except PermissionError:
+            if attempt < _FILE_RETRY_COUNT - 1:
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise
+        else:
+            return
+
+
+def _rmtree_onerror(func: Any, path: str, exc_info: Any) -> None:
+    """Handles errors during ``shutil.rmtree()`` by clearing the Windows read-only attribute and retrying.
+
+    This is passed as the ``onerror`` callback to ``shutil.rmtree()``. When Windows marks files as read-only during
+    concurrent operations, this handler clears the read-only flag and retries the failed deletion. Non-PermissionError
+    exceptions are re-raised.
+
+    Args:
+        func: The function that raised the exception (e.g., ``os.remove`` or ``os.rmdir``).
+        path: The path to the file or directory that could not be removed.
+        exc_info: The exception information tuple returned by ``sys.exc_info()``.
+
+    Raises:
+        OSError: If the original exception is not a PermissionError.
+    """
+    exception = exc_info[1]
+    if isinstance(exception, PermissionError):
+        Path(path).chmod(stat.S_IWRITE)
+        func(path)
+    else:
+        raise exception
+
+
+def _unlink_with_retry(path: Path, *, missing_ok: bool = False) -> None:
+    """Removes a file with retry logic to handle transient Windows file locks.
+
+    On Windows, retries up to ``_FILE_RETRY_COUNT`` times with exponential backoff when a ``PermissionError`` is
+    encountered. On non-Windows platforms, calls ``Path.unlink()`` directly with no retry overhead.
+
+    Args:
+        path: The absolute path to the file to remove.
+        missing_ok: Determines whether to suppress ``FileNotFoundError`` if the file does not exist.
+
+    Raises:
+        PermissionError: If the file cannot be removed after exhausting all retry attempts on Windows, or immediately
+            on non-Windows platforms.
+    """
+    if sys.platform != "win32":
+        path.unlink(missing_ok=missing_ok)
+        return
+
+    delay = _FILE_RETRY_INITIAL_DELAY
+    for attempt in range(_FILE_RETRY_COUNT):
+        try:
+            path.unlink(missing_ok=missing_ok)
+        except PermissionError:
+            if attempt < _FILE_RETRY_COUNT - 1:
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise
+        else:
+            return
+
+
+def _rename_with_retry(source: Path, destination: Path) -> None:
+    """Renames a file with retry logic to handle transient Windows file locks.
+
+    On Windows, retries up to ``_FILE_RETRY_COUNT`` times with exponential backoff when a ``PermissionError`` is
+    encountered. On non-Windows platforms, calls ``Path.rename()`` directly with no retry overhead.
+
+    Args:
+        source: The absolute path to the file to rename.
+        destination: The absolute path to the target file name.
+
+    Raises:
+        PermissionError: If the file cannot be renamed after exhausting all retry attempts on Windows, or immediately
+            on non-Windows platforms.
+    """
+    if sys.platform != "win32":
+        source.rename(destination)
+        return
+
+    delay = _FILE_RETRY_INITIAL_DELAY
+    for attempt in range(_FILE_RETRY_COUNT):
+        try:
+            source.rename(destination)
+        except PermissionError:
+            if attempt < _FILE_RETRY_COUNT - 1:
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise
+        else:
+            return
 
 
 def _get_copy_number(path: Path, copy_pattern: re.Pattern[str]) -> int:

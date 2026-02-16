@@ -2,7 +2,6 @@
 
 import re  # pragma: no cover
 import base64  # pragma: no cover
-import shutil  # pragma: no cover
 from pathlib import Path  # pragma: no cover
 import subprocess  # pragma: no cover
 from configparser import ConfigParser  # pragma: no cover
@@ -13,6 +12,7 @@ from .automation import (  # pragma: no cover
     ProjectEnvironment,
     move_stubs,
     delete_stubs,
+    robust_rmtree,
     verify_pypirc,
     format_message,
     colorize_message,
@@ -80,7 +80,7 @@ def process_stubs() -> None:  # pragma: no cover
 
     # Moves the stubs to the appropriate source code directories
     move_stubs(stubs_directory=stubs_path, library_root=library_root)
-    shutil.rmtree(stubs_path)  # Removes the /stubs directory once all stubs are moved
+    robust_rmtree(stubs_path)  # Removes the /stubs directory once all stubs are moved
     message = "Stubs successfully distributed to appropriate source code directories."
     click.echo(colorize_message(message, color="green"))
 
@@ -444,7 +444,7 @@ def remove_environment(environment_name: str, environment_directory: Path | None
     # Handles a rare case where the environment does not exist, but its directory exists. In this case, removes the
     # directory and ends the runtime.
     if not environment_exists and directory_exists:
-        shutil.rmtree(environment.environment_directory)
+        robust_rmtree(environment.environment_directory)
         message = f"Removed mamba environment '{environment.environment_name}'."
         click.echo(colorize_message(message, color="green"))
         return
@@ -455,7 +455,7 @@ def remove_environment(environment_name: str, environment_directory: Path | None
         subprocess.run(command, shell=True, check=True)
         # Ensures the environment directory is deleted.
         if environment.environment_directory.exists():
-            shutil.rmtree(environment.environment_directory)
+            robust_rmtree(environment.environment_directory)
         message = f"Removed mamba environment '{environment.environment_name}'."
         click.echo(colorize_message(message, color="green"))
 
@@ -520,7 +520,7 @@ def provision_environment(
     if not environment.environment_exists():
         # Ensures the environment directory also does not exist.
         if environment.environment_directory.exists():
-            shutil.rmtree(environment.environment_directory)
+            robust_rmtree(environment.environment_directory)
     else:
         # Otherwise, removes the existing environment
         try:
@@ -528,7 +528,7 @@ def provision_environment(
             subprocess.run(command, shell=True, check=True)
             # Ensures the environment directory is deleted.
             if environment.environment_directory.exists():
-                shutil.rmtree(environment.environment_directory)
+                robust_rmtree(environment.environment_directory)
             message = f"Removed mamba environment '{environment.environment_name}'."
             click.echo(colorize_message(message, color="green"))
 

@@ -4,6 +4,7 @@ from .automation import (
     ProjectEnvironment as ProjectEnvironment,
     move_stubs as move_stubs,
     delete_stubs as delete_stubs,
+    robust_rmtree as robust_rmtree,
     verify_pypirc as verify_pypirc,
     format_message as format_message,
     colorize_message as colorize_message,
