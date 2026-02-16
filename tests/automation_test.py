@@ -3,10 +3,12 @@
 import os
 import re
 import sys
+import stat
+import shutil
 from pathlib import Path
 import subprocess
 from configparser import ConfigParser
-from unittest.mock import Mock
+from unittest.mock import Mock, patch, call
 
 import pytest
 
@@ -1083,3 +1085,215 @@ def test_move_stubs_single_file_with_copy_number(project_dir: Path) -> None:
     assert (library_root / "module.pyi").exists()
     assert not (library_root / "module 1.pyi").exists()
     assert (library_root / "__init__.pyi").exists()
+
+
+# ---- Group 5: Windows file lock retry helpers ----
+
+
+def test_unlink_with_retry_passthrough_non_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that _unlink_with_retry() calls Path.unlink() directly on non-Windows platforms."""
+    monkeypatch.setattr(sys, "platform", "linux")
+    target_file = tmp_path / "test.txt"
+    target_file.touch()
+
+    aa._unlink_with_retry(target_file)
+    assert not target_file.exists()
+
+
+def test_unlink_with_retry_missing_ok_non_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that _unlink_with_retry() respects missing_ok on non-Windows platforms."""
+    monkeypatch.setattr(sys, "platform", "linux")
+    nonexistent = tmp_path / "nonexistent.txt"
+
+    # Should not raise when missing_ok=True
+    aa._unlink_with_retry(nonexistent, missing_ok=True)
+
+    # Should raise FileNotFoundError when missing_ok=False
+    with pytest.raises(FileNotFoundError):
+        aa._unlink_with_retry(nonexistent, missing_ok=False)
+
+
+def test_unlink_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that _unlink_with_retry() retries on PermissionError when platform is win32."""
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(aa, "_FILE_RETRY_INITIAL_DELAY", 0.01)
+
+    target_file = tmp_path / "test.txt"
+    target_file.touch()
+
+    # Simulates PermissionError on first two calls, then succeeds on third
+    call_count = 0
+    original_unlink = Path.unlink
+
+    def mock_unlink(self: Path, missing_ok: bool = False) -> None:
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            raise PermissionError("File is locked")
+        original_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", mock_unlink)
+
+    aa._unlink_with_retry(target_file)
+    assert call_count == 3
+
+
+def test_unlink_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that _unlink_with_retry() raises PermissionError after exhausting all retries on Windows."""
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(aa, "_FILE_RETRY_INITIAL_DELAY", 0.01)
+
+    target_file = tmp_path / "test.txt"
+    target_file.touch()
+
+    def mock_unlink(self: Path, missing_ok: bool = False) -> None:
+        raise PermissionError("File is locked")
+
+    monkeypatch.setattr(Path, "unlink", mock_unlink)
+
+    with pytest.raises(PermissionError, match="File is locked"):
+        aa._unlink_with_retry(target_file)
+
+
+def test_rename_with_retry_passthrough_non_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that _rename_with_retry() calls Path.rename() directly on non-Windows platforms."""
+    monkeypatch.setattr(sys, "platform", "linux")
+    source = tmp_path / "source.txt"
+    source.touch()
+    destination = tmp_path / "destination.txt"
+
+    aa._rename_with_retry(source, destination)
+    assert not source.exists()
+    assert destination.exists()
+
+
+def test_rename_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that _rename_with_retry() retries on PermissionError when platform is win32."""
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(aa, "_FILE_RETRY_INITIAL_DELAY", 0.01)
+
+    source = tmp_path / "source.txt"
+    source.touch()
+    destination = tmp_path / "destination.txt"
+
+    call_count = 0
+    original_rename = Path.rename
+
+    def mock_rename(self: Path, target: Path) -> Path:
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            raise PermissionError("File is locked")
+        return original_rename(self, target)
+
+    monkeypatch.setattr(Path, "rename", mock_rename)
+
+    aa._rename_with_retry(source, destination)
+    assert call_count == 3
+    assert destination.exists()
+
+
+def test_rename_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that _rename_with_retry() raises PermissionError after exhausting all retries on Windows."""
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(aa, "_FILE_RETRY_INITIAL_DELAY", 0.01)
+
+    source = tmp_path / "source.txt"
+    source.touch()
+    destination = tmp_path / "destination.txt"
+
+    def mock_rename(self: Path, target: Path) -> Path:
+        raise PermissionError("File is locked")
+
+    monkeypatch.setattr(Path, "rename", mock_rename)
+
+    with pytest.raises(PermissionError, match="File is locked"):
+        aa._rename_with_retry(source, destination)
+
+
+def test_robust_rmtree_passthrough_non_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that robust_rmtree() calls shutil.rmtree() directly on non-Windows platforms."""
+    monkeypatch.setattr(sys, "platform", "linux")
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    (target_dir / "file.txt").touch()
+
+    aa.robust_rmtree(target_dir)
+    assert not target_dir.exists()
+
+
+def test_robust_rmtree_retries_on_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that robust_rmtree() retries on PermissionError when platform is win32."""
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(aa, "_FILE_RETRY_INITIAL_DELAY", 0.01)
+
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    (target_dir / "file.txt").touch()
+
+    call_count = 0
+    original_rmtree = shutil.rmtree
+
+    def mock_rmtree(path: Path, onerror: object = None) -> None:
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            raise PermissionError("Directory is locked")
+        original_rmtree(path)
+
+    monkeypatch.setattr(shutil, "rmtree", mock_rmtree)
+
+    aa.robust_rmtree(target_dir)
+    assert call_count == 3
+
+
+def test_robust_rmtree_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that robust_rmtree() raises PermissionError after exhausting all retries on Windows."""
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(aa, "_FILE_RETRY_INITIAL_DELAY", 0.01)
+
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    (target_dir / "file.txt").touch()
+
+    def mock_rmtree(path: Path, onerror: object = None) -> None:
+        raise PermissionError("Directory is locked")
+
+    monkeypatch.setattr(shutil, "rmtree", mock_rmtree)
+
+    with pytest.raises(PermissionError, match="Directory is locked"):
+        aa.robust_rmtree(target_dir)
+
+
+def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
+    """Verifies that _rmtree_onerror() clears the read-only attribute and retries the deletion."""
+    target_file = tmp_path / "readonly.txt"
+    target_file.touch()
+
+    # Makes the file read-only
+    target_file.chmod(stat.S_IREAD)
+
+    # Simulates the onerror callback with os.remove as the function
+    try:
+        aa._rmtree_onerror(
+            func=os.remove,
+            path=str(target_file),
+            exc_info=(PermissionError, PermissionError("Permission denied"), None),
+        )
+    except Exception:
+        # Restores write permission for cleanup if the test fails
+        target_file.chmod(stat.S_IWRITE)
+        raise
+
+    assert not target_file.exists()
+
+
+def test_rmtree_onerror_reraises_non_permission_error() -> None:
+    """Verifies that _rmtree_onerror() re-raises exceptions that are not PermissionError."""
+    error = OSError("Disk error")
+    with pytest.raises(OSError, match="Disk error"):
+        aa._rmtree_onerror(
+            func=os.remove,
+            path="/nonexistent",
+            exc_info=(OSError, error, None),
+        )
