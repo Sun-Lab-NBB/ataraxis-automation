@@ -18,7 +18,8 @@ ___
 Upon installation into a Python environment, this library exposes a command-line interface (automation-cli) used by the
 [tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation suite that comes with every Sun
 Lab project. The CLI abstracts the project's environment manipulation and facilitates mundane development tasks, such as
-linting, typing, and documenting the source code API.
+linting, typing, and documenting the source code API. This library is part of the
+[Ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) framework for AI-assisted scientific hardware control.
 
 ___
 
@@ -523,6 +524,13 @@ this library always compile and install the library from source code before runn
 
 ***Note,*** all pull requests for this project have to successfully complete the `tox` task before being merged.
 To expedite the task's runtime, use the `tox --parallel` command to run some tasks in parallel.
+
+### AI-Assisted Development
+
+Claude Code skills and other AI development assets for this project are distributed through the
+[ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) marketplace as part of the **automation** plugin. Install the
+plugin from the marketplace to make all associated skills and development tools available to compatible AI coding
+agents.
 
 ### Automation Troubleshooting
 
