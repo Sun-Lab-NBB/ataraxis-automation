@@ -56,17 +56,17 @@ dependencies = [
 
     # Coverage Reports
     "coverage>=7,<8",
-    "junitparser>=4,<5",
+    "junitparser>=5,<6",
 
     # Documentation
     "sphinx>=9,<10",
-    "importlib_metadata>=8,<9",
+    "importlib_metadata>=9,<10",
     "furo>=2024,<2027",
     "sphinx-click>=6,<7",
     "sphinx-autodoc-typehints>=3,<4",
 
     # Linting and Stub Generation
-    "mypy>=1,<2",
+    "mypy>=2,<3",
     "ruff>=0,<1",
 
     # Building
@@ -74,7 +74,7 @@ dependencies = [
     "hatchling>=1,<2",
 
     # C-Extension Project Support
-    "cibuildwheel[uv]>=3,<4",
+    "cibuildwheel[uv]>=4,<5",
     "nanobind>=2,<3",
     "scikit-build-core>=0,<1",
     "breathe>=4,<5",
