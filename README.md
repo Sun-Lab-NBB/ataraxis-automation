@@ -149,6 +149,14 @@ commands =
     mypy ./src
 ```
 
+***Note,*** the `mypy ./src` command runs single-threaded, which is optimal for the typical
+ataraxis or sollertia library: warm, incremental runs finish in well under a second. Large projects
+whose source code takes several seconds to type-check (such as `cindra` or `sollertia-experiment`)
+can opt into mypy 2.x's experimental parallel checking by appending `-n N` (`--num-workers N`) to
+the command, where `N` is the number of available CPU cores. This mainly accelerates fresh checkout
+runs and is not recommended for smaller projects, where the worker-startup overhead negates the
+gain.
+
 #### Stubs
 Shell command: `tox -e stubs`
 
