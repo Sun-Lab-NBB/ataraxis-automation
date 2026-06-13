@@ -234,7 +234,7 @@ class ProjectEnvironment:
 
 
 def format_message(message: str) -> str:
-    """Formats input message strings to follow the general Sun lab and project Ataraxis style.
+    """Formats input message strings to follow the general Ataraxis framework style.
 
     Args:
         message: The input message string to format.
@@ -269,19 +269,19 @@ def colorize_message(message: str, color: str, *, wrap: bool = True) -> str:
 
 
 def resolve_project_directory() -> Path:
-    """Resolves the current working directory and verifies that it points to a valid Sun lab project.
+    """Resolves the current working directory and verifies that it points to a valid Ataraxis framework project.
 
     Returns:
-        The absolute path to the current working directory, if it points to a valid Sun lab project.
+        The absolute path to the current working directory, if it points to a valid Ataraxis framework project.
 
     Raises:
-        RuntimeError: If the current working directory does not point to a valid Sun lab project.
+        RuntimeError: If the current working directory does not point to a valid Ataraxis framework project.
     """
     # Gets current working directory
     project_dir = Path.cwd()
 
-    # Checks if the current working directory points to a valid Sun lab project based on the presence of required
-    # files in the root directory.
+    # Checks if the current working directory points to a valid Ataraxis framework project based on the presence
+    # of required files in the root directory.
     required_items = {
         project_dir.joinpath("src"),
         project_dir.joinpath("envs"),

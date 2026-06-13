@@ -1,6 +1,6 @@
 # ataraxis-automation
 
-Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects.
+Supports tox-based development automation pipelines used by other Ataraxis framework projects.
 
 ![PyPI - Version](https://img.shields.io/pypi/v/ataraxis-automation)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ataraxis-automation)
@@ -27,7 +27,8 @@ ___
 
 - Supports Windows, Linux, and macOS.
 - Optimized for runtime speed by using mamba and uv for all environment management tasks.
-- Compliments the extensive suite of tox environments and tasks used by all Sun lab projects to streamline development.
+- Compliments the extensive suite of tox environments and tasks used by all Ataraxis framework projects to streamline
+  development.
 - Apache 2.0 License.
 
 ___
@@ -108,8 +109,8 @@ commands =
 ```
 
 See the [tox.ini file](tox.ini) configuration file for the most up-to-date project development automation
-suite used in the Sun lab. For the most up-to-date C-extension project automation suite, see the tox.ini file of the
-[ataraxis-time](https://github.com/Sun-Lab-NBB/ataraxis-time) library.
+suite used in the Ataraxis framework. For the most up-to-date C-extension project automation suite, see the
+tox.ini file of the [ataraxis-time](https://github.com/Sun-Lab-NBB/ataraxis-time) library.
 
 #### Additional Command Arguments
 ***Note,*** many sub-commands of the CLI have additional flags and arguments that can be used to further customize
@@ -119,12 +120,13 @@ supported CLI commands.
 ### Supported Checkout Tox Tasks
 This library is tightly linked to the environments defined in the [tox.ini file](tox.ini) configuration file.
 
-***Warning!*** Commands listed in this section may and frequently are modified based on the specific needs of each
-Sun lab project. This section is ***not*** a replacement for studying the tox.ini file for each Sun lab project.
+***Warning!*** Commands listed in this section may and frequently are modified based on the specific needs of
+each Ataraxis framework project. This section is ***not*** a replacement for studying the tox.ini file for each
+Ataraxis framework project.
 
 Most commands in this section are designed to be executed together as part of the `tox` CLI command. These commands
 are referred to as 'checkout' tasks and must run successfully for any pull request candidate before it is merged into
-the main branch of each Sun lab project.
+the main branch of each Ataraxis framework project.
 
 #### Lint
 Shell command: `tox -e lint`
@@ -366,9 +368,9 @@ Shell command: `tox -e create`
 
 Creates the project's development mamba environment and installs project dependencies listed in the pyproject.toml file
 into the environment. This task is intended to be used when setting up project development environments for new
-platforms and architectures. The task assumes that all dependencies are stored using the Sun Lab format: inside the
-general 'dependencies' section and the optional 'dev' dependency section. To allow installing prerelease packages, use
-`tox -e create -- --prerelease`.
+platforms and architectures. The task assumes that all dependencies are stored using the Ataraxis framework format:
+inside the general 'dependencies' section and the optional 'dev' dependency section. To allow installing prerelease
+packages, use `tox -e create -- --prerelease`.
 
 Example tox.ini section:
 ```
@@ -423,7 +425,7 @@ Shell command: `tox -e export`
 Exports the project's development environment as a .yml and spec.txt file. This task is used before distributing new
 versions of the project to allow the target audience to generate an identical copy of the development environment using
 the generated .yml and spec.txt files. While 'create' and 'provision' tasks make this largely obsolete, this
-functionality is maintained for all Sun lab projects.
+functionality is maintained for all Ataraxis framework projects.
 
 Example tox.ini section:
 ```
@@ -460,8 +462,8 @@ ___
 
 ## Claude Code Skills
 
-The Ataraxis project also exports agentic skills that enforce Sun Lab development conventions across all downstream 
-via the main [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. See the
+The Ataraxis project also exports agentic skills that enforce Ataraxis framework development conventions across all
+downstream via the main [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. See the
 [Claude Code Skills](https://github.com/Sun-Lab-NBB/ataraxis#claude-code-skills) section of the ataraxis README for
 available skills and installation instructions.
 
@@ -482,13 +484,14 @@ the source code of this library.
 
 ### Installing the Project
 
-***Note,*** this installation method requires **mamba version 2.3.2 or above**. Currently, all Sun lab automation
-pipelines require that mamba is installed through the [miniforge3](https://github.com/conda-forge/miniforge) installer.
+***Note,*** this installation method requires **mamba version 2.3.2 or above**. Currently, all Ataraxis framework
+automation pipelines require that mamba is installed through the [miniforge3](https://github.com/conda-forge/miniforge)
+installer.
 
 1. Download this repository to the local machine using the preferred method, such as git-cloning.
 2. If the downloaded distribution is stored as a compressed archive, unpack it using the appropriate decompression tool.
 3. `cd` to the root directory of the prepared project distribution.
-4. Install the core Sun lab development dependencies into the ***base*** mamba environment via the
+4. Install the core Ataraxis framework development dependencies into the ***base*** mamba environment via the
    `mamba install tox uv tox-uv` command.
 5. Use the `tox -e create` command to create the project-specific development environment followed by
    `tox -e install` command to install the project into that environment as a library.
@@ -576,5 +579,5 @@ ___
   for this project.
 - The teams behind [pip](https://github.com/pypa/pip), [uv](https://github.com/astral-sh/uv),
   [conda](https://conda.org/), [mamba](https://github.com/mamba-org/mamba) and [tox](https://github.com/tox-dev/tox),
-  which form the backbone of Sun lab automation pipelines.
+  which form the backbone of Ataraxis framework automation pipelines.
 - The creators of all other dependencies and projects listed in the [pyproject.toml](pyproject.toml) file.

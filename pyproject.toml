@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ataraxis-automation"
 version = "8.1.0"
-description = "Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects."
+description = "Supports tox-based development automation pipelines used by other Ataraxis framework projects."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -20,7 +20,7 @@ maintainers = [
 ]
 
 # The list of keywords that describe the project
-keywords = ["automation", "tox", "development-tools", "ataraxis", "sunlab"]
+keywords = ["automation", "tox", "development-tools", "ataraxis"]
 
 # Additional classifiers used by PIP to group repositories.
 classifiers = [
@@ -42,8 +42,8 @@ classifiers = [
 ]
 
 # Runtime project dependencies. This list includes both the dependencies necessary to run the ataraxis-automation CLIs
-# and support all Sun lab tox environments (tasks). Therefore, each 'tox' task in every Sun lab project can include
-# the ataraxis-automation as the sole dependency and work as expected.
+# and support all Ataraxis framework tox environments (tasks). Therefore, each 'tox' task in every Ataraxis
+# framework project can include the ataraxis-automation as the sole dependency and work as expected.
 dependencies = [
     # Automation Logic
     "click>=8,<9",

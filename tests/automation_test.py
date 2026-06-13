@@ -86,8 +86,8 @@ def test_resolve_library_root(project_dir: Path, init_location: str, expected: s
     """Verifies the functionality of the resolve_library_root() function.
 
     Tests the following scenarios:
-        0 - library root being the /src directory (used by Sun lab c-extension projects).
-        1 - library root being a subfolder under the /src directory (Used by Sun lab pure-python projects).
+        0 - library root being the /src directory (used by Ataraxis framework c-extension projects).
+        1 - library root being a subfolder under the /src directory (Used by Ataraxis framework pure-python projects).
     """
     init_dir = project_dir.joinpath(init_location)
     init_dir.mkdir(parents=True, exist_ok=True)

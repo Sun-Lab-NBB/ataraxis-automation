@@ -32,8 +32,8 @@ Failure to invoke the appropriate skill results in style violations.
 
 ## Cross-referenced library verification
 
-Sun Lab projects often depend on other `ataraxis-*` or `sl-*` libraries. These libraries may be stored locally in the
-same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`).
+Ataraxis framework projects often depend on other `ataraxis-*` or `sl-*` libraries. These libraries may be stored
+locally in the same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`).
 
 **Before writing code that interacts with a cross-referenced library, you MUST:**
 
@@ -59,31 +59,31 @@ state to prevent integration errors.
 
 ## Available skills
 
-| Skill               | Description                                                        |
-|---------------------|--------------------------------------------------------------------|
-| `/explore-codebase` | Perform in-depth codebase exploration at session start             |
-| `/python-style`     | Apply Sun Lab Python coding conventions (REQUIRED for Python code) |
-| `/cpp-style`        | Apply Sun Lab C++ coding conventions (REQUIRED for C++ code)       |
-| `/csharp-style`     | Apply Sun Lab C# coding conventions (REQUIRED for C# code)         |
-| `/readme-style`     | Apply Sun Lab README conventions (REQUIRED for README files)       |
-| `/pyproject-style`  | Apply Sun Lab pyproject.toml conventions (REQUIRED for pyproject)  |
-| `/commit`           | Generate style-compliant commit messages for local changes         |
-| `/api-docs`         | Apply Sun Lab API documentation conventions (REQUIRED for docs)    |
-| `/project-layout`   | Apply Sun Lab project directory structure conventions              |
-| `/tox-config`       | Apply Sun Lab tox.ini conventions (REQUIRED for tox configuration) |
-| `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md             |
+| Skill               | Description                                                                   |
+|---------------------|-------------------------------------------------------------------------------|
+| `/explore-codebase` | Perform in-depth codebase exploration at session start                        |
+| `/python-style`     | Apply Ataraxis framework Python coding conventions (REQUIRED for Python code) |
+| `/cpp-style`        | Apply Ataraxis framework C++ coding conventions (REQUIRED for C++ code)       |
+| `/csharp-style`     | Apply Ataraxis framework C# coding conventions (REQUIRED for C# code)         |
+| `/readme-style`     | Apply Ataraxis framework README conventions (REQUIRED for README files)       |
+| `/pyproject-style`  | Apply Ataraxis framework pyproject.toml conventions (REQUIRED for pyproject)  |
+| `/commit`           | Generate style-compliant commit messages for local changes                    |
+| `/api-docs`         | Apply Ataraxis framework API documentation conventions (REQUIRED for docs)    |
+| `/project-layout`   | Apply Ataraxis framework project directory structure conventions              |
+| `/tox-config`       | Apply Ataraxis framework tox.ini conventions (REQUIRED for tox configuration) |
+| `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md                        |
 
 ## Project context
 
 This is **ataraxis-automation**, a Python library that supports tox-based development automation pipelines used by all
-Sun Lab (NeuroAI) projects at Cornell University. It provides a CLI (`automation-cli`) that abstracts project
+Ataraxis framework projects at Cornell University. It provides a CLI (`automation-cli`) that abstracts project
 environment manipulation and facilitates development tasks such as linting, typing, testing, documentation, and
 building.
 
 **Note:** The `/cpp-style` skill applies to both C++ embedded projects (e.g., `ataraxis-transport-layer-mc`,
 `ataraxis-micro-controller`, `sl-micro-controllers`) and C++ Python extension projects (e.g., `ataraxis-time`). The
 `/csharp-style` skill applies to C# Unity projects (e.g., `sl-unity-tasks`). Both enforce conventions consistent with
-the Python style guide used across all Sun Lab projects.
+the Python style guide used across all Ataraxis framework projects.
 
 ### Key areas
 
