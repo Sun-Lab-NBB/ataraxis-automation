@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import stat
+from types import TracebackType
 import shutil
 from pathlib import Path
 import subprocess
@@ -1273,6 +1274,26 @@ def test_robust_rmtree_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: 
         aa.robust_rmtree(target_dir)
 
 
+def _capture_exc_info(exception: BaseException) -> tuple[type[BaseException], BaseException, TracebackType]:
+    """Raises and catches the given exception to build a populated exception info tuple.
+
+    The resulting tuple mirrors the value passed by shutil.rmtree() to its onerror callback, including a real
+    traceback object, so it can be forwarded to _rmtree_onerror() in tests.
+
+    Args:
+        exception: The exception instance to raise and capture.
+
+    Returns:
+        The exception info tuple containing the exception type, the exception instance, and a populated traceback.
+    """
+    try:
+        raise exception
+    except BaseException as caught:
+        traceback = caught.__traceback__
+        assert traceback is not None
+        return type(caught), caught, traceback
+
+
 def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
     """Verifies that _rmtree_onerror() clears the read-only attribute and retries the deletion."""
     target_file = tmp_path / "readonly.txt"
@@ -1282,12 +1303,9 @@ def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
     target_file.chmod(stat.S_IREAD)
 
     # Simulates the onerror callback with os.remove as the function
+    exc_info = _capture_exc_info(PermissionError("Permission denied"))
     try:
-        aa._rmtree_onerror(
-            func=os.remove,
-            path=str(target_file),
-            exc_info=(PermissionError, PermissionError("Permission denied"), None),
-        )
+        aa._rmtree_onerror(func=os.remove, path=str(target_file), exc_info=exc_info)
     except Exception:
         # Restores write permission for cleanup if the test fails
         target_file.chmod(stat.S_IWRITE)
@@ -1298,10 +1316,6 @@ def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
 
 def test_rmtree_onerror_reraises_non_permission_error() -> None:
     """Verifies that _rmtree_onerror() re-raises exceptions that are not PermissionError."""
-    error = OSError("Disk error")
+    exc_info = _capture_exc_info(OSError("Disk error"))
     with pytest.raises(OSError, match="Disk error"):
-        aa._rmtree_onerror(
-            func=os.remove,
-            path="/nonexistent",
-            exc_info=(OSError, error, None),
-        )
+        aa._rmtree_onerror(func=os.remove, path="/nonexistent", exc_info=exc_info)
