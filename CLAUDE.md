@@ -25,32 +25,20 @@ You MUST invoke the appropriate skill before performing ANY of the following tas
 This is non-negotiable. Each skill contains verification checklists that you MUST complete before submitting any work.
 Failure to invoke the appropriate skill results in style violations.
 
-## Cross-referenced library verification
+## Dependency position
 
-Ataraxis framework projects often depend on other `ataraxis-*` or `sl-*` libraries. These libraries may be stored
-locally in the same parent directory as this project (`/home/cyberaxolotl/Desktop/GitHubRepos/`).
+Unlike most Ataraxis framework and Sollertia platform projects, **ataraxis-automation has no `ataraxis-*` or
+`sollertia-*` library dependencies**. Its runtime dependencies are exclusively third-party development tools (Click,
+pytest, Sphinx, mypy, ruff, build, twine, and similar), so there is no cross-referenced ataraxis or sollertia library
+to locate or version-check before writing code here.
 
-**Before writing code that interacts with a cross-referenced library, you MUST:**
+The dependency relationship is inverted: every other Ataraxis framework and Sollertia platform project depends on
+ataraxis-automation as a **development-time** automation dependency. Each project's `tox` tasks install it (often as
+the sole dependency) to drive linting, typing, testing, documentation, and build pipelines. It is never a runtime
+dependency of those projects.
 
-1. **Check for local version**: Look for the library in the parent directory (e.g., `../ataraxis-base-utilities/`,
-   `../ataraxis-time/`).
-
-2. **Compare versions**: If a local copy exists, compare its version against the latest release or main branch on
-   GitHub:
-   - Read the local `pyproject.toml` to get the current version
-   - Use `gh api repos/Sun-Lab-NBB/{repo-name}/releases/latest` to check the latest release
-   - Alternatively, check the main branch version on GitHub
-
-3. **Handle version mismatches**: If the local version differs from the latest release or main branch, notify the user
-   with the following options:
-   - **Use online version**: Fetch documentation and API details from the GitHub repository
-   - **Update local copy**: The user will pull the latest changes locally before proceeding
-
-4. **Proceed with correct source**: Use whichever version the user selects as the authoritative reference for API
-   usage, patterns, and documentation.
-
-**Why this matters**: Skills and documentation may reference outdated APIs. Always verify against the actual library
-state to prevent integration errors.
+Dependency direction across the two platforms is one-way: Sollertia platform libraries may depend on Ataraxis
+framework libraries, but Ataraxis framework libraries never depend on Sollertia platform libraries.
 
 ## Available skills
 
