@@ -47,7 +47,6 @@ classifiers = [
 dependencies = [
     # Automation Logic
     "click>=8,<9",
-    "tomli>=2,<3",
 
     # Testing
     "pytest>=9,<10",
@@ -61,7 +60,7 @@ dependencies = [
     # Documentation
     "sphinx>=9,<10",
     "importlib_metadata>=9,<10",
-    "furo>=2024,<2027",
+    "furo>=2025,<2026",
     "sphinx-click>=6,<7",
     "sphinx-autodoc-typehints>=3,<4",
 

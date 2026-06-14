@@ -10,13 +10,13 @@ import time
 import shutil
 from typing import Any
 from pathlib import Path
+import tomllib
 import textwrap
 import subprocess
 from dataclasses import dataclass
 from configparser import ConfigParser
 
 import click
-import tomli
 
 # Stores supported platform (OS) names together with their suffixes. This library is designed to work only with these
 # listed operating systems.
@@ -731,7 +731,7 @@ def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
 
     # Opens pyproject.toml and parses its contents
     with pyproject_path.open(mode="rb") as toml_file:
-        pyproject_data = tomli.load(toml_file)
+        pyproject_data = tomllib.load(toml_file)
 
     # Extracts runtime dependencies from the main 'project' metadata section.
     project_data: dict[str, Any] = pyproject_data.get("project", {})
@@ -795,8 +795,8 @@ def _resolve_project_name(project_root: Path) -> str:
     # Reads and parses the pyproject.toml file
     try:
         with pyproject_path.open(mode="rb") as toml_file:
-            pyproject_data: dict[str, Any] = tomli.load(toml_file)
-    except tomli.TOMLDecodeError as e:
+            pyproject_data: dict[str, Any] = tomllib.load(toml_file)
+    except tomllib.TOMLDecodeError as e:
         message: str = (
             f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax. "
             f"Error details: {e}."
