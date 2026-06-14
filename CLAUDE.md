@@ -59,19 +59,24 @@ state to prevent integration errors.
 
 ## Available skills
 
-| Skill               | Description                                                                   |
-|---------------------|-------------------------------------------------------------------------------|
-| `/explore-codebase` | Perform in-depth codebase exploration at session start                        |
-| `/python-style`     | Apply Ataraxis framework Python coding conventions (REQUIRED for Python code) |
-| `/cpp-style`        | Apply Ataraxis framework C++ coding conventions (REQUIRED for C++ code)       |
-| `/csharp-style`     | Apply Ataraxis framework C# coding conventions (REQUIRED for C# code)         |
-| `/readme-style`     | Apply Ataraxis framework README conventions (REQUIRED for README files)       |
-| `/pyproject-style`  | Apply Ataraxis framework pyproject.toml conventions (REQUIRED for pyproject)  |
-| `/commit`           | Generate style-compliant commit messages for local changes                    |
-| `/api-docs`         | Apply Ataraxis framework API documentation conventions (REQUIRED for docs)    |
-| `/project-layout`   | Apply Ataraxis framework project directory structure conventions              |
-| `/tox-config`       | Apply Ataraxis framework tox.ini conventions (REQUIRED for tox configuration) |
-| `/skill-design`     | Generate, update, and verify skill files and CLAUDE.md                        |
+| Skill                   | Description                                                                   |
+|-------------------------|-------------------------------------------------------------------------------|
+| `/explore-codebase`     | Perform in-depth codebase exploration at session start                        |
+| `/explore-dependencies` | Build a live API snapshot of installed ataraxis dependencies                  |
+| `/python-style`         | Apply Ataraxis framework Python coding conventions (REQUIRED for Python code) |
+| `/cpp-style`            | Apply Ataraxis framework C++ coding conventions (REQUIRED for C++ code)       |
+| `/csharp-style`         | Apply Ataraxis framework C# coding conventions (REQUIRED for C# code)         |
+| `/readme-style`         | Apply Ataraxis framework README conventions (REQUIRED for README files)       |
+| `/pyproject-style`      | Apply Ataraxis framework pyproject.toml conventions (REQUIRED for pyproject)  |
+| `/commit`               | Generate style-compliant commit messages for local changes                    |
+| `/pr`                   | Draft a style-compliant pull request summary                                  |
+| `/release`              | Draft style-compliant release notes for a new release                         |
+| `/api-docs`             | Apply Ataraxis framework API documentation conventions (REQUIRED for docs)    |
+| `/project-layout`       | Apply Ataraxis framework project directory structure conventions              |
+| `/tox-config`           | Apply Ataraxis framework tox.ini conventions (REQUIRED for tox configuration) |
+| `/skill-design`         | Generate, update, and verify skill files and CLAUDE.md                        |
+| `/audit-facts`          | Fact-check documentation against source code (findings only)                  |
+| `/audit-style`          | Audit files for style and convention compliance (findings only)               |
 
 ## Project context
 
@@ -81,9 +86,9 @@ environment manipulation and facilitates development tasks such as linting, typi
 building.
 
 **Note:** The `/cpp-style` skill applies to both C++ embedded projects (e.g., `ataraxis-transport-layer-mc`,
-`ataraxis-micro-controller`, `sl-micro-controllers`) and C++ Python extension projects (e.g., `ataraxis-time`). The
-`/csharp-style` skill applies to C# Unity projects (e.g., `sl-unity-tasks`). Both enforce conventions consistent with
-the Python style guide used across all Ataraxis framework projects.
+`ataraxis-micro-controller`, `sollertia-micro-controllers`) and C++ Python extension projects (e.g.,
+`ataraxis-time`). The `/csharp-style` skill applies to C# Unity projects (e.g., `sollertia-unity-tasks`).
+Both enforce conventions consistent with the Python style guide used across all Ataraxis framework projects.
 
 ### Key areas
 
@@ -115,15 +120,15 @@ the Python style guide used across all Ataraxis framework projects.
 
 ### Core components
 
-| Component            | File             | Purpose                                            |
-|----------------------|------------------|----------------------------------------------------|
-| CLI commands         | `cli.py`         | Click-based command-line interface                 |
-| ProjectEnvironment   | `automation.py`  | Dataclass encapsulating environment commands       |
-| resolve_project_dir  | `automation.py`  | Validates project directory structure              |
-| resolve_library_root | `automation.py`  | Finds library __init__.py for stub placement       |
-| move_stubs           | `automation.py`  | Distributes .pyi files to src directories          |
-| verify_pypirc        | `automation.py`  | Validates PyPI token configuration                 |
-| format_message       | `automation.py`  | Wraps text at 120 characters for CLI output        |
+| Component                 | File            | Purpose                                      |
+|---------------------------|-----------------|----------------------------------------------|
+| CLI commands              | `cli.py`        | Click-based command-line interface           |
+| ProjectEnvironment        | `automation.py` | Dataclass encapsulating environment commands |
+| resolve_project_directory | `automation.py` | Validates project directory structure        |
+| resolve_library_root      | `automation.py` | Finds library __init__.py for stub placement |
+| move_stubs                | `automation.py` | Distributes .pyi files to src directories    |
+| verify_pypirc             | `automation.py` | Validates PyPI token configuration           |
+| format_message            | `automation.py` | Wraps text at 120 characters for CLI output  |
 
 ### Code standards
 

@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "8.1.0"
+version = "8.1.1"
 description = "Supports tox-based development automation pipelines used by other Ataraxis framework projects."
 readme = "README.md"
 license = "Apache-2.0"
