@@ -4,11 +4,12 @@ import os
 import re
 import sys
 import stat
+from types import TracebackType
 import shutil
 from pathlib import Path
 import subprocess
 from configparser import ConfigParser
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock
 
 import pytest
 
@@ -182,7 +183,7 @@ def test_resolve_environment_files_error(project_dir: Path, monkeypatch: pytest.
 def test_check_package_engines(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies the functionality of the _check_package_engines() function when both mamba and uv are available."""
 
-    def mock_subprocess_run(cmd, *args, **kwargs):
+    def mock_subprocess_run(cmd, *_args, **_kwargs):
         """Returns success code for mamba and uv commands."""
         if "mamba --version" in cmd or "uv --version" in cmd:
             return Mock(returncode=0)
@@ -196,7 +197,7 @@ def test_check_package_engines(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_check_package_engines_missing_mamba(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies error handling behavior of the _check_package_engines() function when mamba is not available."""
 
-    def mock_subprocess_run(cmd, *args, **kwargs):
+    def mock_subprocess_run(cmd, *_args, **_kwargs):
         """Fails for mamba but succeeds for uv."""
         if "uv --version" in cmd:
             return Mock(returncode=0)
@@ -215,7 +216,7 @@ def test_check_package_engines_missing_mamba(monkeypatch: pytest.MonkeyPatch) ->
 def test_check_package_engines_missing_uv(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies error handling behavior of the _check_package_engines() function when uv is not available."""
 
-    def mock_subprocess_run(cmd, *args, **kwargs):
+    def mock_subprocess_run(cmd, *_args, **_kwargs):
         """Succeeds for mamba but fails for uv."""
         if "mamba --version" in cmd:
             return Mock(returncode=0)
@@ -540,7 +541,9 @@ def test_project_environment_resolve(
     assert "--prerelease=allow" not in result.install_dependencies_command
     assert "--prerelease=allow" not in result.install_project_command
 
-    # Checks other commands
+    # Checks other commands. The update command is only populated when an environment .yml file exists, so its type
+    # is 'str | None'; the .yml file created above guarantees it is set here.
+    assert result.update_command is not None
     assert f"mamba env update -n test_env{os_suffix}" in result.update_command
     assert f"mamba env export --name test_env{os_suffix}" in result.export_yaml_command
     assert f"mamba list -n test_env{os_suffix} --use-uv --explicit" in result.export_spec_command
@@ -798,14 +801,14 @@ def test_project_environment_exists(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
     # Test when the environment exists
-    def mock_run_success(*args, **kwargs):
+    def mock_run_success(*args, **_kwargs):
         return subprocess.CompletedProcess(args, 0)
 
     monkeypatch.setattr(subprocess, "run", mock_run_success)
     assert env.environment_exists() is True
 
     # Test when the environment doesn't exist
-    def mock_run_failure(*args, **kwargs):
+    def mock_run_failure(*_args, **_kwargs):
         raise subprocess.CalledProcessError(1, "cmd")
 
     monkeypatch.setattr(subprocess, "run", mock_run_failure)
@@ -1125,6 +1128,7 @@ def test_unlink_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytes
     call_count = 0
     original_unlink = Path.unlink
 
+    # noinspection PyTypeChecker
     def mock_unlink(self: Path, missing_ok: bool = False) -> None:
         nonlocal call_count
         call_count += 1
@@ -1146,6 +1150,7 @@ def test_unlink_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypat
     target_file = tmp_path / "test.txt"
     target_file.touch()
 
+    # noinspection PyUnusedLocal
     def mock_unlink(self: Path, missing_ok: bool = False) -> None:
         raise PermissionError("File is locked")
 
@@ -1179,6 +1184,7 @@ def test_rename_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytes
     call_count = 0
     original_rename = Path.rename
 
+    # noinspection PyTypeChecker
     def mock_rename(self: Path, target: Path) -> Path:
         nonlocal call_count
         call_count += 1
@@ -1202,6 +1208,7 @@ def test_rename_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypat
     source.touch()
     destination = tmp_path / "destination.txt"
 
+    # noinspection PyUnusedLocal
     def mock_rename(self: Path, target: Path) -> Path:
         raise PermissionError("File is locked")
 
@@ -1234,6 +1241,7 @@ def test_robust_rmtree_retries_on_windows(tmp_path: Path, monkeypatch: pytest.Mo
     call_count = 0
     original_rmtree = shutil.rmtree
 
+    # noinspection PyUnusedLocal
     def mock_rmtree(path: Path, onerror: object = None) -> None:
         nonlocal call_count
         call_count += 1
@@ -1256,6 +1264,7 @@ def test_robust_rmtree_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: 
     target_dir.mkdir()
     (target_dir / "file.txt").touch()
 
+    # noinspection PyUnusedLocal
     def mock_rmtree(path: Path, onerror: object = None) -> None:
         raise PermissionError("Directory is locked")
 
@@ -1263,6 +1272,26 @@ def test_robust_rmtree_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: 
 
     with pytest.raises(PermissionError, match="Directory is locked"):
         aa.robust_rmtree(target_dir)
+
+
+def _capture_exc_info(exception: BaseException) -> tuple[type[BaseException], BaseException, TracebackType]:
+    """Raises and catches the given exception to build a populated exception info tuple.
+
+    The resulting tuple mirrors the value passed by shutil.rmtree() to its onerror callback, including a real
+    traceback object, so it can be forwarded to _rmtree_onerror() in tests.
+
+    Args:
+        exception: The exception instance to raise and capture.
+
+    Returns:
+        The exception info tuple containing the exception type, the exception instance, and a populated traceback.
+    """
+    try:
+        raise exception
+    except BaseException as caught:
+        traceback = caught.__traceback__
+        assert traceback is not None
+        return type(caught), caught, traceback
 
 
 def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
@@ -1274,12 +1303,9 @@ def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
     target_file.chmod(stat.S_IREAD)
 
     # Simulates the onerror callback with os.remove as the function
+    exc_info = _capture_exc_info(PermissionError("Permission denied"))
     try:
-        aa._rmtree_onerror(
-            func=os.remove,
-            path=str(target_file),
-            exc_info=(PermissionError, PermissionError("Permission denied"), None),
-        )
+        aa._rmtree_onerror(func=os.remove, path=str(target_file), exc_info=exc_info)
     except Exception:
         # Restores write permission for cleanup if the test fails
         target_file.chmod(stat.S_IWRITE)
@@ -1290,10 +1316,6 @@ def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
 
 def test_rmtree_onerror_reraises_non_permission_error() -> None:
     """Verifies that _rmtree_onerror() re-raises exceptions that are not PermissionError."""
-    error = OSError("Disk error")
+    exc_info = _capture_exc_info(OSError("Disk error"))
     with pytest.raises(OSError, match="Disk error"):
-        aa._rmtree_onerror(
-            func=os.remove,
-            path="/nonexistent",
-            exc_info=(OSError, error, None),
-        )
+        aa._rmtree_onerror(func=os.remove, path="/nonexistent", exc_info=exc_info)

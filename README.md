@@ -16,9 +16,9 @@ ___
 ## Detailed Description
 
 Upon installation into a Python environment, this library exposes a command-line interface (automation-cli) used by the
-[tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation suite that comes with every Sun
-Lab project. The CLI abstracts the project's environment manipulation and facilitates mundane development tasks, such as
-linting, typing, and documenting the source code API. This library is part of the
+[tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation suite that comes with every
+Ataraxis framework project. The CLI abstracts the project's environment manipulation and facilitates mundane
+development tasks, such as linting, typing, and documenting the source code API. This library is part of the
 [Ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) framework for AI-assisted scientific hardware control.
 
 ___
@@ -38,6 +38,9 @@ ___
 - [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Automation Command-Line Interface](#automation-command-line-interface)
+  - [Supported Checkout Tox Tasks](#supported-checkout-tox-tasks)
+  - [Supported Mamba Environment Manipulation Tox Tasks](#supported-mamba-environment-manipulation-tox-tasks)
 - [API Documentation](#api-documentation)
 - [Developers](#developers)
 - [Versioning](#versioning)
@@ -103,7 +106,7 @@ any of the exposed CLI's commands as part of a tox environment, add it to the 'c
 ```
 [testenv:create]
 deps =
-    ataraxis-automation==8.0.0
+    ataraxis-automation==8.1.1
 commands =
     automation-cli create-environment --environment-name axa_dev --python-version 3.14
 ```
@@ -217,7 +220,7 @@ skip_install = true
 description =
     Combines test-coverage data from multiple test runs (for different python versions) into a single html file. The
     file can be viewed by loading the 'reports/coverage_html/index.html'.
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 setenv = COVERAGE_FILE = reports/.coverage
 depends = {py312, py313, py314}-test
 commands =
@@ -241,7 +244,7 @@ description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 commands =
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
 ```
@@ -258,7 +261,7 @@ description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 commands =
     doxygen Doxyfile
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
@@ -279,7 +282,7 @@ Example tox.ini section for a pure-python project:
 [testenv:build]
 skip_install = true
 description = Builds the project's source code distribution (sdist) and binary distribution (wheel).
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 allowlist_externals = docker
 commands =
     python -m build . --sdist
@@ -293,7 +296,7 @@ skip-install = true
 description =
     Builds the project's source code distribution (sdist) and compiles and assembles binary wheels for all
     supported platform architectures.
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 allowlist_externals = docker
 commands =
     python -m build . --sdist
@@ -313,7 +316,7 @@ Example tox.ini section:
 [testenv:upload]
 skip_install = true
 description = Uses twine to upload all files inside the project's 'dist' directory to PyPI.
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 allowlist_externals = distutils
 commands =
     automation-cli acquire-pypi-token {posargs:}
@@ -335,7 +338,7 @@ Example tox.ini section:
 ```
 [testenv:install]
 skip_install = true
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 depends =
     lint
     stubs
@@ -357,7 +360,7 @@ Example tox.ini section:
 ```
 [testenv:uninstall]
 skip_install = true
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 description = Uninstalls the project from its development mamba environment.
 commands =
     automation-cli uninstall-project --environment-name axa_dev
@@ -376,7 +379,7 @@ Example tox.ini section:
 ```
 [testenv:create]
 skip_install = true
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 description =
     Creates the project's development mamba environment using the requested python version and installs runtime and
     development project dependencies extracted from the pyproject.toml file.
@@ -395,7 +398,7 @@ Example tox.ini section:
 ```
 [testenv:remove]
 skip_install = true
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 description = Removes the project's development mamba environment.
 commands =
     automation-cli remove-environment --environment-name axa_dev
@@ -413,7 +416,7 @@ Example tox.ini section:
 ```
 [testenv:provision]
 skip_install = true
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 description = Provisions the project's development mamba environment by removing and (re)creating the environment.
 commands =
     automation-cli provision-environment --environment-name axa_dev --python-version 3.14
@@ -431,7 +434,7 @@ Example tox.ini section:
 ```
 [testenv:export]
 skip_install = true
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 description =
     Exports the project's development mamba environment to the 'envs' project directory as a .yml file and as a
     spec.txt with revision history.
@@ -450,22 +453,13 @@ Example tox.ini section:
 ```
 [testenv:import]
 skip_install = true
-deps = ataraxis-automation==8.0.0
+deps = ataraxis-automation==8.1.1
 description =
     Creates or updates the project's development mamba environment using the .yml file stored in the 'envs' project
     directory.
 commands =
     automation-cli import-environment --environment-name axa_dev
 ```
-
-___
-
-## Claude Code Skills
-
-The Ataraxis project also exports agentic skills that enforce Ataraxis framework development conventions across all
-downstream via the main [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. See the
-[Claude Code Skills](https://github.com/Sun-Lab-NBB/ataraxis#claude-code-skills) section of the ataraxis README for
-available skills and installation instructions.
 
 ___
 
@@ -541,7 +535,8 @@ To expedite the task's runtime, use the `tox --parallel` command to run some tas
 Claude Code skills and other AI development assets for this project are distributed through the
 [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) marketplace as part of the **automation** plugin. Install the
 plugin from the marketplace to make all associated skills and development tools available to compatible AI coding
-agents.
+agents. See the [Claude Code Skills](https://github.com/Sun-Lab-NBB/ataraxis#claude-code-skills) section of the
+ataraxis README for the full list of available skills and installation instructions.
 
 ### Automation Troubleshooting
 

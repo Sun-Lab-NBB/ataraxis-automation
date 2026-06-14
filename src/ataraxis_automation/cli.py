@@ -21,9 +21,10 @@ from .automation import (  # pragma: no cover
     resolve_project_directory,
 )
 
-# Defines minimum and maximum token lengths used when verifying PYPI tokens.
 _MINIMUM_PYPI_TOKEN_LENGTH: int = 100  # pragma: no cover
+"""Stores the minimum length, in characters, that a valid PyPI API token may have."""  # pragma: no cover
 _MAXIMUM_PYPI_TOKEN_LENGTH: int = 500  # pragma: no cover
+"""Stores the maximum length, in characters, that a valid PyPI API token may have."""  # pragma: no cover
 
 # Ensures that displayed CLICK help messages are formatted according to the lab standard.
 CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}  # pragma: no cover
@@ -53,7 +54,7 @@ def process_typed_markers() -> None:  # pragma: no cover
     # Ensures that the py.typed marker file is only found inside the library root directory.
     generate_typed_marker(library_root=library_root)
     message: str = "Typed (py.typed) marker(s) successfully processed."
-    click.echo(colorize_message(message, color="green"))
+    click.echo(colorize_message(message=message, color="green"))
 
 
 @cli.command()
@@ -76,13 +77,14 @@ def process_stubs() -> None:  # pragma: no cover
             f"Unable to move generated stub (.pyi) files from {stubs_path} to {library_root}. Stubs directory does "
             f"not exist under the project root directory."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message=message))
 
-    # Moves the stubs to the appropriate source code directories
+    # Moves the stubs to the appropriate source code directories.
     move_stubs(stubs_directory=stubs_path, library_root=library_root)
-    robust_rmtree(stubs_path)  # Removes the /stubs directory once all stubs are moved
+    # Removes the /stubs directory once all stubs are moved.
+    robust_rmtree(path=stubs_path)
     message = "Stubs successfully distributed to appropriate source code directories."
-    click.echo(colorize_message(message, color="green"))
+    click.echo(colorize_message(message=message, color="green"))
 
 
 @cli.command()
@@ -98,7 +100,7 @@ def purge_stubs() -> None:  # pragma: no cover
     # Removes all stub files from the library source code folder.
     delete_stubs(library_root=library_root)
     message: str = "Existing stub (.pyi) files purged from all source code directories."
-    click.echo(colorize_message(message, color="green"))
+    click.echo(colorize_message(message=message, color="green"))
 
 
 @cli.command()
@@ -120,9 +122,9 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
     pypirc_path: Path = project_root.joinpath(".pypirc")
 
     # If the file exists, recreating the file is not requested, and the file appears well-formed, ends the runtime.
-    if verify_pypirc(pypirc_path) and not replace_token:
+    if verify_pypirc(file_path=pypirc_path) and not replace_token:
         message: str = "Existing PyPI token found inside the '.pypirc' file."
-        click.echo(colorize_message(message, color="green"))
+        click.echo(colorize_message(message=message, color="green"))
         return
 
     # Otherwise, proceeds to generating a new file and token entry.
@@ -130,7 +132,7 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
         "Unable to use the existing PyPI token: the project's '.pypirc' file does not exist, is invalid, or "
         "does not contain a valid PyPI API token. Proceeding to new token acquisition."
     )
-    click.echo(colorize_message(message, color="white"))
+    click.echo(colorize_message(message=message, color="white"))
 
     # Enters the while loop to iteratively ask for the token until a valid token entry is provided.
     while True:
@@ -141,7 +143,6 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
         # Asks the user for the token.
         token: str = click.prompt(text=prompt, hide_input=True, type=str)
 
-        # Strips whitespaces from the input string
         token = token.strip()
 
         # Validates the token using multiple heuristics for what a well-formed PyPI token should look like.
@@ -158,8 +159,9 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
             and "\t" not in token
         )
 
-        # Additional base64 validation
+        # Additional base64 validation.
         if valid:
+            # noinspection PyBroadException
             try:
                 token_body = token[5:]
                 padding_needed = (4 - len(token_body) % 4) % 4
@@ -167,25 +169,25 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
             except Exception:
                 valid = False
 
-        # Handles invalid token inputs
+        # Handles invalid token inputs.
         if not valid:
             message = "The input token does not appear to be a valid PyPI token."
-            click.echo(colorize_message(message, color="red"))
+            click.echo(colorize_message(message=message, color="red"))
             if not click.confirm("Do you want to try entering another token?"):
                 message = "PyPI token acquisition: aborted by user."
-                raise RuntimeError(format_message(message))
+                raise RuntimeError(format_message(message=message))
             continue
 
         # Generates the new .pypirc file and saves the valid token data to the file.
         config = ConfigParser()
         config["pypi"] = {"username": "__token__", "password": token}
-        with pypirc_path.open("w") as config_file:
+        with pypirc_path.open(mode="w") as config_file:
             # noinspection PyTypeChecker
             config.write(config_file)
 
-        # Notifies the user and breaks out of the while loop
+        # Notifies the user and breaks out of the while loop.
         message = "Valid PyPI token acquired and added to the project's '.pypirc' file for future use."
-        click.echo(colorize_message(message, color="green"))
+        click.echo(colorize_message(message=message, color="green"))
         break
 
 
@@ -236,7 +238,7 @@ def install_project(
             f"Unable to activate the requested mamba environment '{environment.environment_name}', which likely means "
             f"that it does not exist. Use 'create-environment' ('tox -e create') command to create the environment."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message=message))
 
     # Installs the project into the mamba environment.
     try:
@@ -245,14 +247,14 @@ def install_project(
         message = (
             f"Project successfully installed into the requested mamba environment '{environment.environment_name}'."
         )
-        click.echo(colorize_message(message, color="green"))
+        click.echo(colorize_message(message=message, color="green"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to build and install the project into the requested mamba environment "
             f"'{environment.environment_name}'. See uv-generated error messages for specific details about the "
             f"errors that prevented the installation."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
 
 @cli.command()
@@ -291,7 +293,7 @@ def uninstall_project(environment_name: str, environment_directory: Path | None)
             f"Requested mamba environment '{environment.environment_name}' is not accessible (likely does not exist). "
             f"Uninstallation process aborted without further actions."
         )
-        click.echo(colorize_message(message, color="yellow"))
+        click.echo(colorize_message(message=message, color="yellow"))
         return
 
     try:
@@ -300,13 +302,13 @@ def uninstall_project(environment_name: str, environment_directory: Path | None)
         message = (
             f"Project successfully uninstalled from the requested mamba environment '{environment.environment_name}'."
         )
-        click.echo(colorize_message(message, color="green"))
+        click.echo(colorize_message(message=message, color="green"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to uninstall the project from the requested mamba environment '{environment.environment_name}'. "
             f"See uv-generated error messages for specific details about the errors that prevented the uninstallation."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
 
 @cli.command()
@@ -365,40 +367,40 @@ def create_environment(
             f"without further actions. To recreate the environment, run 'provision-environment' ('tox -e provision') "
             f"command instead."
         )
-        click.echo(colorize_message(message, color="yellow"))
+        click.echo(colorize_message(message=message, color="yellow"))
         return
 
-    # Creates the new environment
+    # Creates the new environment.
     try:
         subprocess.run(environment.create_command, shell=True, check=True)
-        message = f"Created '{environment.environment_name}' conda environment."
-        click.echo(colorize_message(message, color="white"))
+        message = f"Created '{environment.environment_name}' mamba environment."
+        click.echo(colorize_message(message=message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to create the project's mamba environment '{environment.environment_name}'. See the mamba-issued "
             f"error-messages above for more information."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
     # If the environment was successfully created, installs project dependencies.
     try:
         command = f"{environment.activate_command} && {environment.install_dependencies_command}"
         subprocess.run(command, shell=True, check=True)
         message = f"Installed project dependencies into created '{environment.environment_name}' mamba environment."
-        click.echo(colorize_message(message, color="white"))
+        click.echo(colorize_message(message=message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to install project dependencies into created '{environment.environment_name}' mamba environment. "
             f"See uv-generated error messages above for more information."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
     # Displays the final success message.
     message = (
         f"Created '{environment.environment_name}' mamba environment and installed all project dependencies into the "
         f"environment."
     )
-    click.echo(colorize_message(message, color="green"))
+    click.echo(colorize_message(message=message, color="green"))
 
 
 @cli.command()
@@ -438,15 +440,15 @@ def remove_environment(environment_name: str, environment_directory: Path | None
             f"Unable to find the requested mamba environment '{environment.environment_name}'. This indicates that the "
             f"environment does not exist. Removal process aborted without further actions."
         )
-        click.echo(colorize_message(message, color="yellow"))
+        click.echo(colorize_message(message=message, color="yellow"))
         return
 
     # Handles a rare case where the environment does not exist, but its directory exists. In this case, removes the
     # directory and ends the runtime.
     if not environment_exists and directory_exists:
-        robust_rmtree(environment.environment_directory)
+        robust_rmtree(path=environment.environment_directory)
         message = f"Removed mamba environment '{environment.environment_name}'."
-        click.echo(colorize_message(message, color="green"))
+        click.echo(colorize_message(message=message, color="green"))
         return
 
     # Otherwise, ensures the environment is not active and carries out the full removal procedure.
@@ -455,16 +457,16 @@ def remove_environment(environment_name: str, environment_directory: Path | None
         subprocess.run(command, shell=True, check=True)
         # Ensures the environment directory is deleted.
         if environment.environment_directory.exists():
-            robust_rmtree(environment.environment_directory)
+            robust_rmtree(path=environment.environment_directory)
         message = f"Removed mamba environment '{environment.environment_name}'."
-        click.echo(colorize_message(message, color="green"))
+        click.echo(colorize_message(message=message, color="green"))
 
     except subprocess.CalledProcessError:
         message = (
             f"Unable to remove the requested mamba environment '{environment.environment_name}'. See the mamba-issued "
             f"error-messages above for more information."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
 
 @cli.command()
@@ -520,17 +522,17 @@ def provision_environment(
     if not environment.environment_exists():
         # Ensures the environment directory also does not exist.
         if environment.environment_directory.exists():
-            robust_rmtree(environment.environment_directory)
+            robust_rmtree(path=environment.environment_directory)
     else:
-        # Otherwise, removes the existing environment
+        # Otherwise, removes the existing environment.
         try:
             command: str = f"{environment.deactivate_command} && {environment.remove_command}"
             subprocess.run(command, shell=True, check=True)
             # Ensures the environment directory is deleted.
             if environment.environment_directory.exists():
-                robust_rmtree(environment.environment_directory)
+                robust_rmtree(path=environment.environment_directory)
             message = f"Removed mamba environment '{environment.environment_name}'."
-            click.echo(colorize_message(message, color="green"))
+            click.echo(colorize_message(message=message, color="green"))
 
         except subprocess.CalledProcessError:
             message = (
@@ -538,19 +540,19 @@ def provision_environment(
                 f"failed at the environment removal step. See the mamba-issued error-messages above for more "
                 f"information."
             )
-            raise RuntimeError(format_message(message)) from None
+            raise RuntimeError(format_message(message=message)) from None
 
-    # Recreates the environment
+    # Recreates the environment.
     try:
         subprocess.run(environment.create_command, shell=True, check=True)
         message = f"Created fresh '{environment.environment_name}' mamba environment."
-        click.echo(colorize_message(message, color="white"))
+        click.echo(colorize_message(message=message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to provision the requested mamba environment '{environment.environment_name}'. See the "
             f"mamba-issued error-messages above for more information."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
     # Installs all project dependencies using uv into the newly created environment.
     try:
@@ -560,17 +562,17 @@ def provision_environment(
             f"Installed all project dependencies into the provisioned '{environment.environment_name}' mamba "
             f"environment."
         )
-        click.echo(colorize_message(message, color="white"))
+        click.echo(colorize_message(message=message, color="white"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to install project dependencies into the provisioned '{environment.environment_name}' mamba "
             f"environment. See uv-generated error messages above for more information."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
     # Displays the final success message.
     message = f"Successfully provisioned '{environment.environment_name}' mamba environment."
-    click.echo(colorize_message(message, color="green"))
+    click.echo(colorize_message(message=message, color="green"))
 
 
 @cli.command()
@@ -612,26 +614,26 @@ def import_environment(environment_name: str, environment_directory: Path | None
             message: str = (
                 f"'{environment.environment_name}' mamba environment imported (created) from existing .yml file."
             )
-            click.echo(colorize_message(message, color="green"))
+            click.echo(colorize_message(message=message, color="green"))
         except subprocess.CalledProcessError:
             message = (
-                f"Unable to import (create) the mamba environment'{environment.environment_name}' from existing .yml "
+                f"Unable to import (create) the mamba environment '{environment.environment_name}' from existing .yml "
                 f"file. See mamba-issued error-message above for more information."
             )
-            raise RuntimeError(format_message(message)) from None
+            raise RuntimeError(format_message(message=message)) from None
 
     # If the mamba environment already exists and the .yml file exists, updates the environment using the .yml file.
     elif environment.update_command is not None:
         try:
             subprocess.run(environment.update_command, shell=True, check=True)
             message = f"Existing '{environment.environment_name}' mamba environment updated from .yml file."
-            click.echo(colorize_message(message, color="green"))
+            click.echo(colorize_message(message=message, color="green"))
         except subprocess.CalledProcessError:
             message = (
                 f"Unable to update the existing mamba environment '{environment.environment_name}' from .yml file. "
                 f"See mamba-issued error-message above for more information."
             )
-            raise RuntimeError(format_message(message)) from None
+            raise RuntimeError(format_message(message=message)) from None
     # If the .yml file does not exist, aborts with error.
     else:
         message = (
@@ -639,7 +641,7 @@ def import_environment(environment_name: str, environment_directory: Path | None
             f".yml file inside the /envs directory for the given project and operating system combination. Use the "
             f"'create-environment' ('tox -e create') command to create the environment from the pyproject.toml file."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message=message))
 
 
 @cli.command()
@@ -681,28 +683,28 @@ def export_environment(environment_name: str, environment_directory: Path | None
             f"indicates that it does not exist. Create the environment with 'create-environment' ('tox -e create') "
             f"before attempting to export it."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message=message))
 
-    # Exports environment as a .yml file
+    # Exports environment as a .yml file.
     try:
         subprocess.run(environment.export_yaml_command, shell=True, check=True)
         message = f"'{environment.environment_name}' mamba environment exported to /envs as a .yml file."
-        click.echo(colorize_message(message, color="green"))
+        click.echo(colorize_message(message=message, color="green"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to export the '{environment.environment_name}' mamba environment to .yml file. See mamba-issued "
             f"error-message above for more information."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
-    # Exports environment as a spec.txt file
+    # Exports environment as a spec.txt file.
     try:
         subprocess.run(environment.export_spec_command, shell=True, check=True)
         message = f"'{environment.environment_name}' mamba environment exported to /envs as a spec.txt file."
-        click.echo(colorize_message(message, color="green"))
+        click.echo(colorize_message(message=message, color="green"))
     except subprocess.CalledProcessError:
         message = (
             f"Unable to export the '{environment.environment_name}' mamba environment to spec.txt file. See "
             f"mamba-issued error-message above for more information."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None

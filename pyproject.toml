@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "8.1.0"
+version = "8.1.1"
 description = "Supports tox-based development automation pipelines used by other Ataraxis framework projects."
 readme = "README.md"
 license = "Apache-2.0"
@@ -82,6 +82,7 @@ dependencies = [
     "twine>=6,<7",
 ]
 
+# Project repository and hosted documentation URLs.
 [project.urls]
 Homepage = "https://github.com/Sun-Lab-NBB/ataraxis-automation"
 Documentation = "https://ataraxis-automation-api-docs.netlify.app/"
@@ -163,6 +164,7 @@ convention = "google"
     "F403", # Wildcard imports
 ]
 
+# Import sorting (isort) configuration.
 [tool.ruff.lint.isort]
 case-sensitive = true              # Takes case into account when sorting imports
 combine-as-imports = true          # Combines multiple "as" imports for the same package
@@ -170,6 +172,7 @@ force-wrap-aliases = true          # Wraps "as" imports so that each uses a sepa
 force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close
 length-sort = true                 # Places shorter imports first
 
+# Unused-argument linting configuration.
 [tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true       # Ignores unused *args and **kwargs
 
