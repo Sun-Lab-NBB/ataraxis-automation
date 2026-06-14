@@ -71,7 +71,6 @@ def test_resolve_project_directory_error(tmp_path: Path) -> None:
         f"project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
         f"directory is set to {Path.cwd()}, which does not contain at least one of the required files."
     )
-    # noinspection PyTypeChecker
     with pytest.raises((SystemExit, RuntimeError), match=_error_format(message)):
         aa.resolve_project_directory()
 
@@ -727,7 +726,6 @@ def test_verify_pypirc(tmp_path: Path, config: dict[str, dict[str, str]], expect
     config_parser = ConfigParser()
     config_parser.read_dict(config)
     with pypirc_path.open("w") as pypirc_file:
-        # noinspection PyTypeChecker
         config_parser.write(pypirc_file)
 
     # Runs the verify_pypirc function
@@ -1128,7 +1126,6 @@ def test_unlink_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytes
     call_count = 0
     original_unlink = Path.unlink
 
-    # noinspection PyTypeChecker
     def mock_unlink(self: Path, missing_ok: bool = False) -> None:
         nonlocal call_count
         call_count += 1
@@ -1150,7 +1147,6 @@ def test_unlink_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypat
     target_file = tmp_path / "test.txt"
     target_file.touch()
 
-    # noinspection PyUnusedLocal
     def mock_unlink(self: Path, missing_ok: bool = False) -> None:
         raise PermissionError("File is locked")
 
@@ -1184,7 +1180,6 @@ def test_rename_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytes
     call_count = 0
     original_rename = Path.rename
 
-    # noinspection PyTypeChecker
     def mock_rename(self: Path, target: Path) -> Path:
         nonlocal call_count
         call_count += 1
@@ -1208,7 +1203,6 @@ def test_rename_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypat
     source.touch()
     destination = tmp_path / "destination.txt"
 
-    # noinspection PyUnusedLocal
     def mock_rename(self: Path, target: Path) -> Path:
         raise PermissionError("File is locked")
 
@@ -1241,7 +1235,6 @@ def test_robust_rmtree_retries_on_windows(tmp_path: Path, monkeypatch: pytest.Mo
     call_count = 0
     original_rmtree = shutil.rmtree
 
-    # noinspection PyUnusedLocal
     def mock_rmtree(path: Path, onerror: object = None) -> None:
         nonlocal call_count
         call_count += 1
@@ -1264,7 +1257,6 @@ def test_robust_rmtree_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: 
     target_dir.mkdir()
     (target_dir / "file.txt").touch()
 
-    # noinspection PyUnusedLocal
     def mock_rmtree(path: Path, onerror: object = None) -> None:
         raise PermissionError("Directory is locked")
 

@@ -161,7 +161,6 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
 
         # Additional base64 validation.
         if valid:
-            # noinspection PyBroadException
             try:
                 token_body = token[5:]
                 padding_needed = (4 - len(token_body) % 4) % 4
@@ -182,7 +181,6 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
         config = ConfigParser()
         config["pypi"] = {"username": "__token__", "password": token}
         with pypirc_path.open(mode="w") as config_file:
-            # noinspection PyTypeChecker
             config.write(config_file)
 
         # Notifies the user and breaks out of the while loop.
