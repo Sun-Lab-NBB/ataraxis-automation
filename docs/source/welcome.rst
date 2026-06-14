@@ -1,7 +1,7 @@
 Welcome to ataraxis-automation API documentation page
 =====================================================
 
-Supports tox-based development automation pipelines used by other Sun (NeuroAI) lab projects.
+Supports tox-based development automation pipelines used by other Ataraxis framework projects.
 
 This library is part of the `Ataraxis <https://github.com/Sun-Lab-NBB/ataraxis>`_ framework for AI-assisted scientific
 hardware control, developed in the `Sun (NeuroAI) lab <https://neuroai.github.io/sunlab/>`_ at Cornell University.

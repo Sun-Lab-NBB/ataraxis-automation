@@ -10,13 +10,13 @@ import time
 import shutil
 from typing import Any
 from pathlib import Path
+import tomllib
 import textwrap
 import subprocess
 from dataclasses import dataclass
 from configparser import ConfigParser
 
 import click
-import tomli
 
 # Stores supported platform (OS) names together with their suffixes. This library is designed to work only with these
 # listed operating systems.
@@ -234,7 +234,7 @@ class ProjectEnvironment:
 
 
 def format_message(message: str) -> str:
-    """Formats input message strings to follow the general Sun lab and project Ataraxis style.
+    """Formats input message strings to follow the general Ataraxis framework style.
 
     Args:
         message: The input message string to format.
@@ -269,19 +269,19 @@ def colorize_message(message: str, color: str, *, wrap: bool = True) -> str:
 
 
 def resolve_project_directory() -> Path:
-    """Resolves the current working directory and verifies that it points to a valid Sun lab project.
+    """Resolves the current working directory and verifies that it points to a valid Ataraxis framework project.
 
     Returns:
-        The absolute path to the current working directory, if it points to a valid Sun lab project.
+        The absolute path to the current working directory, if it points to a valid Ataraxis framework project.
 
     Raises:
-        RuntimeError: If the current working directory does not point to a valid Sun lab project.
+        RuntimeError: If the current working directory does not point to a valid Ataraxis framework project.
     """
     # Gets current working directory
     project_dir = Path.cwd()
 
-    # Checks if the current working directory points to a valid Sun lab project based on the presence of required
-    # files in the root directory.
+    # Checks if the current working directory points to a valid Ataraxis framework project based on the presence
+    # of required files in the root directory.
     required_items = {
         project_dir.joinpath("src"),
         project_dir.joinpath("envs"),
@@ -731,7 +731,7 @@ def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
 
     # Opens pyproject.toml and parses its contents
     with pyproject_path.open(mode="rb") as toml_file:
-        pyproject_data = tomli.load(toml_file)
+        pyproject_data = tomllib.load(toml_file)
 
     # Extracts runtime dependencies from the main 'project' metadata section.
     project_data: dict[str, Any] = pyproject_data.get("project", {})
@@ -795,8 +795,8 @@ def _resolve_project_name(project_root: Path) -> str:
     # Reads and parses the pyproject.toml file
     try:
         with pyproject_path.open(mode="rb") as toml_file:
-            pyproject_data: dict[str, Any] = tomli.load(toml_file)
-    except tomli.TOMLDecodeError as e:
+            pyproject_data: dict[str, Any] = tomllib.load(toml_file)
+    except tomllib.TOMLDecodeError as e:
         message: str = (
             f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax. "
             f"Error details: {e}."
