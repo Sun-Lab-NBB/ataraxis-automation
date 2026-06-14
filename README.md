@@ -16,9 +16,9 @@ ___
 ## Detailed Description
 
 Upon installation into a Python environment, this library exposes a command-line interface (automation-cli) used by the
-[tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation suite that comes with every Sun
-Lab project. The CLI abstracts the project's environment manipulation and facilitates mundane development tasks, such as
-linting, typing, and documenting the source code API. This library is part of the
+[tox](https://tox.wiki/en/latest/user_guide.html)-based project development automation suite that comes with every
+Ataraxis framework project. The CLI abstracts the project's environment manipulation and facilitates mundane
+development tasks, such as linting, typing, and documenting the source code API. This library is part of the
 [Ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) framework for AI-assisted scientific hardware control.
 
 ___
@@ -38,6 +38,9 @@ ___
 - [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Automation Command-Line Interface](#automation-command-line-interface)
+  - [Supported Checkout Tox Tasks](#supported-checkout-tox-tasks)
+  - [Supported Mamba Environment Manipulation Tox Tasks](#supported-mamba-environment-manipulation-tox-tasks)
 - [API Documentation](#api-documentation)
 - [Developers](#developers)
 - [Versioning](#versioning)
@@ -460,15 +463,6 @@ commands =
 
 ___
 
-## Claude Code Skills
-
-The Ataraxis project also exports agentic skills that enforce Ataraxis framework development conventions across all
-downstream via the main [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. See the
-[Claude Code Skills](https://github.com/Sun-Lab-NBB/ataraxis#claude-code-skills) section of the ataraxis README for
-available skills and installation instructions.
-
-___
-
 ## API Documentation
 
 See the [API documentation](https://ataraxis-automation-api-docs.netlify.app/) for the
@@ -541,7 +535,8 @@ To expedite the task's runtime, use the `tox --parallel` command to run some tas
 Claude Code skills and other AI development assets for this project are distributed through the
 [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) marketplace as part of the **automation** plugin. Install the
 plugin from the marketplace to make all associated skills and development tools available to compatible AI coding
-agents.
+agents. See the [Claude Code Skills](https://github.com/Sun-Lab-NBB/ataraxis#claude-code-skills) section of the
+ataraxis README for the full list of available skills and installation instructions.
 
 ### Automation Troubleshooting
 

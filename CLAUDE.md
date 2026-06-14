@@ -5,11 +5,6 @@
 At the beginning of each coding session, before making any code changes, you should build a comprehensive
 understanding of the codebase by invoking the `/explore-codebase` skill.
 
-This ensures you:
-- Understand the project architecture before modifying code
-- Follow existing patterns and conventions
-- Don't introduce inconsistencies or break integrations
-
 ## Style guide requirements
 
 You MUST invoke the appropriate skill before performing ANY of the following tasks:
