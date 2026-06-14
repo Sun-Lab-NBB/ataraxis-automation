@@ -44,7 +44,7 @@ class ProjectEnvironment:
     information used by these commands.
 
     Notes:
-        This class should not be instantiated directly. Instead, use the `resolve_environment_commands()` class method
+        This class should not be instantiated directly. Instead, use the `resolve_project_environment()` class method
         to get an instance of this class.
     """
 
@@ -65,7 +65,7 @@ class ProjectEnvironment:
     export_yaml_command: str
     """Stores the command used to export the project's mamba environment to a .yml file."""
     export_spec_command: str
-    """Stores the command used to export the project's mamba environment to a spec.txt file with revision history."""
+    """Stores the command used to export the project's mamba environment to an explicit spec.txt file."""
     install_project_command: str
     """Stores the command used to build and install the project as a library into the project's mamba environment."""
     uninstall_project_command: str
@@ -257,7 +257,7 @@ def colorize_message(message: str, color: str, *, wrap: bool = True) -> str:
     Args:
         message: The input message string to format and colorize.
         color: The ANSI color code to use for coloring the message.
-        wrap: Determines whether to format the message by wrapping it at 120 lines.
+        wrap: Determines whether to format the message by wrapping it at 120 characters.
 
     Returns:
         The colorized and wrapped (if requested) message string.
@@ -389,6 +389,9 @@ def move_stubs(stubs_directory: Path, library_root: Path) -> None:
     Args:
         stubs_directory: The absolute path to the project's "stubs" directory.
         library_root: The absolute path to the root library directory.
+
+    Raises:
+        RuntimeError: If the 'stubs' directory does not contain exactly one subdirectory with an __init__.pyi file.
     """
     # Compiles regex patterns once to optimize the cycles below
     copy_pattern = re.compile(r" (\d+)\.pyi$")
@@ -503,6 +506,9 @@ def verify_pypirc(file_path: Path) -> bool:
 
     Returns:
         True if the .pypirc file appears to contain a well-configured API token and False otherwise.
+
+    Raises:
+        configparser.Error: If the .pypirc file exists but contains malformed INI syntax.
     """
     config_validator: ConfigParser = ConfigParser()
     config_validator.read(file_path)
@@ -527,8 +533,9 @@ def robust_rmtree(path: Path) -> None:
         path: The absolute path to the directory tree to remove.
 
     Raises:
-        PermissionError: If the directory cannot be removed after exhausting all retry attempts on Windows, or
-            immediately on non-Windows platforms.
+        OSError: If the directory cannot be removed. On Windows, transient PermissionErrors are retried with
+            exponential backoff before the error is re-raised; on non-Windows platforms and for other error types,
+            the error propagates immediately.
     """
     # On non-Windows platforms, file locks are advisory, so no retry logic is needed.
     if sys.platform != "win32":
@@ -563,7 +570,7 @@ def _rmtree_onerror(func: Any, path: str, exc_info: Any) -> None:
         exc_info: The exception information tuple returned by ``sys.exc_info()``.
 
     Raises:
-        OSError: If the original exception is not a PermissionError.
+        OSError: Re-raises the original exception unchanged when it is not a PermissionError.
     """
     exception = exc_info[1]
     if isinstance(exception, PermissionError):
@@ -576,7 +583,7 @@ def _rmtree_onerror(func: Any, path: str, exc_info: Any) -> None:
 def _unlink_with_retry(path: Path, *, missing_ok: bool = False) -> None:
     """Removes a file with retry logic to handle transient Windows file locks.
 
-    On Windows, retries up to ``_FILE_RETRY_COUNT`` times with exponential backoff when a ``PermissionError`` is
+    On Windows, makes up to ``_FILE_RETRY_COUNT`` attempts with exponential backoff when a ``PermissionError`` is
     encountered. On non-Windows platforms, calls ``Path.unlink()`` directly with no retry overhead.
 
     Args:
@@ -608,7 +615,7 @@ def _unlink_with_retry(path: Path, *, missing_ok: bool = False) -> None:
 def _rename_with_retry(source: Path, destination: Path) -> None:
     """Renames a file with retry logic to handle transient Windows file locks.
 
-    On Windows, retries up to ``_FILE_RETRY_COUNT`` times with exponential backoff when a ``PermissionError`` is
+    On Windows, makes up to ``_FILE_RETRY_COUNT`` attempts with exponential backoff when a ``PermissionError`` is
     encountered. On non-Windows platforms, calls ``Path.rename()`` directly with no retry overhead.
 
     Args:
