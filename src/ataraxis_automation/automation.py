@@ -7,6 +7,7 @@ import re
 import sys
 import stat
 import time
+from types import TracebackType
 import shutil
 from typing import Any
 from pathlib import Path
@@ -15,28 +16,31 @@ import textwrap
 import subprocess
 from dataclasses import dataclass
 from configparser import ConfigParser
+from collections.abc import Callable
 
 import click
 
-# Stores supported platform (OS) names together with their suffixes. This library is designed to work only with these
-# listed operating systems.
 _SUPPORTED_PLATFORMS: dict[str, str] = {
     "win32": "_win",
     "linux": "_lin",
     "darwin": "_osx",
 }
+"""Stores supported platform (OS) names together with their suffixes. This library is designed to work only with the
+listed operating systems."""
 
-# Stores the module-level compiled regex pattern for extracting package base names.
 _BASE_NAME_PATTERN: re.Pattern[str] = re.compile(r"^([a-zA-Z0-9_.-]+)")
+"""Stores the module-level compiled regex pattern for extracting package base names."""
 
-# Stores the maximum number of retry attempts for file operations that may fail due to transient Windows file locks.
 _FILE_RETRY_COUNT: int = 5
+"""Stores the maximum number of retry attempts for file operations that may fail due to transient Windows file
+locks."""
 
-# Stores the initial delay in seconds between file operation retry attempts. Each subsequent retry doubles the delay.
 _FILE_RETRY_INITIAL_DELAY: float = 0.5
+"""Stores the initial delay in seconds between file operation retry attempts. Each subsequent retry doubles the
+delay."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProjectEnvironment:
     """Encapsulates the data used to interface with the project's mamba environment.
 
@@ -44,7 +48,7 @@ class ProjectEnvironment:
     information used by these commands.
 
     Notes:
-        This class should not be instantiated directly. Instead, use the `resolve_project_environment()` class method
+        This class should not be instantiated directly. Instead, use the ``resolve_project_environment()`` class method
         to get an instance of this class.
     """
 
@@ -107,7 +111,9 @@ class ProjectEnvironment:
                 found.
         """
         # Gets the environment name with the appropriate os-extension and the paths to the .yml and /spec files.
-        extended_environment_name, yaml_path, spec_path = _resolve_environment_files(project_root, environment_name)
+        extended_environment_name, yaml_path, spec_path = _resolve_environment_files(
+            project_root=project_root, environment_base_name=environment_name
+        )
 
         # Gets the name of the project from the pyproject.toml file.
         project_name = _resolve_project_name(project_root=project_root)
@@ -132,7 +138,7 @@ class ProjectEnvironment:
 
         # WINDOWS
         if "_win" in extended_environment_name:
-            # .yml export
+            # .yml export.
             export_yaml_command = (
                 f'mamba env export --name {extended_environment_name} --use-uv | findstr -v "prefix" > {yaml_path}'
             )
@@ -143,17 +149,17 @@ class ProjectEnvironment:
 
         # LINUX
         elif "_lin" in extended_environment_name:
-            # .yml export
+            # .yml export.
             export_yaml_command = (
                 f"mamba env export --name {extended_environment_name} --use-uv | head -n -1 > {yaml_path}"
             )
 
-            # Conda environment activation command
+            # Conda environment activation command.
             conda_initialization_command = ". $(conda info --base)/etc/profile.d/conda.sh"
 
         # MACOS
         else:
-            # .yml export
+            # .yml export.
             export_yaml_command = (
                 f"mamba env export --name {extended_environment_name} --use-uv | tail -r | "
                 f"tail -n +2 | tail -r > {yaml_path}"
@@ -172,7 +178,7 @@ class ProjectEnvironment:
         # Generates dependency installation commands using uv:
         prerelease_flag = " --prerelease=allow" if prerelease else ""
         install_dependencies_command = (
-            f"uv pip install {' '.join(_resolve_dependencies(project_root))} --resolution highest "
+            f"uv pip install {' '.join(_resolve_dependencies(project_root=project_root))} --resolution highest "
             f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact{prerelease_flag}"
         )
         uninstall_project_command = f"uv pip uninstall {project_name} --python={target_environment_directory}"
@@ -186,11 +192,11 @@ class ProjectEnvironment:
         # are added via separate dependency commands generated above. Note, installs the latest versions of tox, uv,
         # and tox-uv with the expectation that dependency installation commands use --reinstall to override the
         # versions of these packages as necessary.
-        create_command: str = (
+        create_command = (
             f"mamba create -n {extended_environment_name} python={python_version} uv tox tox-uv --yes "
             f"--retry-clean-cache --pyc --use-uv"
         )
-        remove_command: str = f"mamba remove -n {extended_environment_name} --all --yes"
+        remove_command = f"mamba remove -n {extended_environment_name} --all --yes"
 
         # Resolves .yml based commands. These commands are set to valid string-commands only if the .yml file for the
         # project's environment exists and to None otherwise.
@@ -263,7 +269,7 @@ def colorize_message(message: str, color: str, *, wrap: bool = True) -> str:
         The colorized and wrapped (if requested) message string.
     """
     if wrap:
-        message = format_message(message)
+        message = format_message(message=message)
 
     return click.style(text=message, fg=color)
 
@@ -277,7 +283,6 @@ def resolve_project_directory() -> Path:
     Raises:
         RuntimeError: If the current working directory does not point to a valid Ataraxis framework project.
     """
-    # Gets current working directory
     project_dir = Path.cwd()
 
     # Checks if the current working directory points to a valid Ataraxis framework project based on the presence
@@ -295,7 +300,7 @@ def resolve_project_directory() -> Path:
             f"project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
             f"directory is set to {project_dir}, which does not contain at least one of the required files."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message=message))
 
     return project_dir
 
@@ -316,7 +321,6 @@ def resolve_library_root(project_root: Path) -> Path:
     Raises:
         RuntimeError: If the valid root directory candidate cannot be found based on the determination heuristics.
     """
-    # Resolves the target directory
     src_path: Path = project_root.joinpath("src")
 
     # If the __init__.py is found inside the /src directory, this indicates /src is the library root. This is typically
@@ -345,7 +349,7 @@ def resolve_library_root(project_root: Path) -> Path:
             f"sub-directories with __init__.py inside the /src directory. Make sure there is an __init__.py "
             f"inside /src or ONE of the sub-directories under /src."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message=message))
 
     return candidates.pop()
 
@@ -360,19 +364,19 @@ def generate_typed_marker(library_root: Path) -> None:
     Args:
         library_root: The path to the root level of the library directory.
     """
-    # Adds py.typed to the root directory if it doesn't exist
+    # Adds py.typed to the root directory if it doesn't exist.
     root_py_typed = library_root.joinpath("py.typed")
     if not root_py_typed.exists():
         root_py_typed.touch()
         message: str = f"Added py.typed marker to library root ({library_root})."
-        click.echo(colorize_message(message, color="white"), color=True)
+        click.echo(colorize_message(message=message, color="white"), color=True)
 
-    # Removes py.typed from all subdirectories
+    # Removes py.typed from all subdirectories.
     for path in library_root.rglob("py.typed"):
         if path != root_py_typed:
-            _unlink_with_retry(path)
+            _unlink_with_retry(path=path)
             message = f"Removed no longer needed py.typed marker file {path}."
-            click.echo(colorize_message(message, color="white"), color=True)
+            click.echo(colorize_message(message=message, color="white"), color=True)
 
 
 def move_stubs(stubs_directory: Path, library_root: Path) -> None:
@@ -393,7 +397,7 @@ def move_stubs(stubs_directory: Path, library_root: Path) -> None:
     Raises:
         RuntimeError: If the 'stubs' directory does not contain exactly one subdirectory with an __init__.pyi file.
     """
-    # Compiles regex patterns once to optimize the cycles below
+    # Compiles regex patterns once to optimize the cycles below.
     copy_pattern = re.compile(r" (\d+)\.pyi$")
     base_name_pattern = re.compile(r" \d+\.pyi$")
 
@@ -412,7 +416,7 @@ def move_stubs(stubs_directory: Path, library_root: Path) -> None:
             f"Expected exactly one subdirectory with __init__.pyi in '{stubs_directory}', but found "
             f"{len(valid_subdirectories)}."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message=message))
 
     # Extracts the single valid directory and uses it as the source for .pyi files.
     source_directory = valid_subdirectories[0]
@@ -425,61 +429,61 @@ def move_stubs(stubs_directory: Path, library_root: Path) -> None:
         relative_path = stub_path.relative_to(source_directory)
         destination_path = library_root.joinpath(relative_path)
 
-        # Ensures the destination directory exists
+        # Ensures the destination directory exists.
         destination_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Removes the old .pyi file if it already exists
-        _unlink_with_retry(destination_path, missing_ok=True)
+        # Removes the old .pyi file if it already exists.
+        _unlink_with_retry(path=destination_path, missing_ok=True)
 
-        # Moves the stub file to its destination directory using rename (this is more efficient than shutil.move)
-        _rename_with_retry(stub_path, destination_path)
+        # Moves the stub file to its destination directory using rename (this is more efficient than shutil.move).
+        _rename_with_retry(source=stub_path, destination=destination_path)
 
         message = f"Moved stub file from /stubs to /src: {destination_path.name}."
-        click.echo(colorize_message(message, color="white"), color=True)
+        click.echo(colorize_message(message=message, color="white"), color=True)
 
-        # Tracks moved files by directory for duplicate handling
+        # Tracks moved files by directory for duplicate handling.
         moved_files.setdefault(destination_path.parent, []).append(destination_path)
 
     # This section handles an OSX-unique issue, where this function produces multiple copies that
     # have space+copy_number appended to each file name, rather than a single copy of the .pyi file.
 
-    # Processes each directory that received stub files
+    # Processes each directory that received stub files.
     for directory_path, files in moved_files.items():
-        # Groups files by their base name (without space and number)
+        # Groups files by their base name (without space and number).
         file_groups: dict[str, list[Path]] = {}
         for file_path in files:
-            # Extracts base name without copy number
+            # Extracts base name without copy number.
             base_name = base_name_pattern.sub(".pyi", file_path.name)
             file_groups.setdefault(base_name, []).append(file_path)
 
-        # Handles duplicates within each group
+        # Handles duplicates within each group.
         for base_name, group in file_groups.items():
-            # If the group only has a single file, renames it if it has a copy number
+            # If the group only has a single file, renames it if it has a copy number.
             if len(group) == 1:
                 file_path = group[0]
                 if file_path.name != base_name:
                     new_path = file_path.with_name(base_name)
-                    _rename_with_retry(file_path, new_path)
+                    _rename_with_retry(source=file_path, destination=new_path)
                     message = f"Renamed stub file in {directory_path}: {file_path.name} -> {base_name}."
-                    click.echo(colorize_message(message, color="white"), color=True)
-            # If the group has multiple files, keeps the one with the highest copy number
+                    click.echo(colorize_message(message=message, color="white"), color=True)
+            # If the group has multiple files, keeps the one with the highest copy number.
             else:
-                # Sorts by copy number in the descending order and keeps the first item
-                group.sort(key=lambda path: _get_copy_number(path, copy_pattern=copy_pattern), reverse=True)
+                # Sorts by copy number in the descending order and keeps the first item.
+                group.sort(key=lambda path: _get_copy_number(path=path, copy_pattern=copy_pattern), reverse=True)
                 kept_file = group[0]
 
-                # Removes all duplicates
+                # Removes all duplicates.
                 for file_to_remove in group[1:]:
-                    _unlink_with_retry(file_to_remove)
+                    _unlink_with_retry(path=file_to_remove)
                     message = f"Removed duplicate .pyi file in {directory_path}: {file_to_remove.name}."
-                    click.echo(colorize_message(message, color="white"), color=True)
+                    click.echo(colorize_message(message=message, color="white"), color=True)
 
-                # Renames the kept file to remove copy number if needed
+                # Renames the kept file to remove copy number if needed.
                 if kept_file.name != base_name:
                     new_path = kept_file.with_name(base_name)
-                    _rename_with_retry(kept_file, new_path)
+                    _rename_with_retry(source=kept_file, destination=new_path)
                     message = f"Renamed stub file in {directory_path}: {kept_file.name} -> {base_name}."
-                    click.echo(colorize_message(message, color="white"), color=True)
+                    click.echo(colorize_message(message=message, color="white"), color=True)
 
 
 def delete_stubs(library_root: Path) -> None:
@@ -491,8 +495,8 @@ def delete_stubs(library_root: Path) -> None:
     # Iterates over all .pyi files in the directory tree and removes them.
     pyi_file: Path
     for pyi_file in library_root.rglob("*.pyi"):
-        _unlink_with_retry(pyi_file)
-        click.echo(colorize_message(f"Removed stub file: {pyi_file.name}.", color="white"), color=True)
+        _unlink_with_retry(path=pyi_file)
+        click.echo(colorize_message(message=f"Removed stub file: {pyi_file.name}.", color="white"), color=True)
 
 
 def verify_pypirc(file_path: Path) -> bool:
@@ -557,7 +561,9 @@ def robust_rmtree(path: Path) -> None:
             return
 
 
-def _rmtree_onerror(func: Any, path: str, exc_info: Any) -> None:
+def _rmtree_onerror(
+    func: Callable[[str], None], path: str, exc_info: tuple[type[BaseException], BaseException, TracebackType]
+) -> None:
     """Handles errors during ``shutil.rmtree()`` by clearing the Windows read-only attribute and retrying.
 
     This is passed as the ``onerror`` callback to ``shutil.rmtree()``. When Windows marks files as read-only during
@@ -667,13 +673,13 @@ def _get_base_name(dependency: str) -> str:
     Returns:
         The process dependency name, stripped of version, platform, and any other modifiers.
     """
-    # Strips quotes if present
+    # Strips quotes if present.
     dependency = dependency.strip("\"'")
 
-    # Strips platform markers first (anything after semicolon)
+    # Strips platform markers first (anything after semicolon).
     dependency = dependency.split(";")[0].strip()
 
-    # Uses regex to extract the base package name, removing extras and version specifiers in one operation
+    # Uses regex to extract the base package name, removing extras and version specifiers in one operation.
     match = _BASE_NAME_PATTERN.match(dependency)
     return match.group(1) if match else dependency.strip()
 
@@ -704,7 +710,7 @@ def _add_dependency(dependency: str, dependencies: list[str], processed_dependen
             f"pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
             f"'dependency-groups' lists."
         )
-        raise ValueError(format_message(message))
+        raise ValueError(format_message(message=message))
 
     # Wraps dependency in quotes to properly handle version specifiers and platform markers when dependencies are
     # installed via uv. This is needed for 'special' version specifications that use < or > and similar notations,
@@ -736,7 +742,7 @@ def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
     # the presence of this file as part of its runtime, so it is assumed that it always exists.
     pyproject_path: Path = project_root.joinpath("pyproject.toml")
 
-    # Opens pyproject.toml and parses its contents
+    # Opens pyproject.toml and parses its contents.
     with pyproject_path.open(mode="rb") as toml_file:
         pyproject_data = tomllib.load(toml_file)
 
@@ -744,9 +750,12 @@ def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
     project_data: dict[str, Any] = pyproject_data.get("project", {})
     dependencies: list[str] = project_data.get("dependencies", [])
 
-    runtime_dependencies: list[str] = []  # Stores all platform-applicable runtime dependencies
-    development_dependencies: list[str] = []  # Stores all platform-applicable development dependencies
-    processed_dependencies: set[str] = set()  # Keeps track of duplicates to prevent double-listing
+    # Stores all platform-applicable runtime dependencies.
+    runtime_dependencies: list[str] = []
+    # Stores all platform-applicable development dependencies.
+    development_dependencies: list[str] = []
+    # Keeps track of duplicates to prevent double-listing.
+    processed_dependencies: set[str] = set()
 
     # Processes runtime dependencies first. These are the core dependencies required for the project to function.
     for dependency in dependencies:
@@ -778,7 +787,7 @@ def _resolve_dependencies(project_root: Path) -> tuple[str, ...]:
                     processed_dependencies=processed_dependencies,
                 )
 
-    # Merges the two dependency lists and returns the merged list to caller as a tuple
+    # Merges the two dependency lists and returns the merged list to caller as a tuple.
     runtime_dependencies.extend(development_dependencies)
     return tuple(runtime_dependencies)
 
@@ -796,10 +805,10 @@ def _resolve_project_name(project_root: Path) -> str:
         ValueError: If the project name is not defined in the pyproject.toml file. Also, if the pyproject.toml file is
             corrupted or otherwise malformed.
     """
-    # Resolves the path to the pyproject.toml file
+    # Resolves the path to the pyproject.toml file.
     pyproject_path: Path = project_root.joinpath("pyproject.toml")
 
-    # Reads and parses the pyproject.toml file
+    # Reads and parses the pyproject.toml file.
     try:
         with pyproject_path.open(mode="rb") as toml_file:
             pyproject_data: dict[str, Any] = tomllib.load(toml_file)
@@ -808,19 +817,19 @@ def _resolve_project_name(project_root: Path) -> str:
             f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax. "
             f"Error details: {e}."
         )
-        raise ValueError(format_message(message)) from None
+        raise ValueError(format_message(message=message)) from None
 
-    # Extracts the project name from the [project] section
+    # Extracts the project name from the [project] section.
     project_data: dict[str, Any] = pyproject_data.get("project", {})
     project_name: str | None = project_data.get("name")
 
-    # Checks if the project name was successfully extracted
+    # Checks if the project name was successfully extracted.
     if project_name is None:
         message = (
             "Unable to resolve the project name from the pyproject.toml file. The 'name' field is missing or "
             "empty in the [project] section of the file."
         )
-        raise ValueError(format_message(message))
+        raise ValueError(format_message(message=message))
 
     return project_name
 
@@ -834,7 +843,7 @@ def _resolve_mamba_environments_directory() -> Path:
     Raises:
         RuntimeError: If mamba (via miniforge) is not installed and/or initialized.
     """
-    # First tries to use CONDA_PREFIX (mamba uses the same environment variables as conda)
+    # First tries to use CONDA_PREFIX (mamba uses the same environment variables as conda).
     mamba_prefix = os.environ.get("CONDA_PREFIX")
     if mamba_prefix:
         mamba_prefix_path = Path(mamba_prefix)
@@ -844,7 +853,7 @@ def _resolve_mamba_environments_directory() -> Path:
             return mamba_prefix_path.joinpath("envs")
 
         # Otherwise, for named environments, the root /envs directory is one level below the named directory:
-        # e.g., /path/to/miniforge3/envs/myenv -> /path/to/miniforge3/envs
+        # e.g., /path/to/miniforge3/envs/myenv -> /path/to/miniforge3/envs.
         return mamba_prefix_path.parent
 
     # The call above does not resolve the mamba environment when this method runs in a tox environment, which is the
@@ -857,19 +866,19 @@ def _resolve_mamba_environments_directory() -> Path:
         # Navigates up until it finds the miniforge root.
         current = python_executable.parent
         while current != current.parent:  # Stops at root
-            # If the 'envs' directory is found while ascending towards the root, returns the directory path to caller
+            # If the 'envs' directory is found while ascending towards the root, returns the directory path to caller.
             if current.name == "envs":
                 return current
 
             # If the 'conda-meta' directory is found while ascending towards the root, this indicates that this is the
             # root of a mamba environment manager.
             if current.joinpath("conda-meta").exists():
-                # In a mamba environment, the /envs folder will be found directly under the root
+                # In a mamba environment, the /envs folder will be found directly under the root.
                 environments_path = current.joinpath("envs")
                 if environments_path.exists():
                     return environments_path
 
-                # Otherwise, navigates up to find envs
+                # Otherwise, navigates up to find envs.
                 if current.parent.name == "envs":
                     return current.parent
 
@@ -885,19 +894,19 @@ def _resolve_mamba_environments_directory() -> Path:
     # Method 3: Checks the standard miniforge3 installation location.
     home = Path.home()
 
-    # Standard miniforge3 location on Unix-like systems
+    # Standard miniforge3 location on Unix-like systems.
     miniforge_environments = home.joinpath("miniforge3", "envs")
     if miniforge_environments.exists():
         return miniforge_environments
 
-    # On Windows, also checks the AppData location
+    # On Windows, also checks the AppData location.
     if sys.platform == "win32":
-        # First try: constructs the path from user's home directory
+        # First try: constructs the path from user's home directory.
         windows_miniforge_environments = home.joinpath("AppData", "Local", "miniforge3", "envs")
         if windows_miniforge_environments.exists():
             return windows_miniforge_environments
 
-        # Fallback: uses LOCALAPPDATA environment variable
+        # Fallback: uses LOCALAPPDATA environment variable.
         local_appdata = os.environ.get("LOCALAPPDATA")
         if local_appdata:
             windows_miniforge_environments = Path(local_appdata).joinpath("miniforge3", "envs")
@@ -911,7 +920,7 @@ def _resolve_mamba_environments_directory() -> Path:
         "installed and initialized before using ataraxis-automation cli. Install from: "
         "https://github.com/conda-forge/miniforge"
     )
-    raise RuntimeError(format_message(message))
+    raise RuntimeError(format_message(message=message))
 
 
 def _resolve_environment_files(project_root: Path, environment_base_name: str) -> tuple[str, Path, Path]:
@@ -934,16 +943,17 @@ def _resolve_environment_files(project_root: Path, environment_base_name: str) -
     Raises:
         RuntimeError: If the host OS does not match any of the supported operating systems.
     """
-    os_name: str = sys.platform  # Obtains host os name
+    # Obtains the host operating system name.
+    os_name: str = sys.platform
 
-    # If the os name is not one of the supported names, raises an error
+    # If the os name is not one of the supported names, raises an error.
     if os_name not in _SUPPORTED_PLATFORMS:
         message: str = (
             f"Unable to resolve the operating-system-specific suffix to use for mamba environment file names. The "
             f"local machine is using an unsupported operating system '{os_name}'. Currently, only the following "
             f"operating systems are supported: {', '.join(_SUPPORTED_PLATFORMS.keys())}."
         )
-        raise RuntimeError(format_message(message))
+        raise RuntimeError(format_message(message=message))
 
     # Resolves the absolute path to the 'envs' directory.
     environments_directory: Path = project_root.joinpath("envs")
@@ -964,7 +974,7 @@ def _check_package_engines() -> None:
     Raises:
         RuntimeError: If either mamba or uv is not accessible via subprocess call through the shell.
     """
-    # Verifies that mamba is available for environment management operations
+    # Verifies that mamba is available for environment management operations.
     try:
         subprocess.run(
             "mamba --version",
@@ -974,15 +984,15 @@ def _check_package_engines() -> None:
             stderr=subprocess.DEVNULL,
         )
     except subprocess.CalledProcessError:
-        # If mamba is not available, raises an error as it is now required
+        # If mamba is not available, raises an error as it is now required.
         message: str = (
             "Unable to interface with mamba for environment management. Mamba is required for this automation "
             "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge3) and "
             "ensure it is initialized and added to PATH."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
 
-    # Verifies that uv is available for package installation operations
+    # Verifies that uv is available for package installation operations.
     try:
         subprocess.run(
             "uv --version",
@@ -992,10 +1002,10 @@ def _check_package_engines() -> None:
             stderr=subprocess.DEVNULL,
         )
     except subprocess.CalledProcessError:
-        # If uv is not available, raises an error as it is now required
+        # If uv is not available, raises an error as it is now required.
         message = (
             "Unable to interface with uv for package installation. uv is required for this automation module and "
             "provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install uv') "
             "in the active Python environment."
         )
-        raise RuntimeError(format_message(message)) from None
+        raise RuntimeError(format_message(message=message)) from None
