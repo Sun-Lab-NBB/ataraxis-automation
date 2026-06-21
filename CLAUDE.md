@@ -70,7 +70,7 @@ building.
 
 **Note:** The `/cpp-style` skill applies to both C++ embedded projects (e.g., `ataraxis-transport-layer-mc`,
 `ataraxis-micro-controller`, `sollertia-micro-controllers`) and C++ Python extension projects (e.g.,
-`ataraxis-time`). The `/csharp-style` skill applies to C# Unity projects (e.g., `sollertia-unity-tasks`).
+`ataraxis-time`). The `/csharp-style` skill applies to C# Unity projects (e.g., `sollertia-virtual-reality`).
 Both enforce conventions consistent with the Python style guide used across all Ataraxis framework projects.
 
 ### Key areas
