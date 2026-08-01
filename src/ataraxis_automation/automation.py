@@ -22,6 +22,7 @@ from collections.abc import Callable
 
 import click
 import requests
+import platformdirs
 
 _SUPPORTED_PLATFORMS: dict[str, str] = {
     "win32": "_win",
@@ -47,6 +48,33 @@ _NETLIFY_API_URL: str = "https://api.netlify.com/api/v1"
 
 _NETLIFY_DEPLOY_TIMEOUT: int = 300
 """Stores the maximum time, in seconds, to wait for the Netlify deployment request to complete."""
+
+_APPLICATION_NAME: str = "ataraxis_automation"
+"""Stores the application name used to resolve the directory that keeps the credentials shared by all projects
+managed on the host-machine."""
+
+_APPLICATION_AUTHOR: str = "ataraxis"
+"""Stores the application author used to resolve the shared credentials directory on Windows platforms."""
+
+_PYPIRC_FILE_NAME: str = ".pypirc"
+"""Stores the name of the file that keeps the PyPI API token."""
+
+_NETLIFYRC_FILE_NAME: str = ".netlifyrc"
+"""Stores the name of the file that keeps the Netlify API token."""
+
+_NETLIFY_SITE_FILE_NAME: str = ".netlify-site"
+"""Stores the name of the project-local file that keeps the Netlify site identifier. The identifier differs for each
+project, so it is versioned with the project instead of being shared through the application directory."""
+
+_NETLIFY_SITE_SUFFIX: str = "-api-docs.netlify.app"
+"""Stores the suffix appended to the project's directory name to derive the default Netlify site identifier."""
+
+_PYTHON_PROJECT_ITEMS: tuple[str, ...] = ("src", "envs", "pyproject.toml", "tox.ini")
+"""Stores the names of the root directory items that identify a valid Ataraxis framework Python project."""
+
+_DOCUMENTED_PROJECT_ITEMS: tuple[str, ...] = ("src", "docs", "tox.ini")
+"""Stores the names of the root directory items shared by every Ataraxis framework project archetype that builds API
+documentation, including the C++ PlatformIO projects that have no Python package layout."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,26 +320,33 @@ def resolve_project_directory() -> Path:
     Raises:
         RuntimeError: If the current working directory does not point to a valid Ataraxis framework project.
     """
-    project_dir = Path.cwd()
+    return _resolve_project_directory(
+        required_items=_PYTHON_PROJECT_ITEMS,
+        project_description="Python",
+        items_description="'/src', '/envs', 'pyproject.toml' and 'tox.ini'",
+    )
 
-    # Checks if the current working directory points to a valid Ataraxis framework project based on the presence
-    # of required files in the root directory.
-    required_items = {
-        project_dir.joinpath("src"),
-        project_dir.joinpath("envs"),
-        project_dir.joinpath("pyproject.toml"),
-        project_dir.joinpath("tox.ini"),
-    }
-    if not all(item.exists() for item in required_items):
-        message: str = (
-            f"Unable to confirm that ataraxis automation CLI has been called from the root directory of a valid "
-            f"Python project. This CLI expects that the current working directory is set to the root directory of the "
-            f"project, judged by the presence of '/src', '/envs', 'pyproject.toml' and 'tox.ini'. Current working "
-            f"directory is set to {project_dir}, which does not contain at least one of the required files."
-        )
-        raise RuntimeError(format_message(message=message))
 
-    return project_dir
+def resolve_documented_project_directory() -> Path:
+    """Resolves the current working directory and verifies that it points to an Ataraxis framework project that builds
+    API documentation.
+
+    Notes:
+        This verification accepts every project archetype that builds API documentation, including the C++ PlatformIO
+        projects that have no Python package layout. Commands that only work with the built documentation and the
+        project's Netlify credentials use this verification instead of the stricter Python project verification.
+
+    Returns:
+        The absolute path to the current working directory, if it points to a project that builds API documentation.
+
+    Raises:
+        RuntimeError: If the current working directory does not point to a project that builds API documentation.
+    """
+    return _resolve_project_directory(
+        required_items=_DOCUMENTED_PROJECT_ITEMS,
+        project_description="documented",
+        items_description="'/src', '/docs' and 'tox.ini'",
+    )
 
 
 def resolve_library_root(project_root: Path) -> Path:
@@ -508,6 +543,41 @@ def delete_stubs(library_root: Path) -> None:
         click.echo(colorize_message(message=f"Removed stub file: {pyi_file.name}.", color="white"), color=True)
 
 
+def resolve_application_directory() -> Path:
+    """Resolves the path to the directory that stores the API tokens shared by all projects managed on the
+    host-machine.
+
+    Notes:
+        The directory is created if it does not already exist.
+
+    Returns:
+        The absolute path to the application directory.
+    """
+    application_directory = Path(platformdirs.user_data_dir(appname=_APPLICATION_NAME, appauthor=_APPLICATION_AUTHOR))
+    application_directory.mkdir(parents=True, exist_ok=True)
+    return application_directory
+
+
+def resolve_pypirc_path() -> Path:
+    """Resolves the path to the .pypirc file that stores the PyPI API token shared by all projects managed on the
+    host-machine.
+
+    Returns:
+        The absolute path to the .pypirc file.
+    """
+    return resolve_application_directory().joinpath(_PYPIRC_FILE_NAME)
+
+
+def resolve_netlifyrc_path() -> Path:
+    """Resolves the path to the .netlifyrc file that stores the Netlify API token shared by all projects managed on the
+    host-machine.
+
+    Returns:
+        The absolute path to the .netlifyrc file.
+    """
+    return resolve_application_directory().joinpath(_NETLIFYRC_FILE_NAME)
+
+
 def verify_pypirc(file_path: Path) -> bool:
     """Verifies that the target .pypirc file contains valid PyPI authentication credentials (API token).
 
@@ -535,19 +605,16 @@ def verify_pypirc(file_path: Path) -> bool:
 
 
 def verify_netlifyrc(file_path: Path) -> bool:
-    """Verifies that the target .netlifyrc file contains the Netlify site identifier and authentication credentials
-    (API token).
+    """Verifies that the target .netlifyrc file contains the Netlify authentication credentials (API token).
 
     Notes:
-        This function is not able to verify whether the token is currently active or whether the site identifier
-        resolves to a site accessible with that token.
+        This function is not able to verify whether the token is currently active.
 
     Args:
         file_path: The absolute path to the .netlifyrc file to verify.
 
     Returns:
-        True if the .netlifyrc file appears to contain a well-configured site identifier and API token and False
-        otherwise.
+        True if the .netlifyrc file appears to contain a well-configured API token and False otherwise.
 
     Raises:
         configparser.Error: If the .netlifyrc file exists but contains malformed INI syntax.
@@ -556,11 +623,125 @@ def verify_netlifyrc(file_path: Path) -> bool:
     config_validator.read(file_path)
     return (
         config_validator.has_section("netlify")
-        and config_validator.has_option(section="netlify", option="site")
         and config_validator.has_option(section="netlify", option="token")
-        and bool(config_validator.get(section="netlify", option="site").strip())
         and bool(config_validator.get(section="netlify", option="token").strip())
     )
+
+
+def derive_netlify_site(project_root: Path) -> str:
+    """Derives the Netlify site identifier of the target project from the name of its root directory.
+
+    Notes:
+        The derived identifier follows the site naming convention shared by nearly all Ataraxis framework and Sollertia
+        platform projects. It is used to prefill the acquisition prompt, and projects that use a different identifier
+        override it with the value stored in their .netlify-site file.
+
+    Args:
+        project_root: The absolute path to the root directory of the processed project.
+
+    Returns:
+        The derived Netlify site identifier.
+    """
+    return f"{project_root.name}{_NETLIFY_SITE_SUFFIX}"
+
+
+def read_netlify_site(project_root: Path) -> str | None:
+    """Reads the Netlify site identifier stored in the target project's .netlify-site file.
+
+    Args:
+        project_root: The absolute path to the root directory of the processed project.
+
+    Returns:
+        The stored Netlify site identifier, or None if the file does not exist or stores no identifier.
+    """
+    site_path = project_root.joinpath(_NETLIFY_SITE_FILE_NAME)
+    if not site_path.is_file():
+        return None
+
+    return site_path.read_text(encoding="utf-8").strip() or None
+
+
+def write_netlify_site(project_root: Path, site: str) -> None:
+    """Writes the Netlify site identifier to the target project's .netlify-site file.
+
+    Notes:
+        Unlike the API token, the site identifier is not a secret and differs for each project, so the file it is
+        written to is tracked by the project's version control system.
+
+    Args:
+        project_root: The absolute path to the root directory of the processed project.
+        site: The Netlify site identifier to store in the file.
+    """
+    project_root.joinpath(_NETLIFY_SITE_FILE_NAME).write_text(f"{site}\n", encoding="utf-8")
+
+
+def migrate_legacy_pypirc(project_root: Path) -> bool:
+    """Copies the PyPI API token stored in the target project's root directory to the shared application directory.
+
+    Notes:
+        Earlier library versions stored the token inside the root directory of each project. This function preserves
+        the token of a project that still uses that layout, so the user does not have to enter it again.
+
+    Args:
+        project_root: The absolute path to the root directory of the processed project.
+
+    Returns:
+        True if the token was migrated and False if the shared token is already configured or there is no legacy token
+        to migrate.
+
+    Raises:
+        configparser.Error: If either .pypirc file exists but contains malformed INI syntax.
+    """
+    if verify_pypirc(file_path=resolve_pypirc_path()):
+        return False
+
+    legacy_path = project_root.joinpath(_PYPIRC_FILE_NAME)
+    if not verify_pypirc(file_path=legacy_path):
+        return False
+
+    shutil.copyfile(src=legacy_path, dst=resolve_pypirc_path())
+    return True
+
+
+def migrate_legacy_netlifyrc(project_root: Path) -> bool:
+    """Splits the Netlify credentials stored in the target project's root directory between the shared application
+    directory and the project's .netlify-site file.
+
+    Notes:
+        Earlier library versions stored both the site identifier and the API token inside a single .netlifyrc file in
+        the root directory of each project. This function preserves both values of a project that still uses that
+        layout, so the user does not have to enter them again.
+
+    Args:
+        project_root: The absolute path to the root directory of the processed project.
+
+    Returns:
+        True if at least one credential was migrated and False if there was nothing to migrate.
+
+    Raises:
+        configparser.Error: If either .netlifyrc file exists but contains malformed INI syntax.
+    """
+    legacy_credentials: ConfigParser = ConfigParser()
+    legacy_credentials.read(project_root.joinpath(_NETLIFYRC_FILE_NAME))
+    if not legacy_credentials.has_section("netlify"):
+        return False
+
+    migrated: bool = False
+
+    token = legacy_credentials.get(section="netlify", option="token", fallback="").strip()
+    if token and not verify_netlifyrc(file_path=resolve_netlifyrc_path()):
+        credentials: ConfigParser = ConfigParser()
+        credentials["netlify"] = {"token": token}
+        with resolve_netlifyrc_path().open(mode="w") as config_file:
+            credentials.write(config_file)
+        migrated = True
+
+    site = legacy_credentials.get(section="netlify", option="site", fallback="").strip()
+    if site and read_netlify_site(project_root=project_root) is None:
+        write_netlify_site(project_root=project_root, site=site)
+        migrated = True
+
+    return migrated
 
 
 def deploy_documentation(documentation_directory: Path, site: str, token: str) -> str:
@@ -660,6 +841,37 @@ def robust_rmtree(path: Path) -> None:
                 raise
         else:
             return
+
+
+def _resolve_project_directory(
+    required_items: tuple[str, ...], project_description: str, items_description: str
+) -> Path:
+    """Verifies that the current working directory contains all required root directory items and resolves the path to
+    it.
+
+    Args:
+        required_items: The names of the root directory items that have to be present in the project directory.
+        project_description: The description of the expected project type, used to build the error message.
+        items_description: The human-readable listing of the required items, used to build the error message.
+
+    Returns:
+        The absolute path to the current working directory, if it contains all required root directory items.
+
+    Raises:
+        RuntimeError: If the current working directory does not contain at least one of the required items.
+    """
+    project_dir = Path.cwd()
+
+    if not all(project_dir.joinpath(item).exists() for item in required_items):
+        message: str = (
+            f"Unable to confirm that ataraxis automation CLI has been called from the root directory of a valid "
+            f"{project_description} project. This CLI expects that the current working directory is set to the root "
+            f"directory of the project, judged by the presence of {items_description}. Current working "
+            f"directory is set to {project_dir}, which does not contain at least one of the required files."
+        )
+        raise RuntimeError(format_message(message=message))
+
+    return project_dir
 
 
 def _rmtree_onerror(

@@ -17,10 +17,18 @@ from .automation import (  # pragma: no cover
     format_message,
     colorize_message,
     verify_netlifyrc,
+    read_netlify_site,
+    write_netlify_site,
+    derive_netlify_site,
+    resolve_pypirc_path,
     deploy_documentation,
     resolve_library_root,
     generate_typed_marker,
+    migrate_legacy_pypirc,
+    resolve_netlifyrc_path,
+    migrate_legacy_netlifyrc,
     resolve_project_directory,
+    resolve_documented_project_directory,
 )
 
 _MINIMUM_PYPI_TOKEN_LENGTH: int = 100  # pragma: no cover
@@ -117,25 +125,33 @@ def purge_stubs() -> None:  # pragma: no cover
     help="If this flag is provided, the command recreates the .pypirc file even if it already contains an API token.",
 )
 def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
-    """Ensures that a validly formatted PyPI API token is contained in the .pypirc file stored in the root directory
-    of the project.
+    """Ensures that a validly formatted PyPI API token is contained in the .pypirc file stored in the shared
+    application directory.
     """
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
 
-    # Generates the path to the .pypirc file. The file is expected to be found inside the root directory of the project.
-    pypirc_path: Path = project_root.joinpath(".pypirc")
+    # The token is the same for every project uploaded from this machine, so it is stored in the shared application
+    # directory instead of the root directory of each project.
+    pypirc_path: Path = resolve_pypirc_path()
+
+    if migrate_legacy_pypirc(project_root=project_root):
+        message: str = (
+            f"Existing PyPI token migrated from the project's '.pypirc' file to the shared '.pypirc' file stored "
+            f"under {pypirc_path.parent}. The project-local file is no longer used and can be deleted."
+        )
+        click.echo(colorize_message(message=message, color="yellow"))
 
     # If the file exists, recreating the file is not requested, and the file appears well-formed, ends the runtime.
     if verify_pypirc(file_path=pypirc_path) and not replace_token:
-        message: str = "Existing PyPI token found inside the '.pypirc' file."
+        message = "Existing PyPI token found inside the shared '.pypirc' file."
         click.echo(colorize_message(message=message, color="green"))
         return
 
     # Otherwise, proceeds to generating a new file and token entry.
     message = (
-        "Unable to use the existing PyPI token: the project's '.pypirc' file does not exist, is invalid, or "
+        "Unable to use the existing PyPI token: the shared '.pypirc' file does not exist, is invalid, or "
         "does not contain a valid PyPI API token. Proceeding to new token acquisition."
     )
     click.echo(colorize_message(message=message, color="white"))
@@ -143,8 +159,8 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
     # Enters the while loop to iteratively ask for the token until a valid token entry is provided.
     while True:
         prompt: str = format_message(
-            message="Enter the PyPI (API) token. It will be stored inside the .pypirc file for future use. "
-            "Input is hidden: ",
+            message="Enter the PyPI (API) token. It will be stored inside the shared .pypirc file and reused by all "
+            "projects managed on this machine. Input is hidden",
         )
         # Asks the user for the token.
         token: str = click.prompt(text=prompt, hide_input=True, type=str)
@@ -190,7 +206,7 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
             config.write(config_file)
 
         # Notifies the user and breaks out of the while loop.
-        message = "Valid PyPI token acquired and added to the project's '.pypirc' file for future use."
+        message = f"Valid PyPI token acquired and added to the shared '.pypirc' file stored under {pypirc_path.parent}."
         click.echo(colorize_message(message=message, color="green"))
         break
 
@@ -201,63 +217,92 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
     "--replace-token",
     is_flag=True,
     help=(
-        "If this flag is provided, the command recreates the .netlifyrc file even if it already contains the site "
-        "identifier and the API token."
+        "If this flag is provided, the command replaces the API token stored in the shared .netlifyrc file even if "
+        "that file already contains a valid token."
     ),
 )
-def acquire_netlify_token(*, replace_token: bool) -> None:  # pragma: no cover
-    """Ensures that the Netlify site identifier and a validly formatted Netlify API token are contained in the
-    .netlifyrc file stored in the root directory of the project.
+@click.option(
+    "-rs",
+    "--replace-site",
+    is_flag=True,
+    help=(
+        "If this flag is provided, the command replaces the site identifier stored in the project's .netlify-site "
+        "file even if that file already contains an identifier."
+    ),
+)
+def acquire_netlify_token(*, replace_token: bool, replace_site: bool) -> None:  # pragma: no cover
+    """Ensures that the project's .netlify-site file contains the Netlify site identifier and that the shared
+    .netlifyrc file contains a validly formatted Netlify API token.
     """
-    # Verifies that the working directory is pointing to a project with the necessary key directories and files
-    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
-    project_root: Path = resolve_project_directory()
+    # Verifies that the working directory is pointing to a project that builds API documentation and resolves the
+    # absolute path to the project's root directory.
+    project_root: Path = resolve_documented_project_directory()
 
-    # Generates the path to the .netlifyrc file. The file is expected to be found inside the root directory of the
-    # project.
-    netlifyrc_path: Path = project_root.joinpath(".netlifyrc")
+    # The token authenticates the account that owns every deployed site, so it is stored in the shared application
+    # directory. The site identifier differs for each project, so it is stored in the project's root directory.
+    netlifyrc_path: Path = resolve_netlifyrc_path()
+
+    if migrate_legacy_netlifyrc(project_root=project_root):
+        message: str = (
+            f"Existing Netlify credentials migrated from the project's '.netlifyrc' file to the shared '.netlifyrc' "
+            f"file stored under {netlifyrc_path.parent} and to the project's '.netlify-site' file. The project-local "
+            f"'.netlifyrc' file is no longer used and can be deleted."
+        )
+        click.echo(colorize_message(message=message, color="yellow"))
+
+    stored_site: str | None = read_netlify_site(project_root=project_root)
+    if stored_site is not None and not replace_site:
+        message = f"Existing Netlify site identifier '{stored_site}' found inside the project's '.netlify-site' file."
+        click.echo(colorize_message(message=message, color="green"))
+    else:
+        # Enters the while loop to iteratively ask for the site identifier until a valid identifier is provided.
+        while True:
+            prompt: str = format_message(
+                message="Enter the Netlify site domain name or API (UUID) identifier",
+            )
+            # Nearly all projects follow the shared site naming convention, so the derived identifier is offered as
+            # the default and only has to be overridden by the projects that deviate from the convention.
+            site: str = click.prompt(text=prompt, type=str, default=derive_netlify_site(project_root=project_root))
+
+            # Accepts full site URLs by reducing them to the bare identifier expected by the Netlify API.
+            site = site.strip().removeprefix("https://").removeprefix("http://").rstrip("/")
+
+            # Validates that the identifier is not empty and does not contain characters that would corrupt the API
+            # request path.
+            if site and " " not in site and "/" not in site:
+                break
+
+            message = "The input identifier does not appear to be a valid Netlify site domain name or UUID."
+            click.echo(colorize_message(message=message, color="red"))
+            if not click.confirm("Do you want to try entering another site identifier?"):
+                message = "Netlify credential acquisition: aborted by user."
+                raise RuntimeError(format_message(message=message))
+
+        write_netlify_site(project_root=project_root, site=site)
+        message = (
+            f"Netlify site identifier '{site}' added to the project's '.netlify-site' file. Commit the file, as it "
+            f"identifies the site that serves this project's API documentation."
+        )
+        click.echo(colorize_message(message=message, color="green"))
 
     if verify_netlifyrc(file_path=netlifyrc_path) and not replace_token:
-        message: str = "Existing Netlify site identifier and API token found inside the '.netlifyrc' file."
+        message = "Existing Netlify API token found inside the shared '.netlifyrc' file."
         click.echo(colorize_message(message=message, color="green"))
         return
 
     message = (
-        "Unable to use the existing Netlify credentials: the project's '.netlifyrc' file does not exist, is invalid, "
-        "or does not contain the site identifier and a valid Netlify API token. Proceeding to new credential "
-        "acquisition."
+        "Unable to use the existing Netlify token: the shared '.netlifyrc' file does not exist, is invalid, or does "
+        "not contain a valid Netlify API token. Proceeding to new token acquisition."
     )
     click.echo(colorize_message(message=message, color="white"))
 
-    # Enters the while loop to iteratively ask for the site identifier until a valid identifier is provided.
-    while True:
-        prompt: str = format_message(
-            message="Enter the Netlify site domain name or API (UUID) identifier, e.g: "
-            "'project-api-docs.netlify.app': ",
-        )
-        site: str = click.prompt(text=prompt, type=str)
-
-        # Accepts full site URLs by reducing them to the bare identifier expected by the Netlify API.
-        site = site.strip().removeprefix("https://").removeprefix("http://").rstrip("/")
-
-        # Validates that the identifier is not empty and does not contain characters that would corrupt the API
-        # request path.
-        if site and " " not in site and "/" not in site:
-            break
-
-        message = "The input identifier does not appear to be a valid Netlify site domain name or UUID."
-        click.echo(colorize_message(message=message, color="red"))
-        if not click.confirm("Do you want to try entering another site identifier?"):
-            message = "Netlify credential acquisition: aborted by user."
-            raise RuntimeError(format_message(message=message))
-
     # Enters the while loop to iteratively ask for the token until a valid token entry is provided.
     while True:
-        prompt = format_message(
-            message="Enter the Netlify (API) token. It will be stored inside the .netlifyrc file for future use. "
-            "Input is hidden: ",
+        token_prompt: str = format_message(
+            message="Enter the Netlify (API) token. It will be stored inside the shared .netlifyrc file and reused by "
+            "all projects managed on this machine. Input is hidden",
         )
-        token: str = click.prompt(text=prompt, hide_input=True, type=str)
+        token: str = click.prompt(text=token_prompt, hide_input=True, type=str)
 
         token = token.strip()
 
@@ -279,30 +324,37 @@ def acquire_netlify_token(*, replace_token: bool) -> None:  # pragma: no cover
             raise RuntimeError(format_message(message=message))
 
     config: ConfigParser = ConfigParser()
-    config["netlify"] = {"site": site, "token": token}
+    config["netlify"] = {"token": token}
     with netlifyrc_path.open(mode="w") as config_file:
         config.write(config_file)
 
-    message = "Valid Netlify credentials acquired and added to the project's '.netlifyrc' file for future use."
+    message = (
+        f"Valid Netlify token acquired and added to the shared '.netlifyrc' file stored under {netlifyrc_path.parent}."
+    )
     click.echo(colorize_message(message=message, color="green"))
 
 
 @cli.command()
 def deploy_docs() -> None:  # pragma: no cover
     """Deploys the API documentation built by the 'docs' task to the project's Netlify site."""
-    # Verifies that the working directory is pointing to a project with the necessary key directories and files
-    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
-    project_root: Path = resolve_project_directory()
+    # Verifies that the working directory is pointing to a project that builds API documentation and resolves the
+    # absolute path to the project's root directory.
+    project_root: Path = resolve_documented_project_directory()
 
-    # Generates the path to the .netlifyrc file. The file is expected to be found inside the root directory of the
-    # project.
-    netlifyrc_path: Path = project_root.joinpath(".netlifyrc")
+    netlifyrc_path: Path = resolve_netlifyrc_path()
 
     if not verify_netlifyrc(file_path=netlifyrc_path):
         message: str = (
-            "Unable to deploy the API documentation. The project's '.netlifyrc' file does not exist, is invalid, or "
-            "does not contain the Netlify site identifier and API token. Use the 'acquire-netlify-token' command to "
-            "configure the file."
+            "Unable to deploy the API documentation. The shared '.netlifyrc' file does not exist, is invalid, or does "
+            "not contain the Netlify API token. Use the 'acquire-netlify-token' command to configure the file."
+        )
+        raise RuntimeError(format_message(message=message))
+
+    site: str | None = read_netlify_site(project_root=project_root)
+    if site is None:
+        message = (
+            "Unable to deploy the API documentation. The project's '.netlify-site' file does not exist or does not "
+            "contain the Netlify site identifier. Use the 'acquire-netlify-token' command to configure the file."
         )
         raise RuntimeError(format_message(message=message))
 
@@ -311,11 +363,55 @@ def deploy_docs() -> None:  # pragma: no cover
 
     website_url: str = deploy_documentation(
         documentation_directory=project_root.joinpath("docs", "build", "html"),
-        site=credentials.get(section="netlify", option="site").strip(),
+        site=site,
         token=credentials.get(section="netlify", option="token").strip(),
     )
 
     message = f"API documentation successfully deployed to {website_url}."
+    click.echo(colorize_message(message=message, color="green"))
+
+
+@cli.command()
+def upload_project() -> None:  # pragma: no cover
+    """Uploads the distributions built by the 'build' task to PyPI.
+
+    This command resolves the PyPI API token from the shared application directory, so the project does not have to
+    store the token in its root directory.
+    """
+    # Verifies that the working directory is pointing to a project with the necessary key directories and files
+    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
+    project_root: Path = resolve_project_directory()
+
+    pypirc_path: Path = resolve_pypirc_path()
+    if not verify_pypirc(file_path=pypirc_path):
+        message: str = (
+            "Unable to upload the project to PyPI. The shared '.pypirc' file does not exist, is invalid, or does not "
+            "contain a valid PyPI API token. Use the 'acquire-pypi-token' command to configure the file."
+        )
+        raise RuntimeError(format_message(message=message))
+
+    distributions: list[str] = sorted(str(path) for path in project_root.joinpath("dist").glob("*") if path.is_file())
+    if not distributions:
+        message = (
+            "Unable to upload the project to PyPI. The project's 'dist' directory does not exist or contains no "
+            "distribution files. Build the distributions with the 'build' ('tox -e build') task before uploading "
+            "them."
+        )
+        raise RuntimeError(format_message(message=message))
+
+    try:
+        subprocess.run(  # noqa: S603 - Every command element is generated by this library, not by user input.
+            ["twine", "upload", *distributions, "--skip-existing", "--config-file", str(pypirc_path)],
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        message = (
+            "Unable to upload the project to PyPI. See twine-generated error messages for specific details about the "
+            "errors that prevented the upload."
+        )
+        raise RuntimeError(format_message(message=message)) from None
+
+    message = "Project distributions successfully uploaded to PyPI."
     click.echo(colorize_message(message=message, color="green"))
 
 

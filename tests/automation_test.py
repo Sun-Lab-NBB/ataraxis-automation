@@ -15,6 +15,7 @@ from configparser import ConfigParser
 from unittest.mock import Mock
 
 import pytest
+import platformdirs
 
 import ataraxis_automation.automation as aa
 from ataraxis_automation.automation import ProjectEnvironment
@@ -30,6 +31,27 @@ def project_dir(tmp_path: Path) -> Path:
     project_dir.joinpath("pyproject.toml").touch()
     project_dir.joinpath("tox.ini").touch()
     return project_dir
+
+
+@pytest.fixture
+def documented_project_dir(tmp_path: Path) -> Path:
+    """Generates the test project root directory with the file layout shared by every project archetype that builds
+    API documentation.
+    """
+    project_dir = tmp_path.joinpath("project")
+    project_dir.mkdir()
+    project_dir.joinpath("src").mkdir()
+    project_dir.joinpath("docs").mkdir()
+    project_dir.joinpath("tox.ini").touch()
+    return project_dir
+
+
+@pytest.fixture
+def application_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Isolates the shared application directory from the host machine to avoid polluting real user state."""
+    application_dir = tmp_path.joinpath("application")
+    monkeypatch.setattr(platformdirs, "user_data_dir", lambda **_kwargs: str(application_dir))
+    return application_dir
 
 
 @pytest.fixture
@@ -414,7 +436,6 @@ def test_resolve_project_name(project_dir: Path) -> None:
 
 def test_resolve_project_name_errors(project_dir: Path) -> None:
     """Verifies the error-handling behavior of the _resolve_project_name() function."""
-
     # Verifies that malformed pyproject.toml files are not processed.
     pyproject_content = """
         [project
@@ -754,17 +775,13 @@ def test_verify_pypirc_nonexistent_file(tmp_path: Path) -> None:
     "config, expected_result",
     [
         # Valid configuration
-        ({"netlify": {"site": "project-api-docs.netlify.app", "token": "faketoken1234567890abcdef"}}, True),
+        ({"netlify": {"token": "faketoken1234567890abcdef"}}, True),
         # Missing netlify section
         ({"pypi": {"username": "__token__"}}, False),
-        # Missing site
-        ({"netlify": {"token": "faketoken1234567890abcdef"}}, False),
         # Missing token
         ({"netlify": {"site": "project-api-docs.netlify.app"}}, False),
-        # Empty site
-        ({"netlify": {"site": "  ", "token": "faketoken1234567890abcdef"}}, False),
         # Empty token
-        ({"netlify": {"site": "project-api-docs.netlify.app", "token": ""}}, False),
+        ({"netlify": {"token": ""}}, False),
         # Empty file
         ({}, False),
     ],
@@ -798,6 +815,97 @@ def test_verify_netlifyrc_nonexistent_file(tmp_path: Path) -> None:
 
     # Asserts that the function returns False for a nonexistent file
     assert result is False
+
+
+def test_resolve_documented_project_directory(documented_project_dir: Path) -> None:
+    """Verifies the functionality of the resolve_documented_project_directory() function."""
+    os.chdir(documented_project_dir)
+    result = aa.resolve_documented_project_directory()
+    assert result == documented_project_dir
+
+
+def test_resolve_documented_project_directory_python_project(project_dir: Path) -> None:
+    """Verifies that the resolve_documented_project_directory() function accepts Python project layouts."""
+    project_dir.joinpath("docs").mkdir()
+    os.chdir(project_dir)
+    result = aa.resolve_documented_project_directory()
+    assert result == project_dir
+
+
+def test_resolve_documented_project_directory_error(tmp_path: Path) -> None:
+    """Verifies the error handling behavior of the resolve_documented_project_directory() function."""
+    os.chdir(tmp_path)
+    message: str = (
+        f"Unable to confirm that ataraxis automation CLI has been called from the root directory of a valid "
+        f"documented project. This CLI expects that the current working directory is set to the root directory of "
+        f"the project, judged by the presence of '/src', '/docs' and 'tox.ini'. Current working directory is set to "
+        f"{Path.cwd()}, which does not contain at least one of the required files."
+    )
+    with pytest.raises((SystemExit, RuntimeError), match=_error_format(message)):
+        aa.resolve_documented_project_directory()
+
+
+def test_resolve_application_directory(application_dir: Path) -> None:
+    """Verifies the functionality of the application directory path resolution functions."""
+    assert aa.resolve_application_directory() == application_dir
+    assert application_dir.is_dir()
+    assert aa.resolve_pypirc_path() == application_dir.joinpath(".pypirc")
+    assert aa.resolve_netlifyrc_path() == application_dir.joinpath(".netlifyrc")
+
+
+def test_derive_netlify_site(tmp_path: Path) -> None:
+    """Verifies the functionality of the derive_netlify_site() function."""
+    project_root = tmp_path.joinpath("ataraxis-automation")
+    assert aa.derive_netlify_site(project_root=project_root) == "ataraxis-automation-api-docs.netlify.app"
+
+
+def test_read_and_write_netlify_site(tmp_path: Path) -> None:
+    """Verifies the functionality of the read_netlify_site() and write_netlify_site() functions."""
+    assert aa.read_netlify_site(project_root=tmp_path) is None
+
+    aa.write_netlify_site(project_root=tmp_path, site="project-api-docs.netlify.app")
+    assert aa.read_netlify_site(project_root=tmp_path) == "project-api-docs.netlify.app"
+
+
+def test_read_netlify_site_empty_file(tmp_path: Path) -> None:
+    """Verifies that the read_netlify_site() function treats a blank .netlify-site file as an unconfigured file."""
+    tmp_path.joinpath(".netlify-site").write_text("   \n")
+    assert aa.read_netlify_site(project_root=tmp_path) is None
+
+
+def test_migrate_legacy_pypirc(tmp_path: Path, application_dir: Path) -> None:
+    """Verifies the functionality of the migrate_legacy_pypirc() function."""
+    # A project without a legacy file has nothing to migrate.
+    assert aa.migrate_legacy_pypirc(project_root=tmp_path) is False
+
+    legacy_config = ConfigParser()
+    legacy_config["pypi"] = {"username": "__token__", "password": "pypi-faketoken"}
+    with tmp_path.joinpath(".pypirc").open("w") as legacy_file:
+        legacy_config.write(legacy_file)
+
+    assert aa.migrate_legacy_pypirc(project_root=tmp_path) is True
+    assert aa.verify_pypirc(file_path=application_dir.joinpath(".pypirc"))
+
+    # The shared token is already configured, so a second call does not overwrite it.
+    assert aa.migrate_legacy_pypirc(project_root=tmp_path) is False
+
+
+def test_migrate_legacy_netlifyrc(tmp_path: Path, application_dir: Path) -> None:
+    """Verifies the functionality of the migrate_legacy_netlifyrc() function."""
+    # A project without a legacy file has nothing to migrate.
+    assert aa.migrate_legacy_netlifyrc(project_root=tmp_path) is False
+
+    legacy_config = ConfigParser()
+    legacy_config["netlify"] = {"site": "project-api-docs.netlify.app", "token": "faketoken1234567890abcdef"}
+    with tmp_path.joinpath(".netlifyrc").open("w") as legacy_file:
+        legacy_config.write(legacy_file)
+
+    assert aa.migrate_legacy_netlifyrc(project_root=tmp_path) is True
+    assert aa.verify_netlifyrc(file_path=application_dir.joinpath(".netlifyrc"))
+    assert aa.read_netlify_site(project_root=tmp_path) == "project-api-docs.netlify.app"
+
+    # Both credentials are already configured, so a second call does not overwrite them.
+    assert aa.migrate_legacy_netlifyrc(project_root=tmp_path) is False
 
 
 @pytest.fixture
