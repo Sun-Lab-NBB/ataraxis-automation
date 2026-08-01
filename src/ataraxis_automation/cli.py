@@ -46,7 +46,7 @@ CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}  # pragma: no cove
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli() -> None:  # pragma: no cover
-    """Exposes the helper environment used to automate various project development and building steps.
+    """Exposes the helper commands used to automate various project development and building steps.
 
     Commands exposed by this interface are intended to be called via the 'tox' automation manager and should not be
     used directly by end-users.
@@ -75,6 +75,8 @@ def process_typed_markers() -> None:  # pragma: no cover
 def process_stubs() -> None:  # pragma: no cover
     """Distributes the stub files from the /stubs directory to the appropriate level of the /src or src/library_name
     directory (depending on the type of the processed project).
+
+    Once all stub files are distributed, removes the /stubs directory.
     """
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -122,7 +124,10 @@ def purge_stubs() -> None:  # pragma: no cover
     "-rt",
     "--replace-token",
     is_flag=True,
-    help="If this flag is provided, the command recreates the .pypirc file even if it already contains an API token.",
+    help=(
+        "If this flag is provided, the command replaces the API token stored in the shared .pypirc file even if "
+        "that file already contains a valid token."
+    ),
 )
 def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
     """Ensures that a validly formatted PyPI API token is contained in the .pypirc file stored in the shared
@@ -646,7 +651,7 @@ def create_environment(
     ),
 )
 def remove_environment(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
-    """Removes (deletes) the project's mamba environment if it exists."""
+    """Removes (deletes) the project's mamba environment and its environment directory, if either exists."""
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -727,7 +732,9 @@ def remove_environment(environment_name: str, environment_directory: Path | None
 def provision_environment(
     environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
 ) -> None:  # pragma: no cover
-    """Recreates the project's mamba environment."""
+    """Recreates the project's mamba environment and installs the project dependencies into the recreated
+    environment.
+    """
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
     project_root: Path = resolve_project_directory()
@@ -892,9 +899,8 @@ def export_environment(environment_name: str, environment_directory: Path | None
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
 
-    # Gets the list of environment that can be used to carry out mamba environment operations. Since
-    # python_version is not provided, this uses the default value (but the python_version argument is not needed for
-    # this function).
+    # Resolves the project's mamba environment data and generates a list of commands to interface with the environment.
+    # Since python_version is not provided, this uses the default value, which this command does not depend on.
     environment = ProjectEnvironment.resolve_project_environment(
         project_root=project_root,
         environment_name=environment_name,

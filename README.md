@@ -90,11 +90,12 @@ command terminates with an error, the terminal output describes whether the erro
 configuration or file structure.
 
 ### Automation Command-Line Interface
-All library functions designed to be called by end-users are exposed through the 'automation-cli' Command Line
-Interface (CLI). This CLI is automatically exposed by installing the library into a Python environment.
+All library functions designed to be called by automation pipelines are exposed through the 'automation-cli' Command
+Line Interface (CLI). This CLI is automatically exposed by installing the library into a Python environment. The
+commands are intended to be invoked through 'tox' tasks rather than directly by end-users.
 
 #### Automation-CLI
-All functions supplied by the library are accessible by calling `automation-cli` from a Python environment where
+All CLI commands supplied by the library are accessible by calling `automation-cli` from a Python environment where
 the library is installed. For example:
 - Use `automation-cli --help` to verify that the CLI is available and to see the list of supported commands.
 - Use `automation-cli COMMAND-NAME --help` to display additional information about a specific command. For example:
@@ -106,9 +107,9 @@ any of the exposed CLI's commands as part of a tox environment, add it to the 'c
 ```
 [testenv:create]
 deps =
-    ataraxis-automation==8.1.1
+    ataraxis-automation==9.0.0
 commands =
-    automation-cli create-environment --environment-name axa_dev --python-version 3.14
+    automation-cli create-environment --environment-name axa_dev --python-version 3.14 {posargs:}
 ```
 
 See the [tox.ini file](tox.ini) configuration file for the most up-to-date project development automation
@@ -129,7 +130,8 @@ Ataraxis framework project.
 
 Most commands in this section are designed to be executed together as part of the `tox` CLI command. These commands
 are referred to as 'checkout' tasks and must run successfully for any pull request candidate before it is merged into
-the main branch of each Ataraxis framework project.
+the main branch of each Ataraxis framework project. The 'upload' and 'deploy' tasks are kept out of the envlist and
+are called manually at release time.
 
 #### Lint
 Shell command: `tox -e lint`
@@ -220,7 +222,7 @@ skip_install = true
 description =
     Combines test-coverage data from multiple test runs (for different python versions) into a single html file. The
     file can be viewed by loading the 'reports/coverage_html/index.html'.
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 setenv = COVERAGE_FILE = reports/.coverage
 depends = {py312, py313, py314}-test
 commands =
@@ -240,11 +242,12 @@ opening PROJECT_ROOT/docs/build/html/index.html in a browser.
 
 Example tox.ini section for a pure-python project:
 ```
+[testenv:docs]
 description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 commands =
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
 ```
@@ -257,11 +260,12 @@ same .html file. To support this behavior, the tox.ini file must include an addi
 
 Example tox.ini section for a C-extension project:
 ```
+[testenv:docs]
 description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 commands =
     doxygen Doxyfile
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
@@ -282,7 +286,7 @@ Example tox.ini section for a pure-python project:
 [testenv:build]
 skip_install = true
 description = Builds the project's source code distribution (sdist) and binary distribution (wheel).
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 allowlist_externals = docker
 commands =
     python -m build . --sdist
@@ -292,11 +296,11 @@ commands =
 Example tox.ini section for a C-extension project:
 ```
 [testenv:build]
-skip-install = true
+skip_install = true
 description =
     Builds the project's source code distribution (sdist) and compiles and assembles binary wheels for all
     supported platform architectures.
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 allowlist_externals = docker
 commands =
     python -m build . --sdist
@@ -322,7 +326,7 @@ Example tox.ini section:
 [testenv:upload]
 skip_install = true
 description = Uses twine to upload all files inside the project's 'dist' directory to PyPI.
-deps = ataraxis-automation==8.2.0
+deps = ataraxis-automation==9.0.0
 commands =
     automation-cli acquire-pypi-token {posargs:}
     automation-cli upload-project
@@ -346,12 +350,17 @@ contain an index.html file.
 
 ***Note,*** the site identifier accepts both the site's domain name, such as 'project-api-docs.netlify.app', and the
 site's API (UUID) identifier. Full site URLs are also accepted and are reduced to the bare identifier before use. The
-acquisition prompt offers the PROJECT_NAME-api-docs.netlify.app identifier as its default, which is the naming
-convention followed by nearly all projects. Use `tox -e deploy --replace-site` to change the stored identifier.
+acquisition prompt offers the PROJECT_DIRECTORY_NAME-api-docs.netlify.app identifier as its default, derived from the
+name of the project's root directory, which is the naming convention followed by nearly all projects. Use
+`tox -e deploy -- --replace-site` to change the stored identifier.
 
 ***Note,*** Netlify API tokens are generated under 'User settings' → 'Applications' → 'Personal access tokens' in the
 Netlify web interface. A single token authorizes deployments to every site owned by the account that generated it, so
 one token is shared by all projects developed on the same machine.
+
+***Note,*** projects that still keep a .netlifyrc file in their root directory have the token migrated to the shared
+file and the site identifier migrated to the project's .netlify-site file the next time this task runs. The
+project-local .netlifyrc file can be deleted once the migration is reported.
 
 ***Warning!*** The .netlifyrc file stores an active API token. It is kept outside every project directory, so it stays
 out of reach of the version control systems that track the projects using it. The .netlify-site file stores no secret
@@ -364,7 +373,7 @@ skip_install = true
 description =
     Uploads the API documentation built by the 'docs' task to the project's Netlify site. Build the documentation with
     'tox -e docs' before calling this task.
-deps = ataraxis-automation==8.2.0
+deps = ataraxis-automation==9.0.0
 commands =
     automation-cli acquire-netlify-token {posargs:}
     automation-cli deploy-docs
@@ -372,7 +381,7 @@ commands =
 
 ### Supported Mamba Environment Manipulation Tox Tasks
 These tasks were added to automate repetitive tasks associated with managing project mamba environments during
-development. They assume that there is a validly configured mamba distribution installed and accessible from the
+development. They assume that validly configured mamba and uv distributions are installed and accessible from the
 shell of the machine that calls these commands.
 
 #### Install
@@ -385,7 +394,7 @@ Example tox.ini section:
 ```
 [testenv:install]
 skip_install = true
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 depends =
     lint
     stubs
@@ -395,7 +404,7 @@ depends =
     export
 description = Builds and installs the project into its development mamba environment.
 commands =
-    automation-cli install-project --environment-name axa_dev
+    automation-cli install-project --environment-name axa_dev {posargs:}
 ```
 
 #### Uninstall
@@ -407,7 +416,7 @@ Example tox.ini section:
 ```
 [testenv:uninstall]
 skip_install = true
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 description = Uninstalls the project from its development mamba environment.
 commands =
     automation-cli uninstall-project --environment-name axa_dev
@@ -419,19 +428,20 @@ Shell command: `tox -e create`
 Creates the project's development mamba environment and installs project dependencies listed in the pyproject.toml file
 into the environment. This task is intended to be used when setting up project development environments for new
 platforms and architectures. The task assumes that all dependencies are stored using the Ataraxis framework format:
-inside the general 'dependencies' section and the optional 'dev' dependency section. To allow installing prerelease
-packages, use `tox -e create -- --prerelease`.
+inside the general 'dependencies' section and the PEP 735 '[dependency-groups]' dev group. The legacy
+'[project.optional-dependencies]' dev section is also supported. To allow installing prerelease packages, use
+`tox -e create -- --prerelease`.
 
 Example tox.ini section:
 ```
 [testenv:create]
 skip_install = true
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 description =
     Creates the project's development mamba environment using the requested python version and installs runtime and
     development project dependencies extracted from the pyproject.toml file.
 commands =
-    automation-cli create-environment --environment-name axa_dev --python-version 3.14
+    automation-cli create-environment --environment-name axa_dev --python-version 3.14 {posargs:}
 ```
 
 #### Remove
@@ -445,7 +455,7 @@ Example tox.ini section:
 ```
 [testenv:remove]
 skip_install = true
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 description = Removes the project's development mamba environment.
 commands =
     automation-cli remove-environment --environment-name axa_dev
@@ -463,10 +473,10 @@ Example tox.ini section:
 ```
 [testenv:provision]
 skip_install = true
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 description = Provisions the project's development mamba environment by removing and (re)creating the environment.
 commands =
-    automation-cli provision-environment --environment-name axa_dev --python-version 3.14
+    automation-cli provision-environment --environment-name axa_dev --python-version 3.14 {posargs:}
 ```
 
 #### Export
@@ -481,7 +491,8 @@ Example tox.ini section:
 ```
 [testenv:export]
 skip_install = true
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
+depends = uninstall
 description = Exports the project's development mamba environment to the 'envs' project directory as a .yml file.
 commands =
     automation-cli export-environment --environment-name axa_dev
@@ -498,7 +509,7 @@ Example tox.ini section:
 ```
 [testenv:import]
 skip_install = true
-deps = ataraxis-automation==8.1.1
+deps = ataraxis-automation==9.0.0
 description =
     Creates or updates the project's development mamba environment using the .yml file stored in the 'envs' project
     directory.

@@ -16,7 +16,8 @@ You MUST invoke the appropriate skill before performing ANY of the following tas
 | Writing or modifying C# code            | `/csharp-style`     |
 | Writing or modifying README files       | `/readme-style`     |
 | Writing or modifying pyproject.toml     | `/pyproject-style`  |
-| Writing git commit messages             | `/commit`           |
+| Writing or modifying PlatformIO configs | `/platformio-config`|
+| Committing local changes                | `/commit`           |
 | Writing or modifying Sphinx docs files  | `/api-docs`         |
 | Creating or verifying project structure | `/project-layout`   |
 | Writing or modifying tox.ini files      | `/tox-config`       |
@@ -51,7 +52,8 @@ framework libraries, but Ataraxis framework libraries never depend on Sollertia 
 | `/csharp-style`         | Apply Ataraxis framework C# coding conventions (REQUIRED for C# code)         |
 | `/readme-style`         | Apply Ataraxis framework README conventions (REQUIRED for README files)       |
 | `/pyproject-style`      | Apply Ataraxis framework pyproject.toml conventions (REQUIRED for pyproject)  |
-| `/commit`               | Generate style-compliant commit messages for local changes                    |
+| `/platformio-config`    | Apply PlatformIO platformio.ini and library.json conventions                  |
+| `/commit`               | Stage all local changes and create a style-compliant commit (no push)         |
 | `/pr`                   | Draft a style-compliant pull request summary                                  |
 | `/release`              | Draft style-compliant release notes for a new release                         |
 | `/api-docs`             | Apply Ataraxis framework API documentation conventions (REQUIRED for docs)    |
@@ -64,9 +66,9 @@ framework libraries, but Ataraxis framework libraries never depend on Sollertia 
 ## Project context
 
 This is **ataraxis-automation**, a Python library that supports tox-based development automation pipelines used by all
-Ataraxis framework projects at Cornell University. It provides a CLI (`automation-cli`) that abstracts project
-environment manipulation and facilitates development tasks such as linting, typing, testing, documentation, and
-building.
+Ataraxis framework and Sollertia platform projects at Cornell University. It provides a CLI (`automation-cli`) that
+abstracts project environment manipulation and facilitates development tasks such as linting, typing, testing,
+documentation, and building.
 
 **Note:** The `/cpp-style` skill applies to both C++ embedded projects (e.g., `ataraxis-transport-layer-mc`,
 `ataraxis-micro-controller`, `sollertia-micro-controllers`) and C++ Python extension projects (e.g.,
@@ -84,10 +86,12 @@ Both enforce conventions consistent with the Python style guide used across all 
 
 ### Architecture
 
-- **CLI Module** (`cli.py`): Click-based CLI with commands for stub management, PyPI token handling, project
-  installation, and environment lifecycle management. Entry point is `automation-cli`.
+- **CLI Module** (`cli.py`): Click-based CLI with commands for stub management, PyPI and Netlify token handling, PyPI
+  upload, Netlify documentation deployment, project installation, and environment lifecycle management. Entry point is
+  `automation-cli`.
 - **Automation Module** (`automation.py`): Core logic including the `ProjectEnvironment` dataclass, project directory
-  resolution, dependency parsing, stub file management, and OS-specific mamba/uv command generation.
+  resolution, dependency parsing, stub file management, shared PyPI and Netlify credential storage and validation,
+  Netlify documentation deployment, and OS-specific mamba/uv command generation.
 - **No MCP Server**: This library does not provide an MCP server.
 
 ### Key patterns
@@ -97,21 +101,26 @@ Both enforce conventions consistent with the Python style guide used across all 
 - **Mamba/Conda Integration**: Multi-method environment directory detection supporting CONDA_PREFIX, Miniforge paths,
   and standard installation locations.
 - **uv for Package Installation**: Uses uv instead of pip for faster package installation.
-- **Stub File Management**: Automated `.pyi` stub generation and distribution with OS-specific duplicate handling.
+- **Stub File Management**: Automated distribution and purging of `stubgen`-generated `.pyi` files with OS-specific
+  duplicate handling.
 - **ProjectEnvironment Dataclass**: Encapsulates all environment commands (create, remove, install, export, etc.) into
   a single frozen dataclass.
 
 ### Core components
 
-| Component                 | File            | Purpose                                      |
-|---------------------------|-----------------|----------------------------------------------|
-| CLI commands              | `cli.py`        | Click-based command-line interface           |
-| ProjectEnvironment        | `automation.py` | Dataclass encapsulating environment commands |
-| resolve_project_directory | `automation.py` | Validates project directory structure        |
-| resolve_library_root      | `automation.py` | Finds library __init__.py for stub placement |
-| move_stubs                | `automation.py` | Distributes .pyi files to src directories    |
-| verify_pypirc             | `automation.py` | Validates PyPI token configuration           |
-| format_message            | `automation.py` | Wraps text at 120 characters for CLI output  |
+| Component                            | File            | Purpose                                              |
+|--------------------------------------|-----------------|------------------------------------------------------|
+| CLI commands                         | `cli.py`        | Click-based command-line interface                   |
+| ProjectEnvironment                   | `automation.py` | Dataclass encapsulating environment commands         |
+| resolve_project_directory            | `automation.py` | Validates Python project directory structure         |
+| resolve_documented_project_directory | `automation.py` | Validates docs-building project directory structure  |
+| resolve_library_root                 | `automation.py` | Finds library __init__.py for stub placement         |
+| move_stubs                           | `automation.py` | Distributes .pyi files to src directories            |
+| resolve_application_directory        | `automation.py` | Resolves the host-wide shared credential directory   |
+| verify_pypirc                        | `automation.py` | Validates PyPI token configuration                   |
+| verify_netlifyrc                     | `automation.py` | Validates Netlify token configuration                |
+| deploy_documentation                 | `automation.py` | Uploads built HTML docs to the project's Netlify site|
+| format_message                       | `automation.py` | Wraps text at 120 characters for CLI output          |
 
 ### Code standards
 
@@ -141,7 +150,8 @@ Both enforce conventions consistent with the Python style guide used across all 
 1. Invoke `/api-docs` for conventions on conf.py, RST structure, and Doxygen integration
 2. Determine the project archetype (Python-only, C++-only, or hybrid)
 3. Follow the templates in the skill's reference files for new documentation
-4. Changes to documentation affect the hosted Netlify site after rebuild
+4. Changes to documentation reach the hosted Netlify site after `tox -e docs` rebuilds it and `tox -e deploy` uploads
+   it
 
 **Note:** Claude Code skills have been moved to the main
 [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. Skill modifications should be made there.
