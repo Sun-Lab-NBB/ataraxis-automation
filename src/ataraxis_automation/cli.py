@@ -16,6 +16,8 @@ from .automation import (  # pragma: no cover
     verify_pypirc,
     format_message,
     colorize_message,
+    verify_netlifyrc,
+    deploy_documentation,
     resolve_library_root,
     generate_typed_marker,
     resolve_project_directory,
@@ -25,6 +27,10 @@ _MINIMUM_PYPI_TOKEN_LENGTH: int = 100  # pragma: no cover
 """Stores the minimum length, in characters, that a valid PyPI API token may have."""  # pragma: no cover
 _MAXIMUM_PYPI_TOKEN_LENGTH: int = 500  # pragma: no cover
 """Stores the maximum length, in characters, that a valid PyPI API token may have."""  # pragma: no cover
+_MINIMUM_NETLIFY_TOKEN_LENGTH: int = 20  # pragma: no cover
+"""Stores the minimum length, in characters, that a valid Netlify API token may have."""  # pragma: no cover
+_MAXIMUM_NETLIFY_TOKEN_LENGTH: int = 500  # pragma: no cover
+"""Stores the maximum length, in characters, that a valid Netlify API token may have."""  # pragma: no cover
 
 # Ensures that displayed CLICK help messages are formatted according to the lab standard.
 CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}  # pragma: no cover
@@ -187,6 +193,130 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
         message = "Valid PyPI token acquired and added to the project's '.pypirc' file for future use."
         click.echo(colorize_message(message=message, color="green"))
         break
+
+
+@cli.command()
+@click.option(
+    "-rt",
+    "--replace-token",
+    is_flag=True,
+    help=(
+        "If this flag is provided, the command recreates the .netlifyrc file even if it already contains the site "
+        "identifier and the API token."
+    ),
+)
+def acquire_netlify_token(*, replace_token: bool) -> None:  # pragma: no cover
+    """Ensures that the Netlify site identifier and a validly formatted Netlify API token are contained in the
+    .netlifyrc file stored in the root directory of the project.
+    """
+    # Verifies that the working directory is pointing to a project with the necessary key directories and files
+    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
+    project_root: Path = resolve_project_directory()
+
+    # Generates the path to the .netlifyrc file. The file is expected to be found inside the root directory of the
+    # project.
+    netlifyrc_path: Path = project_root.joinpath(".netlifyrc")
+
+    if verify_netlifyrc(file_path=netlifyrc_path) and not replace_token:
+        message: str = "Existing Netlify site identifier and API token found inside the '.netlifyrc' file."
+        click.echo(colorize_message(message=message, color="green"))
+        return
+
+    message = (
+        "Unable to use the existing Netlify credentials: the project's '.netlifyrc' file does not exist, is invalid, "
+        "or does not contain the site identifier and a valid Netlify API token. Proceeding to new credential "
+        "acquisition."
+    )
+    click.echo(colorize_message(message=message, color="white"))
+
+    # Enters the while loop to iteratively ask for the site identifier until a valid identifier is provided.
+    while True:
+        prompt: str = format_message(
+            message="Enter the Netlify site domain name or API (UUID) identifier, e.g: "
+            "'project-api-docs.netlify.app': ",
+        )
+        site: str = click.prompt(text=prompt, type=str)
+
+        # Accepts full site URLs by reducing them to the bare identifier expected by the Netlify API.
+        site = site.strip().removeprefix("https://").removeprefix("http://").rstrip("/")
+
+        # Validates that the identifier is not empty and does not contain characters that would corrupt the API
+        # request path.
+        if site and " " not in site and "/" not in site:
+            break
+
+        message = "The input identifier does not appear to be a valid Netlify site domain name or UUID."
+        click.echo(colorize_message(message=message, color="red"))
+        if not click.confirm("Do you want to try entering another site identifier?"):
+            message = "Netlify credential acquisition: aborted by user."
+            raise RuntimeError(format_message(message=message))
+
+    # Enters the while loop to iteratively ask for the token until a valid token entry is provided.
+    while True:
+        prompt = format_message(
+            message="Enter the Netlify (API) token. It will be stored inside the .netlifyrc file for future use. "
+            "Input is hidden: ",
+        )
+        token: str = click.prompt(text=prompt, hide_input=True, type=str)
+
+        token = token.strip()
+
+        # Netlify tokens carry no prefix and no checksum, so the validation is limited to the length bounds and the
+        # character set shared by all issued tokens.
+        valid: bool = bool(
+            token
+            and _MINIMUM_NETLIFY_TOKEN_LENGTH <= len(token) <= _MAXIMUM_NETLIFY_TOKEN_LENGTH
+            and re.match(r"^[A-Za-z0-9\-_]+$", token)
+        )
+
+        if valid:
+            break
+
+        message = "The input token does not appear to be a valid Netlify token."
+        click.echo(colorize_message(message=message, color="red"))
+        if not click.confirm("Do you want to try entering another token?"):
+            message = "Netlify credential acquisition: aborted by user."
+            raise RuntimeError(format_message(message=message))
+
+    config: ConfigParser = ConfigParser()
+    config["netlify"] = {"site": site, "token": token}
+    with netlifyrc_path.open(mode="w") as config_file:
+        config.write(config_file)
+
+    message = "Valid Netlify credentials acquired and added to the project's '.netlifyrc' file for future use."
+    click.echo(colorize_message(message=message, color="green"))
+
+
+@cli.command()
+def deploy_docs() -> None:  # pragma: no cover
+    """Deploys the API documentation built by the 'docs' task to the project's Netlify site."""
+    # Verifies that the working directory is pointing to a project with the necessary key directories and files
+    # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
+    project_root: Path = resolve_project_directory()
+
+    # Generates the path to the .netlifyrc file. The file is expected to be found inside the root directory of the
+    # project.
+    netlifyrc_path: Path = project_root.joinpath(".netlifyrc")
+
+    if not verify_netlifyrc(file_path=netlifyrc_path):
+        message: str = (
+            "Unable to deploy the API documentation. The project's '.netlifyrc' file does not exist, is invalid, or "
+            "does not contain the Netlify site identifier and API token. Use the 'acquire-netlify-token' command to "
+            "configure the file."
+        )
+        raise RuntimeError(format_message(message=message))
+
+    credentials: ConfigParser = ConfigParser()
+    credentials.read(netlifyrc_path)
+
+    website_url: str = deploy_documentation(
+        documentation_directory=project_root.joinpath("docs", "build", "html"),
+        site=credentials.get(section="netlify", option="site").strip(),
+        token=credentials.get(section="netlify", option="token").strip(),
+    )
+
+    message = f"API documentation successfully deployed to {website_url}."
+    click.echo(colorize_message(message=message, color="green"))
 
 
 @cli.command()

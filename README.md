@@ -323,6 +323,40 @@ commands =
     twine upload dist/* --skip-existing --config-file .pypirc
 ```
 
+#### Deploy
+Shell command: `tox -e deploy`
+
+Uploads the API documentation built by the 'docs' task to the project's [Netlify](https://www.netlify.com/) site. When
+this task runs for the first time, it uses automation-cli to generate a .netlifyrc file and store the user-provided
+Netlify site identifier and API token in that file. This allows reusing the credentials for later deployments,
+streamlining the process. Each deployment fully replaces the content served by the target site.
+
+***Note,*** this task uploads the documentation found inside the PROJECT_ROOT/docs/build/html directory. Run the 'docs'
+task to build the documentation before calling this task. The task aborts with an error when the directory does not
+contain an index.html file.
+
+***Note,*** the site identifier accepts both the site's domain name, such as 'project-api-docs.netlify.app', and the
+site's API (UUID) identifier. Full site URLs are also accepted and are reduced to the bare identifier before use.
+Netlify API tokens are generated under 'User settings' → 'Applications' → 'Personal access tokens' in the Netlify web
+interface. A single token authorizes deployments to every site owned by the account that generated it, so the same
+token is reused across all projects.
+
+***Warning!*** The .netlifyrc file stores an active API token. It is excluded from version control through the
+project's .gitignore file and must never be committed to the repository.
+
+Example tox.ini section:
+```
+[testenv:deploy]
+skip_install = true
+description =
+    Uploads the API documentation built by the 'docs' task to the project's Netlify site. Build the documentation with
+    'tox -e docs' before calling this task.
+deps = ataraxis-automation==8.2.0
+commands =
+    automation-cli acquire-netlify-token {posargs:}
+    automation-cli deploy-docs
+```
+
 ### Supported Mamba Environment Manipulation Tox Tasks
 These tasks were added to automate repetitive tasks associated with managing project mamba environments during
 development. They assume that there is a validly configured mamba distribution installed and accessible from the
@@ -513,6 +547,7 @@ This project uses `tox` for development automation. The following tox environmen
 | `docs`               | Builds the API documentation via Sphinx                      |
 | `build`              | Builds sdist and wheel distributions                         |
 | `upload`             | Uploads distributions to PyPI via twine                      |
+| `deploy`             | Uploads the built API documentation to Netlify               |
 | `install`            | Builds and installs the project into its mamba environment   |
 | `uninstall`          | Uninstalls the project from its mamba environment            |
 | `create`             | Creates the project's mamba development environment          |

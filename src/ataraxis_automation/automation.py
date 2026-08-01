@@ -2,6 +2,7 @@
 exposed by the 'cli' module. Implements the logic of all automation tasks.
 """
 
+import io
 import os
 import re
 import sys
@@ -12,6 +13,7 @@ import shutil
 from typing import Any
 from pathlib import Path
 import tomllib
+import zipfile
 import textwrap
 import subprocess
 from dataclasses import dataclass
@@ -19,6 +21,7 @@ from configparser import ConfigParser
 from collections.abc import Callable
 
 import click
+import requests
 
 _SUPPORTED_PLATFORMS: dict[str, str] = {
     "win32": "_win",
@@ -38,6 +41,12 @@ locks."""
 _FILE_RETRY_INITIAL_DELAY: float = 0.5
 """Stores the initial delay in seconds between file operation retry attempts. Each subsequent retry doubles the
 delay."""
+
+_NETLIFY_API_URL: str = "https://api.netlify.com/api/v1"
+"""Stores the base URL of the Netlify REST API used to deploy the project's API documentation."""
+
+_NETLIFY_DEPLOY_TIMEOUT: int = 300
+"""Stores the maximum time, in seconds, to wait for the Netlify deployment request to complete."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -523,6 +532,98 @@ def verify_pypirc(file_path: Path) -> bool:
         and config_validator.get("pypi", "username") == "__token__"
         and config_validator.get("pypi", "password").startswith("pypi-")
     )
+
+
+def verify_netlifyrc(file_path: Path) -> bool:
+    """Verifies that the target .netlifyrc file contains the Netlify site identifier and authentication credentials
+    (API token).
+
+    Notes:
+        This function is not able to verify whether the token is currently active or whether the site identifier
+        resolves to a site accessible with that token.
+
+    Args:
+        file_path: The absolute path to the .netlifyrc file to verify.
+
+    Returns:
+        True if the .netlifyrc file appears to contain a well-configured site identifier and API token and False
+        otherwise.
+
+    Raises:
+        configparser.Error: If the .netlifyrc file exists but contains malformed INI syntax.
+    """
+    config_validator: ConfigParser = ConfigParser()
+    config_validator.read(file_path)
+    return (
+        config_validator.has_section("netlify")
+        and config_validator.has_option(section="netlify", option="site")
+        and config_validator.has_option(section="netlify", option="token")
+        and bool(config_validator.get(section="netlify", option="site").strip())
+        and bool(config_validator.get(section="netlify", option="token").strip())
+    )
+
+
+def deploy_documentation(documentation_directory: Path, site: str, token: str) -> str:
+    """Deploys the pre-built API documentation to the target Netlify site.
+
+    Packages the documentation directory into a ZIP archive and uploads it to Netlify as a production deployment.
+
+    Notes:
+        Netlify deployments are atomic. The uploaded archive has to contain every file served by the site, as each
+        deployment fully replaces the content of the previous one.
+
+    Args:
+        documentation_directory: The absolute path to the directory that stores the built documentation .html files.
+        site: The Netlify site identifier. Both the site's API (UUID) identifier and its domain name are accepted.
+        token: The Netlify API token used to authenticate the deployment request.
+
+    Returns:
+        The URL of the website that serves the deployed documentation.
+
+    Raises:
+        RuntimeError: If the documentation directory does not contain the 'index.html' file. If the deployment
+            request does not reach Netlify or if Netlify rejects the deployment.
+    """
+    if not documentation_directory.joinpath("index.html").is_file():
+        message: str = (
+            f"Unable to deploy the API documentation stored in {documentation_directory}. The directory does not "
+            f"contain the 'index.html' file, which indicates that the documentation has not been built. Build the "
+            f"documentation with the 'docs' ('tox -e docs') task before deploying it."
+        )
+        raise RuntimeError(format_message(message=message))
+
+    archive: io.BytesIO = io.BytesIO()
+    with zipfile.ZipFile(file=archive, mode="w", compression=zipfile.ZIP_DEFLATED) as archive_file:
+        for file_path in sorted(documentation_directory.rglob("*")):
+            if file_path.is_file():
+                archive_file.write(filename=file_path, arcname=file_path.relative_to(documentation_directory))
+
+    try:
+        response: requests.Response = requests.post(
+            url=f"{_NETLIFY_API_URL}/sites/{site}/deploys",
+            headers={"Content-Type": "application/zip", "Authorization": f"Bearer {token}"},
+            data=archive.getvalue(),
+            timeout=_NETLIFY_DEPLOY_TIMEOUT,
+        )
+    except requests.RequestException as error:
+        message = (
+            f"Unable to deploy the API documentation to the '{site}' Netlify site. The deployment request failed with "
+            f"the following error: {error}."
+        )
+        raise RuntimeError(format_message(message=message)) from None
+
+    if not response.ok:
+        message = (
+            f"Unable to deploy the API documentation to the '{site}' Netlify site. Netlify rejected the deployment "
+            f"request with the status code {response.status_code} and the following response: {response.text}."
+        )
+        raise RuntimeError(format_message(message=message))
+
+    # Netlify reports the address of the deployed website under one of two keys, depending on whether the site is
+    # configured to serve traffic over HTTPS.
+    deployment_data: dict[str, Any] = response.json()
+    website_url: str = deployment_data.get("ssl_url") or deployment_data.get("url") or f"https://{site}"
+    return website_url
 
 
 def robust_rmtree(path: Path) -> None:

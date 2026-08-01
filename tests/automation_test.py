@@ -1,12 +1,15 @@
 """Contains tests for non-CLI functions provided by the automation module."""
 
+import io
 import os
 import re
 import sys
 import stat
 from types import TracebackType
 import shutil
+from typing import Any
 from pathlib import Path
+import zipfile
 import subprocess
 from configparser import ConfigParser
 from unittest.mock import Mock
@@ -745,6 +748,176 @@ def test_verify_pypirc_nonexistent_file(tmp_path: Path) -> None:
 
     # Asserts that the function returns False for a nonexistent file
     assert result is False
+
+
+@pytest.mark.parametrize(
+    "config, expected_result",
+    [
+        # Valid configuration
+        ({"netlify": {"site": "project-api-docs.netlify.app", "token": "faketoken1234567890abcdef"}}, True),
+        # Missing netlify section
+        ({"pypi": {"username": "__token__"}}, False),
+        # Missing site
+        ({"netlify": {"token": "faketoken1234567890abcdef"}}, False),
+        # Missing token
+        ({"netlify": {"site": "project-api-docs.netlify.app"}}, False),
+        # Empty site
+        ({"netlify": {"site": "  ", "token": "faketoken1234567890abcdef"}}, False),
+        # Empty token
+        ({"netlify": {"site": "project-api-docs.netlify.app", "token": ""}}, False),
+        # Empty file
+        ({}, False),
+    ],
+)
+def test_verify_netlifyrc(tmp_path: Path, config: dict[str, dict[str, str]], expected_result: bool) -> None:
+    """Verifies the functionality of the verify_netlifyrc() function.
+
+    Tests all supported netlifyrc layouts.
+    """
+    # Creates a mock .netlifyrc file with the given configuration
+    netlifyrc_path = tmp_path / ".netlifyrc"
+    config_parser = ConfigParser()
+    config_parser.read_dict(config)
+    with netlifyrc_path.open("w") as netlifyrc_file:
+        config_parser.write(netlifyrc_file)
+
+    # Runs the verify_netlifyrc function
+    result = aa.verify_netlifyrc(file_path=netlifyrc_path)
+
+    # Asserts that the function returns the expected result
+    assert result == expected_result
+
+
+def test_verify_netlifyrc_nonexistent_file(tmp_path: Path) -> None:
+    """Verifies the error-handling behavior of the verify_netlifyrc() function."""
+    # Creates a path to a nonexistent file
+    nonexistent_path = tmp_path / "nonexistent.netlifyrc"
+
+    # Runs the verify_netlifyrc function
+    result = aa.verify_netlifyrc(file_path=nonexistent_path)
+
+    # Asserts that the function returns False for a nonexistent file
+    assert result is False
+
+
+@pytest.fixture
+def documentation_directory(tmp_path: Path) -> Path:
+    """Generates a mock built documentation directory with the file layout produced by the 'docs' tox task."""
+    documentation_directory = tmp_path.joinpath("html")
+    documentation_directory.mkdir()
+    documentation_directory.joinpath("index.html").write_text("<html></html>")
+    static_directory = documentation_directory.joinpath("_static")
+    static_directory.mkdir()
+    static_directory.joinpath("styles.css").write_text("body {}")
+    return documentation_directory
+
+
+def test_deploy_documentation(monkeypatch: pytest.MonkeyPatch, documentation_directory: Path) -> None:
+    """Verifies the functionality of the deploy_documentation() function."""
+    captured_request: dict[str, Any] = {}
+
+    def _mock_post(**kwargs: Any) -> Mock:
+        captured_request.update(kwargs)
+        response = Mock()
+        response.ok = True
+        response.json.return_value = {"ssl_url": "https://project-api-docs.netlify.app"}
+        return response
+
+    monkeypatch.setattr(aa.requests, "post", _mock_post)
+
+    result = aa.deploy_documentation(
+        documentation_directory=documentation_directory, site="project-api-docs.netlify.app", token="faketoken"
+    )
+
+    # Asserts that the function returns the URL reported by Netlify
+    assert result == "https://project-api-docs.netlify.app"
+
+    # Asserts that the request targets the deploys endpoint of the requested site and carries the expected headers
+    assert captured_request["url"] == "https://api.netlify.com/api/v1/sites/project-api-docs.netlify.app/deploys"
+    assert captured_request["headers"]["Content-Type"] == "application/zip"
+    assert captured_request["headers"]["Authorization"] == "Bearer faketoken"
+
+    # Asserts that the uploaded archive stores every documentation file under a site-root-relative path
+    with zipfile.ZipFile(file=io.BytesIO(captured_request["data"])) as archive:
+        assert sorted(archive.namelist()) == ["_static/styles.css", "index.html"]
+
+
+def test_deploy_documentation_falls_back_to_insecure_url(
+    monkeypatch: pytest.MonkeyPatch, documentation_directory: Path
+) -> None:
+    """Verifies that deploy_documentation() reports the plain URL for sites that do not serve traffic over HTTPS."""
+
+    def _mock_post(**_kwargs: Any) -> Mock:
+        response = Mock()
+        response.ok = True
+        response.json.return_value = {"url": "http://project-api-docs.netlify.app"}
+        return response
+
+    monkeypatch.setattr(aa.requests, "post", _mock_post)
+
+    result = aa.deploy_documentation(
+        documentation_directory=documentation_directory, site="project-api-docs.netlify.app", token="faketoken"
+    )
+
+    assert result == "http://project-api-docs.netlify.app"
+
+
+def test_deploy_documentation_unbuilt_documentation(tmp_path: Path) -> None:
+    """Verifies the error-handling behavior of the deploy_documentation() function for unbuilt documentation."""
+    documentation_directory = tmp_path.joinpath("html")
+    documentation_directory.mkdir()
+
+    message = (
+        f"Unable to deploy the API documentation stored in {documentation_directory}. The directory does not "
+        f"contain the 'index.html' file, which indicates that the documentation has not been built. Build the "
+        f"documentation with the 'docs' ('tox -e docs') task before deploying it."
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        aa.deploy_documentation(
+            documentation_directory=documentation_directory, site="project-api-docs.netlify.app", token="faketoken"
+        )
+
+
+def test_deploy_documentation_rejected_deployment(
+    monkeypatch: pytest.MonkeyPatch, documentation_directory: Path
+) -> None:
+    """Verifies the error-handling behavior of the deploy_documentation() function for rejected deployments."""
+
+    def _mock_post(**_kwargs: Any) -> Mock:
+        response = Mock()
+        response.ok = False
+        response.status_code = 401
+        response.text = "Unauthorized"
+        return response
+
+    monkeypatch.setattr(aa.requests, "post", _mock_post)
+
+    message = (
+        "Unable to deploy the API documentation to the 'project-api-docs.netlify.app' Netlify site. Netlify rejected "
+        "the deployment request with the status code 401 and the following response: Unauthorized."
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        aa.deploy_documentation(
+            documentation_directory=documentation_directory, site="project-api-docs.netlify.app", token="faketoken"
+        )
+
+
+def test_deploy_documentation_failed_request(monkeypatch: pytest.MonkeyPatch, documentation_directory: Path) -> None:
+    """Verifies the error-handling behavior of the deploy_documentation() function for unreachable Netlify servers."""
+
+    def _mock_post(**_kwargs: Any) -> Mock:
+        raise aa.requests.ConnectionError("Connection refused")
+
+    monkeypatch.setattr(aa.requests, "post", _mock_post)
+
+    message = (
+        "Unable to deploy the API documentation to the 'project-api-docs.netlify.app' Netlify site. The deployment "
+        "request failed with the following error: Connection refused."
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        aa.deploy_documentation(
+            documentation_directory=documentation_directory, site="project-api-docs.netlify.app", token="faketoken"
+        )
 
 
 def test_delete_stubs(tmp_path: Path) -> None:
