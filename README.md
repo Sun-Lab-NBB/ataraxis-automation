@@ -472,19 +472,17 @@ commands =
 #### Export
 Shell command: `tox -e export`
 
-Exports the project's development environment as a .yml and spec.txt file. This task is used before distributing new
-versions of the project to allow the target audience to generate an identical copy of the development environment using
-the generated .yml and spec.txt files. While 'create' and 'provision' tasks make this largely obsolete, this
-functionality is maintained for all Ataraxis framework projects.
+Exports the project's development environment as a .yml file. This task is used before distributing new versions of
+the project to allow the target audience to generate an identical copy of the development environment using the
+generated .yml file. While 'create' and 'provision' tasks make this largely obsolete, this functionality is maintained
+for all Ataraxis framework projects.
 
 Example tox.ini section:
 ```
 [testenv:export]
 skip_install = true
 deps = ataraxis-automation==8.1.1
-description =
-    Exports the project's development mamba environment to the 'envs' project directory as a .yml file and as a
-    spec.txt with revision history.
+description = Exports the project's development mamba environment to the 'envs' project directory as a .yml file.
 commands =
     automation-cli export-environment --environment-name axa_dev
 ```
@@ -566,7 +564,7 @@ This project uses `tox` for development automation. The following tox environmen
 | `create`             | Creates the project's mamba development environment          |
 | `remove`             | Removes the project's mamba development environment          |
 | `provision`          | Recreates the mamba environment from scratch                 |
-| `export`             | Exports the mamba environment as .yml and spec.txt files     |
+| `export`             | Exports the mamba environment as a .yml file                 |
 | `import`             | Creates or updates the mamba environment from a .yml file    |
 
 Run any environment using `tox -e ENVIRONMENT`. For example, `tox -e lint`.

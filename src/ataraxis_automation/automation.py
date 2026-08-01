@@ -105,8 +105,6 @@ class ProjectEnvironment:
     """Stores the command used to update an already existing mamba environment using an existing .yml file."""
     export_yaml_command: str
     """Stores the command used to export the project's mamba environment to a .yml file."""
-    export_spec_command: str
-    """Stores the command used to export the project's mamba environment to an explicit spec.txt file."""
     install_project_command: str
     """Stores the command used to build and install the project as a library into the project's mamba environment."""
     uninstall_project_command: str
@@ -147,8 +145,8 @@ class ProjectEnvironment:
             ValueError: If the project name cannot be extracted from pyproject.toml or duplicate dependencies are
                 found.
         """
-        # Gets the environment name with the appropriate os-extension and the paths to the .yml and /spec files.
-        extended_environment_name, yaml_path, spec_path = _resolve_environment_files(
+        # Gets the environment name with the appropriate os-extension and the path to the .yml file.
+        extended_environment_name, yaml_path = _resolve_environment_files(
             project_root=project_root, environment_base_name=environment_name
         )
 
@@ -209,9 +207,6 @@ class ProjectEnvironment:
         activate_command = f"{conda_initialization_command} && conda activate {target_environment_directory}"
         deactivate_command = f"{conda_initialization_command} && conda deactivate"
 
-        # Generates the spec.txt export command, which is the same for all OS versions (unlike .yml export).
-        export_spec_command = f"mamba list -n {extended_environment_name} --use-uv --explicit > {spec_path}"
-
         # Generates dependency installation commands using uv:
         prerelease_flag = " --prerelease=allow" if prerelease else ""
         install_dependencies_command = (
@@ -247,7 +242,6 @@ class ProjectEnvironment:
             activate_command=activate_command,
             deactivate_command=deactivate_command,
             export_yaml_command=export_yaml_command,
-            export_spec_command=export_spec_command,
             create_command=create_command,
             create_from_yaml_command=yaml_create_command,
             remove_command=remove_command,
@@ -1236,9 +1230,9 @@ def _resolve_mamba_environments_directory() -> Path:
     raise RuntimeError(format_message(message=message))
 
 
-def _resolve_environment_files(project_root: Path, environment_base_name: str) -> tuple[str, Path, Path]:
-    """Determines the Operating System of the host platform and uses it to generate the absolute paths to the
-    os-specific mamba environment '.yml' and 'spec.txt' files.
+def _resolve_environment_files(project_root: Path, environment_base_name: str) -> tuple[str, Path]:
+    """Determines the Operating System of the host platform and uses it to generate the absolute path to the
+    os-specific mamba environment '.yml' file.
 
     Notes:
         Currently, this command supports the following Operating Systems: macOS (ARM64: Darwin), Linux (AMD64), and
@@ -1249,9 +1243,9 @@ def _resolve_environment_files(project_root: Path, environment_base_name: str) -
         environment_base_name: The name of the environment excluding the os_suffix, e.g.: 'axa_dev'.
 
     Returns:
-        A tuple of three elements. The first element is the name of the environment with the os-suffix, suitable
+        A tuple of two elements. The first element is the name of the environment with the os-suffix, suitable
         for local mamba commands. The second element is the absolute path to the os-specific environment's '.yml'
-        file. The third element is the absolute path to the os-specific environment's 'spec.txt' file.
+        file.
 
     Raises:
         RuntimeError: If the host OS does not match any of the supported operating systems.
@@ -1271,14 +1265,13 @@ def _resolve_environment_files(project_root: Path, environment_base_name: str) -
     # Resolves the absolute path to the 'envs' directory.
     environments_directory: Path = project_root.joinpath("envs")
 
-    # Selects the environment name according to the host OS and constructs the path to the environment .yml and spec
-    # files using the generated name.
+    # Selects the environment name according to the host OS and constructs the path to the environment .yml file
+    # using the generated name.
     os_suffix = _SUPPORTED_PLATFORMS[os_name]
     environment_name: str = f"{environment_base_name}{os_suffix}"
     yaml_path: Path = environments_directory.joinpath(f"{environment_name}.yml")
-    spec_path: Path = environments_directory.joinpath(f"{environment_name}_spec.txt")
 
-    return environment_name, yaml_path, spec_path
+    return environment_name, yaml_path
 
 
 def _check_package_engines() -> None:
