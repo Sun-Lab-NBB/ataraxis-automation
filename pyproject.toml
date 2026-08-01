@@ -47,6 +47,7 @@ classifiers = [
 dependencies = [
     # Automation Logic
     "click>=8,<9",
+    "platformdirs>=4,<5",
 
     # Testing
     "pytest>=9,<10",

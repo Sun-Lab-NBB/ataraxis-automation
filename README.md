@@ -307,42 +307,55 @@ commands =
 Shell command: `tox -e upload`
 
 Uploads the sdist and wheel files created by the 'build' task to [PyPI](https://pypi.org/). When this task runs for the
-first time, it uses automation-cli to generate a .pypirc file and store the user-provided PyPI API token in that file.
-This allows reusing the token for later uploads, streamlining the process. Once uploaded, the project (library) becomes
-a valid target for `pip install LIBRARYNAME` commands.
+first time, it uses automation-cli to store the user-provided PyPI API token inside a .pypirc file kept in the shared
+application directory. Every project developed on the same machine reuses that token, so it only has to be entered
+once. Once uploaded, the project (library) becomes a valid target for `pip install LIBRARYNAME` commands.
+
+***Warning!*** The .pypirc file stores an active API token. It is kept outside every project directory, so it stays out
+of reach of the version control systems that track the projects using it.
+
+***Note,*** projects that still keep a .pypirc file in their root directory have the token migrated to the shared file
+the next time this task runs. The project-local file can be deleted once the migration is reported.
 
 Example tox.ini section:
 ```
 [testenv:upload]
 skip_install = true
 description = Uses twine to upload all files inside the project's 'dist' directory to PyPI.
-deps = ataraxis-automation==8.1.1
-allowlist_externals = distutils
+deps = ataraxis-automation==8.2.0
 commands =
     automation-cli acquire-pypi-token {posargs:}
-    twine upload dist/* --skip-existing --config-file .pypirc
+    automation-cli upload-project
 ```
 
 #### Deploy
 Shell command: `tox -e deploy`
 
 Uploads the API documentation built by the 'docs' task to the project's [Netlify](https://www.netlify.com/) site. When
-this task runs for the first time, it uses automation-cli to generate a .netlifyrc file and store the user-provided
-Netlify site identifier and API token in that file. This allows reusing the credentials for later deployments,
-streamlining the process. Each deployment fully replaces the content served by the target site.
+this task runs for the first time, it uses automation-cli to acquire two credentials. The API token is stored inside a
+.netlifyrc file kept in the shared application directory, and the site identifier is stored inside the project's
+.netlify-site file. Each deployment fully replaces the content served by the target site.
+
+This task supports every project archetype that builds API documentation, including the C++ PlatformIO projects that
+have no pyproject.toml or envs directory. It verifies the project root through the presence of the /src and /docs
+directories and the tox.ini file.
 
 ***Note,*** this task uploads the documentation found inside the PROJECT_ROOT/docs/build/html directory. Run the 'docs'
 task to build the documentation before calling this task. The task aborts with an error when the directory does not
 contain an index.html file.
 
 ***Note,*** the site identifier accepts both the site's domain name, such as 'project-api-docs.netlify.app', and the
-site's API (UUID) identifier. Full site URLs are also accepted and are reduced to the bare identifier before use.
-Netlify API tokens are generated under 'User settings' → 'Applications' → 'Personal access tokens' in the Netlify web
-interface. A single token authorizes deployments to every site owned by the account that generated it, so the same
-token is reused across all projects.
+site's API (UUID) identifier. Full site URLs are also accepted and are reduced to the bare identifier before use. The
+acquisition prompt offers the PROJECT_NAME-api-docs.netlify.app identifier as its default, which is the naming
+convention followed by nearly all projects. Use `tox -e deploy --replace-site` to change the stored identifier.
 
-***Warning!*** The .netlifyrc file stores an active API token. It is excluded from version control through the
-project's .gitignore file and must never be committed to the repository.
+***Note,*** Netlify API tokens are generated under 'User settings' → 'Applications' → 'Personal access tokens' in the
+Netlify web interface. A single token authorizes deployments to every site owned by the account that generated it, so
+one token is shared by all projects developed on the same machine.
+
+***Warning!*** The .netlifyrc file stores an active API token. It is kept outside every project directory, so it stays
+out of reach of the version control systems that track the projects using it. The .netlify-site file stores no secret
+and is committed to the repository, as the site it identifies differs for each project.
 
 Example tox.ini section:
 ```
