@@ -160,33 +160,30 @@ def test_resolve_environment_files(project_dir: Path, monkeypatch: pytest.Monkey
 
     # Verifies environment resolution works as expected for the linux platform
     monkeypatch.setattr(sys, "platform", "linux")
-    environment_name, yaml_path, spec_path = aa._resolve_environment_files(
+    environment_name, yaml_path = aa._resolve_environment_files(
         project_root=resolved_project_directory,
         environment_base_name=environment_base_name,
     )
     assert environment_name == f"{environment_base_name}_lin"
     assert yaml_path == resolved_project_directory / "envs" / f"{environment_base_name}_lin.yml"
-    assert spec_path == resolved_project_directory / "envs" / f"{environment_base_name}_lin_spec.txt"
 
     # Verifies environment resolution works as expected for the Windows platform
     monkeypatch.setattr(sys, "platform", "win32")
-    environment_name, yaml_path, spec_path = aa._resolve_environment_files(
+    environment_name, yaml_path = aa._resolve_environment_files(
         project_root=resolved_project_directory,
         environment_base_name=environment_base_name,
     )
     assert environment_name == f"{environment_base_name}_win"
     assert yaml_path == resolved_project_directory / "envs" / f"{environment_base_name}_win.yml"
-    assert spec_path == resolved_project_directory / "envs" / f"{environment_base_name}_win_spec.txt"
 
     # Verifies environment resolution works as expected for the darwin (macOS ARM64) platform
     monkeypatch.setattr(sys, "platform", "darwin")
-    environment_name, yaml_path, spec_path = aa._resolve_environment_files(
+    environment_name, yaml_path = aa._resolve_environment_files(
         project_root=resolved_project_directory,
         environment_base_name=environment_base_name,
     )
     assert environment_name == f"{environment_base_name}_osx"
     assert yaml_path == resolved_project_directory / "envs" / f"{environment_base_name}_osx.yml"
-    assert spec_path == resolved_project_directory / "envs" / f"{environment_base_name}_osx_spec.txt"
 
 
 def test_resolve_environment_files_error(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -569,7 +566,6 @@ def test_project_environment_resolve(
     assert result.update_command is not None
     assert f"mamba env update -n test_env{os_suffix}" in result.update_command
     assert f"mamba env export --name test_env{os_suffix}" in result.export_yaml_command
-    assert f"mamba list -n test_env{os_suffix} --use-uv --explicit" in result.export_spec_command
     assert "uv pip install ." in result.install_project_command
     assert "uv pip uninstall test-project" in result.uninstall_project_command
 
@@ -1072,7 +1068,6 @@ def test_project_environment_exists(monkeypatch: pytest.MonkeyPatch) -> None:
         install_dependencies_command="uv pip install deps",
         update_command=None,
         export_yaml_command="mamba env export",
-        export_spec_command="mamba list --explicit",
         install_project_command="uv pip install .",
         uninstall_project_command="uv pip uninstall project",
         environment_name="test_env",

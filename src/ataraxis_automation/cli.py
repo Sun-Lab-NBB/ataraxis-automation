@@ -887,7 +887,7 @@ def import_environment(environment_name: str, environment_directory: Path | None
     ),
 )
 def export_environment(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
-    """Exports the requested mamba environment as .yml and spec.txt files to the /envs directory."""
+    """Exports the requested mamba environment as a .yml file to the /envs directory."""
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
     project_root: Path = resolve_project_directory()
@@ -918,17 +918,5 @@ def export_environment(environment_name: str, environment_directory: Path | None
         message = (
             f"Unable to export the '{environment.environment_name}' mamba environment to .yml file. See mamba-issued "
             f"error-message above for more information."
-        )
-        raise RuntimeError(format_message(message=message)) from None
-
-    # Exports environment as a spec.txt file.
-    try:
-        subprocess.run(environment.export_spec_command, shell=True, check=True)
-        message = f"'{environment.environment_name}' mamba environment exported to /envs as a spec.txt file."
-        click.echo(colorize_message(message=message, color="green"))
-    except subprocess.CalledProcessError:
-        message = (
-            f"Unable to export the '{environment.environment_name}' mamba environment to spec.txt file. See "
-            f"mamba-issued error-message above for more information."
         )
         raise RuntimeError(format_message(message=message)) from None
