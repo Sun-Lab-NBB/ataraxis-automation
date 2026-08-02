@@ -243,8 +243,16 @@ omit = [
 # This is used by the 'test' tox tasks to aggregate coverage data produced during pytest runtimes.
 [tool.coverage.paths]
 
-# Maps coverage measured in site-packages to source files in src
-source = ["src/", ".tox/*/lib/python*/site-packages/"]
+# Maps coverage measured in site-packages to source files in src. The second pattern matches the POSIX virtual
+# environment layout and the third matches the Windows layout, which omits the 'python*' path component. Both are
+# required for the 'coverage' task to merge the data measured by each 'test' task into a single record per source file.
+# Without the merge, every statement is judged against a single python version, so any statement that only executes on
+# some of the tested versions is misreported as uncovered.
+source = [
+    "src/",
+    ".tox/*/lib/python*/site-packages/",
+    ".tox/*/Lib/site-packages/",
+]
 
 # Same as above, specifies the output directory for the coverage .html report
 [tool.coverage.html]
