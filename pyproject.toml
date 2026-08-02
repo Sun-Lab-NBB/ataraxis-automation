@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # Project metadata section. Provides the general ID information about the project.
 [project]
 name = "ataraxis-automation"
-version = "8.2.0"
+version = "9.0.0"
 description = "Supports tox-based development automation pipelines used by other Ataraxis framework projects."
 readme = "README.md"
 license = "Apache-2.0"
@@ -60,7 +60,6 @@ dependencies = [
 
     # Documentation
     "sphinx>=9,<10",
-    "importlib_metadata>=9,<10",
     "furo>=2025,<2026",
     "sphinx-click>=6,<7",
     "sphinx-autodoc-typehints>=3,<4",
@@ -71,16 +70,13 @@ dependencies = [
 
     # Building
     "build>=1,<2",
-    "hatchling>=1,<2",
 
-    # C-Extension Project Support
+    # C++ Project Support
     "cibuildwheel[uv]>=4,<5",
-    "nanobind>=2,<3",
-    "scikit-build-core>=0,<1",
     "breathe>=4,<5",
 
     # Distribution
-    "twine>=6,<7",
+    "twine>=7,<8",
     "requests>=2,<3",
 ]
 
@@ -102,7 +98,7 @@ dev = [
     "tox-uv>=1,<2",
 ]
 
-# Specifies files that should not be included in the source-code distribution but are also not part of gitignore.
+# Specifies files that should not be included in the source-code distribution.
 [tool.hatch.build.targets.sdist]
 exclude = [".github", "recipe"]
 
@@ -125,23 +121,29 @@ lint.select = ["ALL"]
 
 # General ignore directives
 lint.ignore = [
-    "BLE001",  # Interferes with desired library behavior
-    "S602",    # Interferes with desired library behavior
-    "S607",    # Interferes with desired library behavior
+    # Shared corpus. These entries are present in every Ataraxis framework and Sollertia platform project.
     "W291",    # Conflicts with docstring formatting
     "ANN401",  # While suboptimal, ANY is a helpful type when used with caution
+    "BLE001",  # Broad exception handling is necessary at library boundaries
     "C901",    # Sometimes complex functions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
     "PLR0912", # Sometimes complex functions are necessary
-    "PLR0915", # Sometimes complex type definitions are necessary
     "PLR0913", # Sometimes complex functions are necessary
+    "PLR0915", # Sometimes complex type definitions are necessary
+    "PLR0917", # Call sites pass keyword arguments, so the positional count is immaterial
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
     "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
     "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
-    "D107",    # Project-specific, __init__ is documented inside the main class docstring where applicable
+    "D107",    # __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
     "PLW0603", # While global statement usage is not ideal, it greatly streamlines certain development patterns
+    "TID252",  # Conflicts with the library import management strategy
+    "CPY001",  # The license is declared in the LICENSE file and the project metadata
+
+    # Project-specific
+    "S602",    # Subprocess calls with shell=True are necessary to drive mamba and uv
+    "S607",    # Partial executable paths are necessary to invoke tools resolved from PATH
 ]
 
 # Additional formatting configurations
@@ -164,6 +166,25 @@ convention = "google"
 "**/__init__.py" = [
     "F401", # Imported but unused
     "F403", # Wildcard imports
+]
+"tests/**/*.py" = [
+    # Shared test corpus. These entries are present in every Ataraxis framework and Sollertia platform project.
+    "S101",    # Tests assert by design
+    "PLR2004", # Expected values are clearer inline than as named constants
+    "INP001",  # The test directory is not an importable package
+    "SLF001",  # Tests exercise private module members directly
+    "PT006",   # Parametrize argument names are declared as a single comma-separated string
+    "ARG001",  # Pytest injects fixtures that individual tests may not reference
+    "D",       # Test names and inline comments carry the intent that docstrings carry in library code
+    "ANN",     # Test functions and mock helpers do not need annotations
+
+    # Project-specific
+    "S106",    # Token arguments in tests carry fake values
+    "FBT001",  # Mock helpers mirror the boolean signatures of the functions they replace
+    "FBT002",  # Mock helpers mirror the boolean defaults of the functions they replace
+    "EM101",   # Mock failure messages are clearer inline than as named variables
+    "TRY003",  # Mock failure messages are defined at the raise site by design
+    "TRY301",  # Building a populated traceback requires raising inside the helper
 ]
 
 # Import sorting (isort) configuration.
@@ -212,6 +233,13 @@ exclude = [
     "tests/",                   # Ignores the test directory.
 ]
 
+# Lists the source files excluded from coverage measurement in full. Interface modules, such as the CLI, are covered
+# by the tests written for the functions they wrap.
+[tool.coverage.run]
+omit = [
+    "*/ataraxis_automation/cli.py",
+]
+
 # This is used by the 'test' tox tasks to aggregate coverage data produced during pytest runtimes.
 [tool.coverage.paths]
 
@@ -222,8 +250,10 @@ source = ["src/", ".tox/*/lib/python*/site-packages/"]
 [tool.coverage.html]
 directory = "reports/coverage_html"
 
-# Specifies additional ignore directives
+# Specifies the coverage gate and additional ignore directives
 [tool.coverage.report]
+fail_under = 100     # Requires the test suite to cover every measured statement
+show_missing = true  # Lists the statements missed by the test suite, so a failed check names the lines to cover
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
