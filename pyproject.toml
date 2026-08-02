@@ -60,7 +60,6 @@ dependencies = [
 
     # Documentation
     "sphinx>=9,<10",
-    "importlib_metadata>=9,<10",
     "furo>=2025,<2026",
     "sphinx-click>=6,<7",
     "sphinx-autodoc-typehints>=3,<4",
@@ -71,12 +70,9 @@ dependencies = [
 
     # Building
     "build>=1,<2",
-    "hatchling>=1,<2",
 
-    # C-Extension Project Support
+    # C++ Project Support
     "cibuildwheel[uv]>=4,<5",
-    "nanobind>=2,<3",
-    "scikit-build-core>=1,<2",
     "breathe>=4,<5",
 
     # Distribution
