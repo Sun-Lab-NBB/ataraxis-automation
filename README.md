@@ -27,7 +27,7 @@ ___
 
 - Supports Windows, Linux, and macOS.
 - Optimized for runtime speed by using mamba and uv for all environment management tasks.
-- Compliments the extensive suite of tox environments and tasks used by all Ataraxis framework projects to streamline
+- Complements the extensive suite of tox environments and tasks used by all Ataraxis framework projects to streamline
   development.
 - Apache 2.0 License.
 
@@ -85,16 +85,19 @@ Use the following command to install the library and all of its dependencies via
 ___
 
 ## Usage
+
 ***Note,*** the library expects the managed project to use a specific configuration and file structure. If any CLI
 command terminates with an error, the terminal output describes whether the error is due to an invalid project
 configuration or file structure.
 
 ### Automation Command-Line Interface
+
 All library functions designed to be called by automation pipelines are exposed through the 'automation-cli' Command
 Line Interface (CLI). This CLI is automatically exposed by installing the library into a Python environment. The
 commands are intended to be invoked through 'tox' tasks rather than directly by end-users.
 
 #### Automation-CLI
+
 All CLI commands supplied by the library are accessible by calling `automation-cli` from a Python environment where
 the library is installed. For example:
 - Use `automation-cli --help` to verify that the CLI is available and to see the list of supported commands.
@@ -102,6 +105,7 @@ the library is installed. For example:
   `automation-cli import-environment --help`.
 
 #### Tox Integration
+
 This library is intended to be used via [tox](https://tox.wiki/en/latest/user_guide.html) tasks (environments). To use
 any of the exposed CLI's commands as part of a tox environment, add it to the 'commands' section of the tox.ini:
 ```
@@ -117,11 +121,13 @@ suite used in the Ataraxis framework. For the most up-to-date C-extension projec
 tox.ini file of the [ataraxis-time](https://github.com/Sun-Lab-NBB/ataraxis-time) library.
 
 #### Additional Command Arguments
+
 ***Note,*** many sub-commands of the CLI have additional flags and arguments that can be used to further customize
 their runtime. Consult the [API documentation](#api-documentation) for the list of additional runtime flags for all
 supported CLI commands.
 
 ### Supported Checkout Tox Tasks
+
 This library is tightly linked to the environments defined in the [tox.ini file](tox.ini) configuration file.
 
 ***Warning!*** Commands listed in this section may and frequently are modified based on the specific needs of
@@ -134,6 +140,7 @@ the main branch of each Ataraxis framework project. The 'upload' and 'deploy' ta
 are called manually at release time.
 
 #### Lint
+
 Shell command: `tox -e lint`
 
 Uses [ruff](https://github.com/astral-sh/ruff) and [mypy](https://github.com/python/mypy) to statically analyze and,
@@ -165,6 +172,7 @@ runs and is not recommended for smaller projects, where the worker-startup overh
 gain.
 
 #### Stubs
+
 Shell command: `tox -e stubs`
 
 Uses [stubgen](https://mypy.readthedocs.io/en/stable/stubgen.html) to generate stub (.pyi) files and distributes them
@@ -187,6 +195,7 @@ commands =
 ```
 
 #### Test
+
 Shell command: `tox -e pyXXX-test`
 
 This task is executed for all python versions supported by each project. For example, ataraxis-automation supports
@@ -210,6 +219,7 @@ commands =
 ```
 
 #### Coverage
+
 Shell command: `tox -e coverage`
 
 This task is used in conjunction with the 'test' task. It aggregates code coverage data for different python versions
@@ -233,6 +243,7 @@ commands =
 ```
 
 #### Docs
+
 Shell command: `tox -e docs`
 
 Uses [Sphinx](https://www.sphinx-doc.org/en/master/) to automatically parse docstrings from source code and build the
@@ -272,6 +283,7 @@ commands =
 ```
 
 #### Build
+
 Shell command: `tox -e build`
 
 This task builds a source-code distribution (sdist) and a binary distribution (wheel) for the project. These
@@ -308,6 +320,7 @@ commands =
 ```
 
 #### Upload
+
 Shell command: `tox -e upload`
 
 Uploads the sdist and wheel files created by the 'build' task to [PyPI](https://pypi.org/). When this task runs for the
@@ -333,6 +346,7 @@ commands =
 ```
 
 #### Deploy
+
 Shell command: `tox -e deploy`
 
 Uploads the API documentation built by the 'docs' task to the project's [Netlify](https://www.netlify.com/) site. When
@@ -380,11 +394,13 @@ commands =
 ```
 
 ### Supported Mamba Environment Manipulation Tox Tasks
-These tasks were added to automate repetitive tasks associated with managing project mamba environments during
-development. They assume that validly configured mamba and uv distributions are installed and accessible from the
-shell of the machine that calls these commands.
+
+These tasks automate the repetitive work of managing project mamba environments during development. They assume that
+validly configured mamba and uv distributions are installed and accessible from the shell of the machine that calls
+these commands.
 
 #### Install
+
 Shell command: `tox -e install`
 
 Installs the project into its development mamba environment. To allow installing prerelease packages, use
@@ -408,6 +424,7 @@ commands =
 ```
 
 #### Uninstall
+
 Shell command: `tox -e uninstall`
 
 Removes the project from its development mamba environment.
@@ -423,6 +440,7 @@ commands =
 ```
 
 #### Create
+
 Shell command: `tox -e create`
 
 Creates the project's development mamba environment and installs project dependencies listed in the pyproject.toml file
@@ -445,11 +463,12 @@ commands =
 ```
 
 #### Remove
+
 Shell command: `tox -e remove`
 
 Removes the project's development mamba environment. Primarily, this task is intended to be used to clean the local
-system after project development is finished. Note; to reset the environment, it is advised to use the 'provision' task
-instead (see below).
+system after project development is finished. ***Note,*** to reset the environment, use the 'provision' task instead
+(see below).
 
 Example tox.ini section:
 ```
@@ -462,6 +481,7 @@ commands =
 ```
 
 #### Provision
+
 Shell command: `tox -e provision`
 
 This task is a combination of the 'remove' and 'create' tasks. It is designed to reset the project's development
@@ -480,12 +500,12 @@ commands =
 ```
 
 #### Export
+
 Shell command: `tox -e export`
 
 Exports the project's development environment as a .yml file. This task is used before distributing new versions of
 the project to allow the target audience to generate an identical copy of the development environment using the
-generated .yml file. While 'create' and 'provision' tasks make this largely obsolete, this functionality is maintained
-for all Ataraxis framework projects.
+generated .yml file. This functionality is maintained for all Ataraxis framework projects.
 
 Example tox.ini section:
 ```
@@ -499,6 +519,7 @@ commands =
 ```
 
 #### Import
+
 Shell command: `tox -e import`
 
 Imports the project's development environment from its .yml file. If the environment does not exist, this

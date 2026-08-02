@@ -9,19 +9,19 @@ understanding of the codebase by invoking the `/explore-codebase` skill.
 
 You MUST invoke the appropriate skill before performing ANY of the following tasks:
 
-| Task                                    | Skill to invoke     |
-|-----------------------------------------|---------------------|
-| Writing or modifying Python code        | `/python-style`     |
-| Writing or modifying C++ code           | `/cpp-style`        |
-| Writing or modifying C# code            | `/csharp-style`     |
-| Writing or modifying README files       | `/readme-style`     |
-| Writing or modifying pyproject.toml     | `/pyproject-style`  |
-| Writing or modifying PlatformIO configs | `/platformio-config`|
-| Committing local changes                | `/commit`           |
-| Writing or modifying Sphinx docs files  | `/api-docs`         |
-| Creating or verifying project structure | `/project-layout`   |
-| Writing or modifying tox.ini files      | `/tox-config`       |
-| Writing or modifying skill files        | `/skill-design`     |
+| Task                                    | Skill to invoke      |
+|-----------------------------------------|----------------------|
+| Writing or modifying Python code        | `/python-style`      |
+| Writing or modifying C++ code           | `/cpp-style`         |
+| Writing or modifying C# code            | `/csharp-style`      |
+| Writing or modifying README files       | `/readme-style`      |
+| Writing or modifying pyproject.toml     | `/pyproject-style`   |
+| Writing or modifying PlatformIO configs | `/platformio-config` |
+| Committing local changes                | `/commit`            |
+| Writing or modifying Sphinx docs files  | `/api-docs`          |
+| Creating or verifying project structure | `/project-layout`    |
+| Writing or modifying tox.ini files      | `/tox-config`        |
+| Writing or modifying skill files        | `/skill-design`      |
 
 This is non-negotiable. Each skill contains verification checklists that you MUST complete before submitting any work.
 Failure to invoke the appropriate skill results in style violations.
@@ -108,19 +108,19 @@ Both enforce conventions consistent with the Python style guide used across all 
 
 ### Core components
 
-| Component                            | File            | Purpose                                              |
-|--------------------------------------|-----------------|------------------------------------------------------|
-| CLI commands                         | `cli.py`        | Click-based command-line interface                   |
-| ProjectEnvironment                   | `automation.py` | Dataclass encapsulating environment commands         |
-| resolve_project_directory            | `automation.py` | Validates Python project directory structure         |
-| resolve_documented_project_directory | `automation.py` | Validates docs-building project directory structure  |
-| resolve_library_root                 | `automation.py` | Finds library __init__.py for stub placement         |
-| move_stubs                           | `automation.py` | Distributes .pyi files to src directories            |
-| resolve_application_directory        | `automation.py` | Resolves the host-wide shared credential directory   |
-| verify_pypirc                        | `automation.py` | Validates PyPI token configuration                   |
-| verify_netlifyrc                     | `automation.py` | Validates Netlify token configuration                |
-| deploy_documentation                 | `automation.py` | Uploads built HTML docs to the project's Netlify site|
-| format_message                       | `automation.py` | Wraps text at 120 characters for CLI output          |
+| Component                            | File            | Purpose                                               |
+|--------------------------------------|-----------------|-------------------------------------------------------|
+| CLI commands                         | `cli.py`        | Click-based command-line interface                    |
+| ProjectEnvironment                   | `automation.py` | Dataclass encapsulating environment commands          |
+| resolve_project_directory            | `automation.py` | Validates Python project directory structure          |
+| resolve_documented_project_directory | `automation.py` | Validates docs-building project directory structure   |
+| resolve_library_root                 | `automation.py` | Finds library __init__.py for stub placement          |
+| move_stubs                           | `automation.py` | Distributes .pyi files to src directories             |
+| resolve_application_directory        | `automation.py` | Resolves the host-wide shared credential directory    |
+| verify_pypirc                        | `automation.py` | Validates PyPI token configuration                    |
+| verify_netlifyrc                     | `automation.py` | Validates Netlify token configuration                 |
+| deploy_documentation                 | `automation.py` | Uploads built HTML docs to the project's Netlify site |
+| format_message                       | `automation.py` | Wraps text at 120 characters for CLI output           |
 
 ### Code standards
 
@@ -153,5 +153,5 @@ Both enforce conventions consistent with the Python style guide used across all 
 4. Changes to documentation reach the hosted Netlify site after `tox -e docs` rebuilds it and `tox -e deploy` uploads
    it
 
-**Note:** Claude Code skills have been moved to the main
-[ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. Skill modifications should be made there.
+**Note:** Claude Code skills live in the main
+[ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) repository. Make skill modifications there.

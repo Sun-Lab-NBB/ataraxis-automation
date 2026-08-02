@@ -40,8 +40,8 @@ _MINIMUM_NETLIFY_TOKEN_LENGTH: int = 20  # pragma: no cover
 _MAXIMUM_NETLIFY_TOKEN_LENGTH: int = 500  # pragma: no cover
 """Stores the maximum length, in characters, that a valid Netlify API token may have."""  # pragma: no cover
 
-# Ensures that displayed CLICK help messages are formatted according to the lab standard.
 CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}  # pragma: no cover
+"""Stores the Click settings that format displayed CLI help messages."""  # pragma: no cover
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
@@ -426,7 +426,7 @@ def upload_project() -> None:  # pragma: no cover
     "--environment-name",
     required=True,
     type=str,
-    help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
+    help="The name of the project's mamba environment without the os-suffix, e.g., 'project_dev'.",
 )
 @click.option(
     "-ed",
@@ -492,7 +492,7 @@ def install_project(
     "--environment-name",
     required=True,
     type=str,
-    help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
+    help="The name of the project's mamba environment without the os-suffix, e.g., 'project_dev'.",
 )
 @click.option(
     "-ed",
@@ -546,7 +546,7 @@ def uninstall_project(environment_name: str, environment_directory: Path | None)
     "--environment-name",
     required=True,
     type=str,
-    help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
+    help="The name of the project's mamba environment without the os-suffix, e.g., 'project_dev'.",
 )
 @click.option(
     "-p",
@@ -638,7 +638,7 @@ def create_environment(
     "--environment-name",
     required=True,
     type=str,
-    help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
+    help="The name of the project's mamba environment without the os-suffix, e.g., 'project_dev'.",
 )
 @click.option(
     "-ed",
@@ -704,7 +704,7 @@ def remove_environment(environment_name: str, environment_directory: Path | None
     "--environment-name",
     required=True,
     type=str,
-    help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
+    help="The name of the project's mamba environment without the os-suffix, e.g., 'project_dev'.",
 )
 @click.option(
     "-p",
@@ -812,7 +812,7 @@ def provision_environment(
     "--environment-name",
     required=True,
     type=str,
-    help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
+    help="The name of the project's mamba environment without the os-suffix, e.g., 'project_dev'.",
 )
 @click.option(
     "-ed",
@@ -881,7 +881,7 @@ def import_environment(environment_name: str, environment_directory: Path | None
     "--environment-name",
     required=True,
     type=str,
-    help="The name of the project's mamba environment without the os-suffix, e.g: 'project_dev'.",
+    help="The name of the project's mamba environment without the os-suffix, e.g., 'project_dev'.",
 )
 @click.option(
     "-ed",

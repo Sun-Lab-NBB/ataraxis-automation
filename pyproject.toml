@@ -102,7 +102,7 @@ dev = [
     "tox-uv>=1,<2",
 ]
 
-# Specifies files that should not be included in the source-code distribution but are also not part of gitignore.
+# Specifies files that should not be included in the source-code distribution.
 [tool.hatch.build.targets.sdist]
 exclude = [".github", "recipe"]
 
@@ -133,8 +133,8 @@ lint.ignore = [
     "C901",    # Sometimes complex functions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
     "PLR0912", # Sometimes complex functions are necessary
-    "PLR0915", # Sometimes complex type definitions are necessary
     "PLR0913", # Sometimes complex functions are necessary
+    "PLR0915", # Sometimes complex type definitions are necessary
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
     "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
@@ -164,6 +164,23 @@ convention = "google"
 "**/__init__.py" = [
     "F401", # Imported but unused
     "F403", # Wildcard imports
+]
+"tests/**/*.py" = [
+    "S101",    # Tests assert by design
+    "S106",    # Token arguments in tests carry fake values
+    "SLF001",  # Tests exercise private module members directly
+    "PLR2004", # Expected values are clearer inline than as named constants
+    "ANN001",  # Nested mock helpers do not need argument annotations
+    "ANN201",  # Test functions do not need return annotations
+    "D202",    # Conflicts with the blank line that separates setup from assertions
+    "INP001",  # The test directory is not an importable package
+    "PT006",   # Parametrize argument names are declared as a single comma-separated string
+    "ARG001",  # Pytest injects fixtures that individual tests may not reference
+    "FBT001",  # Mock helpers mirror the boolean signatures of the functions they replace
+    "FBT002",  # Mock helpers mirror the boolean defaults of the functions they replace
+    "EM101",   # Mock failure messages are clearer inline than as named variables
+    "TRY003",  # Mock failure messages are defined at the raise site by design
+    "TRY301",  # Building a populated traceback requires raising inside the helper
 ]
 
 # Import sorting (isort) configuration.

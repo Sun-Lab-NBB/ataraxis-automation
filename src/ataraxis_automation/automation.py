@@ -167,9 +167,9 @@ class ProjectEnvironment:
                 # If no manual override is available, re-raises the original error.
                 raise
 
-        # Generates commands that depend on the host OS type. Relies on resolve_environment_files() method to err if
-        # the host is running an unsupported OS, as the OS versions evaluated below are the same as used by
-        # resolve_environment_files(). Also generates the list of platform-specific dependencies.
+        # Generates commands that depend on the host OS type. Relies on _resolve_environment_files() to err if the
+        # host is running an unsupported OS, as the OS versions evaluated below are the same as used by
+        # _resolve_environment_files().
 
         # WINDOWS
         if "_win" in extended_environment_name:
@@ -178,8 +178,8 @@ class ProjectEnvironment:
                 f'mamba env export --name {extended_environment_name} --use-uv | findstr -v "prefix" > {yaml_path}'
             )
 
-            # Mamba environment activation and deactivation commands. Still uses 'conda' for activation due to more
-            # streamlined behavior and no performance downsides.
+            # Mamba environment activation and deactivation commands. Uses 'conda' for activation, as it is more
+            # streamlined and performs equally well.
             conda_initialization_command = "call conda.bat >NUL 2>&1"  # Redirects stdout and stderr to null
 
         # LINUX
@@ -362,7 +362,7 @@ def resolve_library_root(project_root: Path) -> Path:
     src_path: Path = project_root.joinpath("src")
 
     # If the __init__.py is found inside the /src directory, this indicates /src is the library root. This is typically
-    # true for C-extension projects, but not for pure Python project.
+    # true for C-extension projects, but not for pure Python projects.
     if src_path.joinpath("__init__.py").exists():
         return src_path
 
@@ -815,7 +815,7 @@ def robust_rmtree(path: Path) -> None:
 
     Raises:
         OSError: If the directory cannot be removed. On Windows, transient PermissionErrors are retried with
-            exponential backoff before the error is re-raised; on non-Windows platforms and for other error types,
+            exponential backoff before the error is re-raised. On non-Windows platforms and for other error types,
             the error propagates immediately.
     """
     # On non-Windows platforms, file locks are advisory, so no retry logic is needed.
@@ -979,7 +979,7 @@ def _get_base_name(dependency: str) -> str:
         dependency: The dependency name to process.
 
     Returns:
-        The process dependency name, stripped of version, platform, and any other modifiers.
+        The processed dependency name, stripped of version, platform, and any other modifiers.
     """
     # Strips quotes if present.
     dependency = dependency.strip("\"'")
@@ -995,7 +995,7 @@ def _get_base_name(dependency: str) -> str:
 def _add_dependency(dependency: str, dependencies: list[str], processed_dependencies: set[str]) -> None:
     """Verifies that the dependency base-name has not already been processed and, if not, adds it to the input list.
 
-    This method ensures that each dependency only appears in a single pyproject.toml dependency list, preventing
+    This function ensures that each dependency only appears in a single pyproject.toml dependency list, preventing
     listing dependencies as both required and development.
 
     Notes:
@@ -1010,7 +1010,7 @@ def _add_dependency(dependency: str, dependencies: list[str], processed_dependen
     Raises:
         ValueError: If the extracted dependency is found in multiple pyproject.toml dependency lists.
     """
-    # Strips the version, extras, and platform markers from dependencies to verify they are not duplicates
+    # Strips the version, extras, and platform markers from dependencies to verify they are not duplicates.
     stripped_dependency: str = _get_base_name(dependency=dependency)
     if stripped_dependency in processed_dependencies:
         message: str = (
@@ -1121,10 +1121,10 @@ def _resolve_project_name(project_root: Path) -> str:
     try:
         with pyproject_path.open(mode="rb") as toml_file:
             pyproject_data: dict[str, Any] = tomllib.load(toml_file)
-    except tomllib.TOMLDecodeError as e:
+    except tomllib.TOMLDecodeError as error:
         message: str = (
             f"Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax. "
-            f"Error details: {e}."
+            f"Error details: {error}."
         )
         raise ValueError(format_message(message=message)) from None
 
@@ -1238,11 +1238,11 @@ def _resolve_environment_files(project_root: Path, environment_base_name: str) -
 
     Notes:
         Currently, this function supports the following Operating Systems: macOS (Darwin), Linux, and Windows. The
-        host CPU architecture is not evaluated, the resolution depends only on the value of sys.platform.
+        resolution depends only on the value of sys.platform.
 
     Args:
         project_root: The absolute path to the root directory of the processed project.
-        environment_base_name: The name of the environment excluding the os_suffix, e.g.: 'axa_dev'.
+        environment_base_name: The name of the environment excluding the os_suffix, e.g., 'axa_dev'.
 
     Returns:
         A tuple of two elements. The first element is the name of the environment with the os-suffix, suitable
@@ -1292,7 +1292,7 @@ def _check_package_engines() -> None:
             stderr=subprocess.DEVNULL,
         )
     except subprocess.CalledProcessError:
-        # If mamba is not available, raises an error as it is now required.
+        # If mamba is not available, raises an error as it is required.
         message: str = (
             "Unable to interface with mamba for environment management. Mamba is required for this automation "
             "module and provides significantly faster conda operations. Install mamba (e.g., via miniforge3) and "
@@ -1310,7 +1310,7 @@ def _check_package_engines() -> None:
             stderr=subprocess.DEVNULL,
         )
     except subprocess.CalledProcessError:
-        # If uv is not available, raises an error as it is now required.
+        # If uv is not available, raises an error as it is required.
         message = (
             "Unable to interface with uv for package installation. uv is required for this automation module and "
             "provides significantly faster pip operations. Install uv (e.g., 'pip install uv' or 'mamba install uv') "
