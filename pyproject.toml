@@ -55,7 +55,7 @@ dependencies = [
     "pytest-xdist>=3,<4",
 
     # Coverage Reports
-    "coverage>=7,<8",
+    "coverage>=7.15,<8",  # 7.15 introduced the '--keep-combined' flag used by the 'coverage' tox task
     "junitparser>=5,<6",
 
     # Documentation

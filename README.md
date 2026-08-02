@@ -230,6 +230,11 @@ statements. The gate is configured through the 'fail_under' option in the pyproj
 as the CLI, stay outside the measured statements through the 'omit' list in the same file, and individual statements
 that the test suite cannot reach are marked with the 'pragma: no cover' comment.
 
+Every reporting command combines the coverage data files it finds, so all of them run with the '--keep-combined' flag
+to preserve the per-version data files for the commands that follow. The 'tool.coverage.paths' section of the
+pyproject.toml file lists both the POSIX and the Windows virtual environment layouts, so the data measured by each
+'test' task merges into a single record per source file on every supported platform.
+
 Example tox.ini section:
 ```
 [testenv:coverage]
@@ -244,9 +249,9 @@ depends = {py312, py313, py314}-test
 commands =
     junitparser merge --glob reports/pytest.xml.* reports/pytest.xml
     coverage combine --keep
-    coverage xml --fail-under=0
-    coverage html --fail-under=0
-    coverage report
+    coverage xml --fail-under=0 --keep-combined
+    coverage html --fail-under=0 --keep-combined
+    coverage report --keep-combined
 ```
 
 #### Docs
