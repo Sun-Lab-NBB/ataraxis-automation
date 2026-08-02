@@ -76,11 +76,11 @@ dependencies = [
     # C-Extension Project Support
     "cibuildwheel[uv]>=4,<5",
     "nanobind>=2,<3",
-    "scikit-build-core>=0,<1",
+    "scikit-build-core>=1,<2",
     "breathe>=4,<5",
 
     # Distribution
-    "twine>=6,<7",
+    "twine>=7,<8",
     "requests>=2,<3",
 ]
 
@@ -229,6 +229,13 @@ exclude = [
     "tests/",                   # Ignores the test directory.
 ]
 
+# Lists the source files excluded from coverage measurement in full. Interface modules, such as the CLI, are covered
+# by the tests written for the functions they wrap.
+[tool.coverage.run]
+omit = [
+    "*/ataraxis_automation/cli.py",
+]
+
 # This is used by the 'test' tox tasks to aggregate coverage data produced during pytest runtimes.
 [tool.coverage.paths]
 
@@ -239,8 +246,10 @@ source = ["src/", ".tox/*/lib/python*/site-packages/"]
 [tool.coverage.html]
 directory = "reports/coverage_html"
 
-# Specifies additional ignore directives
+# Specifies the coverage gate and additional ignore directives
 [tool.coverage.report]
+fail_under = 100     # Requires the test suite to cover every measured statement
+show_missing = true  # Lists the statements missed by the test suite, so a failed check names the lines to cover
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",

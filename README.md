@@ -225,21 +225,28 @@ Shell command: `tox -e coverage`
 This task is used in conjunction with the 'test' task. It aggregates code coverage data for different python versions
 and compiles it into an HTML report accessible by opening PROJECT_ROOT/reports/coverage_html/index.html in a browser.
 
+The task also applies the project's coverage gate, which requires the test suite to cover 100% of the measured
+statements. The gate is configured through the 'fail_under' option in the pyproject.toml file. Interface modules, such
+as the CLI, stay outside the measured statements through the 'omit' list in the same file, and individual statements
+that the test suite cannot reach are marked with the 'pragma: no cover' comment.
+
 Example tox.ini section:
 ```
 [testenv:coverage]
 skip_install = true
 description =
-    Combines test-coverage data from multiple test runs (for different python versions) into a single html file. The
-    file can be viewed by loading the 'reports/coverage_html/index.html'.
+    Combines test-coverage data from multiple test runs (for different python versions) into a single html file and
+    verifies that the combined data covers 100% of the measured statements. The file can be viewed by loading the
+    'reports/coverage_html/index.html'.
 deps = ataraxis-automation==9.0.0
 setenv = COVERAGE_FILE = reports/.coverage
 depends = {py312, py313, py314}-test
 commands =
     junitparser merge --glob reports/pytest.xml.* reports/pytest.xml
     coverage combine --keep
-    coverage xml
-    coverage html
+    coverage xml --fail-under=0
+    coverage html --fail-under=0
+    coverage report
 ```
 
 #### Docs
@@ -586,7 +593,7 @@ This project uses `tox` for development automation. The following tox environmen
 | `lint`               | Runs ruff formatting, ruff linting, and mypy type checking   |
 | `stubs`              | Generates py.typed marker and .pyi stub files                |
 | `{py312,...}-test`   | Runs the test suite via pytest for each supported Python     |
-| `coverage`           | Aggregates test coverage into an HTML report                 |
+| `coverage`           | Aggregates test coverage and applies the 100% coverage gate  |
 | `docs`               | Builds the API documentation via Sphinx                      |
 | `build`              | Builds sdist and wheel distributions                         |
 | `upload`             | Uploads distributions to PyPI via twine                      |

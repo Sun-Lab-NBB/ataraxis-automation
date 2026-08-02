@@ -1,14 +1,14 @@
 """Provides a Command Line Interface (CLI) that automates certain project building and development steps."""
 
-import re  # pragma: no cover
-import base64  # pragma: no cover
-from pathlib import Path  # pragma: no cover
-import subprocess  # pragma: no cover
-from configparser import ConfigParser  # pragma: no cover
+import re
+import base64
+from pathlib import Path
+import subprocess
+from configparser import ConfigParser
 
-import click  # pragma: no cover
+import click
 
-from .automation import (  # pragma: no cover
+from .automation import (
     ProjectEnvironment,
     move_stubs,
     delete_stubs,
@@ -31,21 +31,21 @@ from .automation import (  # pragma: no cover
     resolve_documented_project_directory,
 )
 
-_MINIMUM_PYPI_TOKEN_LENGTH: int = 100  # pragma: no cover
-"""Stores the minimum length, in characters, that a valid PyPI API token may have."""  # pragma: no cover
-_MAXIMUM_PYPI_TOKEN_LENGTH: int = 500  # pragma: no cover
-"""Stores the maximum length, in characters, that a valid PyPI API token may have."""  # pragma: no cover
-_MINIMUM_NETLIFY_TOKEN_LENGTH: int = 20  # pragma: no cover
-"""Stores the minimum length, in characters, that a valid Netlify API token may have."""  # pragma: no cover
-_MAXIMUM_NETLIFY_TOKEN_LENGTH: int = 500  # pragma: no cover
-"""Stores the maximum length, in characters, that a valid Netlify API token may have."""  # pragma: no cover
+_MINIMUM_PYPI_TOKEN_LENGTH: int = 100
+"""Stores the minimum length, in characters, that a valid PyPI API token may have."""
+_MAXIMUM_PYPI_TOKEN_LENGTH: int = 500
+"""Stores the maximum length, in characters, that a valid PyPI API token may have."""
+_MINIMUM_NETLIFY_TOKEN_LENGTH: int = 20
+"""Stores the minimum length, in characters, that a valid Netlify API token may have."""
+_MAXIMUM_NETLIFY_TOKEN_LENGTH: int = 500
+"""Stores the maximum length, in characters, that a valid Netlify API token may have."""
 
-CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}  # pragma: no cover
-"""Stores the Click settings that format displayed CLI help messages."""  # pragma: no cover
+CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}
+"""Stores the Click settings that format displayed CLI help messages."""
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
-def cli() -> None:  # pragma: no cover
+def cli() -> None:
     """Exposes the helper commands used to automate various project development and building steps.
 
     Commands exposed by this interface are intended to be called via the 'tox' automation manager and should not be
@@ -54,7 +54,7 @@ def cli() -> None:  # pragma: no cover
 
 
 @cli.command()
-def process_typed_markers() -> None:  # pragma: no cover
+def process_typed_markers() -> None:
     """Crawls the library root directory and ensures that the 'py.typed' marker is found only at the highest level of
     the library hierarchy (the highest directory with __init__.py in it).
     """
@@ -72,7 +72,7 @@ def process_typed_markers() -> None:  # pragma: no cover
 
 
 @cli.command()
-def process_stubs() -> None:  # pragma: no cover
+def process_stubs() -> None:
     """Distributes the stub files from the /stubs directory to the appropriate level of the /src or src/library_name
     directory (depending on the type of the processed project).
 
@@ -104,7 +104,7 @@ def process_stubs() -> None:  # pragma: no cover
 
 
 @cli.command()
-def purge_stubs() -> None:  # pragma: no cover
+def purge_stubs() -> None:
     """Removes all existing stub (.pyi) files from the library source code directories."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -129,7 +129,7 @@ def purge_stubs() -> None:  # pragma: no cover
         "that file already contains a valid token."
     ),
 )
-def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
+def acquire_pypi_token(*, replace_token: bool) -> None:
     """Ensures that a validly formatted PyPI API token is contained in the .pypirc file stored in the shared
     application directory.
     """
@@ -235,7 +235,7 @@ def acquire_pypi_token(*, replace_token: bool) -> None:  # pragma: no cover
         "file even if that file already contains an identifier."
     ),
 )
-def acquire_netlify_token(*, replace_token: bool, replace_site: bool) -> None:  # pragma: no cover
+def acquire_netlify_token(*, replace_token: bool, replace_site: bool) -> None:
     """Ensures that the project's .netlify-site file contains the Netlify site identifier and that the shared
     .netlifyrc file contains a validly formatted Netlify API token.
     """
@@ -340,7 +340,7 @@ def acquire_netlify_token(*, replace_token: bool, replace_site: bool) -> None:  
 
 
 @cli.command()
-def deploy_docs() -> None:  # pragma: no cover
+def deploy_docs() -> None:
     """Deploys the API documentation built by the 'docs' task to the project's Netlify site."""
     # Verifies that the working directory is pointing to a project that builds API documentation and resolves the
     # absolute path to the project's root directory.
@@ -377,7 +377,7 @@ def deploy_docs() -> None:  # pragma: no cover
 
 
 @cli.command()
-def upload_project() -> None:  # pragma: no cover
+def upload_project() -> None:
     """Uploads the distributions built by the 'build' task to PyPI.
 
     This command resolves the PyPI API token from the shared application directory, so the project does not have to
@@ -444,9 +444,7 @@ def upload_project() -> None:  # pragma: no cover
     default=False,
     help="Determines whether uv is allowed to install prerelease versions of dependencies.",
 )
-def install_project(
-    environment_name: str, environment_directory: Path | None, *, prerelease: bool
-) -> None:  # pragma: no cover
+def install_project(environment_name: str, environment_directory: Path | None, *, prerelease: bool) -> None:
     """Builds and installs the project into the specified mamba environment as a library."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -504,7 +502,7 @@ def install_project(
         "the default environment detection procedure when it fails."
     ),
 )
-def uninstall_project(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+def uninstall_project(environment_name: str, environment_directory: Path | None) -> None:
     """Uninstalls the project library from the specified mamba environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -573,7 +571,7 @@ def uninstall_project(environment_name: str, environment_directory: Path | None)
 )
 def create_environment(
     environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
-) -> None:  # pragma: no cover
+) -> None:
     """Creates the project's mamba environment and installs the project dependencies into the created environment."""
     # Verifies that the working directory is pointing to a project with the necessary key directories and files
     # (src, envs, pyproject.toml, tox.ini) and resolves the absolute path to the project's root directory.
@@ -650,7 +648,7 @@ def create_environment(
         "the default environment detection procedure when it fails."
     ),
 )
-def remove_environment(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+def remove_environment(environment_name: str, environment_directory: Path | None) -> None:
     """Removes (deletes) the project's mamba environment and its environment directory, if either exists."""
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
@@ -731,7 +729,7 @@ def remove_environment(environment_name: str, environment_directory: Path | None
 )
 def provision_environment(
     environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
-) -> None:  # pragma: no cover
+) -> None:
     """Recreates the project's mamba environment and installs the project dependencies into the recreated
     environment.
     """
@@ -824,7 +822,7 @@ def provision_environment(
         "the default environment detection procedure when it fails."
     ),
 )
-def import_environment(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+def import_environment(environment_name: str, environment_directory: Path | None) -> None:
     """Creates or updates the existing project's mamba environment based on the operating-system-specific .yml file
     stored in the project /envs directory.
     """
@@ -893,7 +891,7 @@ def import_environment(environment_name: str, environment_directory: Path | None
         "the default environment detection procedure when it fails."
     ),
 )
-def export_environment(environment_name: str, environment_directory: Path | None) -> None:  # pragma: no cover
+def export_environment(environment_name: str, environment_directory: Path | None) -> None:
     """Exports the requested mamba environment as a .yml file to the /envs directory."""
     # Resolves the project directory. Verifies that the working directory is pointing to a project with the necessary
     # key directories and files (src, envs, pyproject.toml, tox.ini).
