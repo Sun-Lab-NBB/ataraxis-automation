@@ -121,23 +121,29 @@ lint.select = ["ALL"]
 
 # General ignore directives
 lint.ignore = [
-    "BLE001",  # Interferes with desired library behavior
-    "S602",    # Interferes with desired library behavior
-    "S607",    # Interferes with desired library behavior
+    # Shared corpus. These entries are present in every Ataraxis framework and Sollertia platform project.
     "W291",    # Conflicts with docstring formatting
     "ANN401",  # While suboptimal, ANY is a helpful type when used with caution
+    "BLE001",  # Broad exception handling is necessary at library boundaries
     "C901",    # Sometimes complex functions are necessary
     "PLR0911", # Sometimes complex return graphs are necessary
     "PLR0912", # Sometimes complex functions are necessary
     "PLR0913", # Sometimes complex functions are necessary
     "PLR0915", # Sometimes complex type definitions are necessary
+    "PLR0917", # Call sites pass keyword arguments, so the positional count is immaterial
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
     "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
     "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
-    "D107",    # Project-specific, __init__ is documented inside the main class docstring where applicable
+    "D107",    # __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
     "PLW0603", # While global statement usage is not ideal, it greatly streamlines certain development patterns
+    "TID252",  # Conflicts with the library import management strategy
+    "CPY001",  # The license is declared in the LICENSE file and the project metadata
+
+    # Project-specific
+    "S602",    # Subprocess calls with shell=True are necessary to drive mamba and uv
+    "S607",    # Partial executable paths are necessary to invoke tools resolved from PATH
 ]
 
 # Additional formatting configurations
@@ -162,16 +168,18 @@ convention = "google"
     "F403", # Wildcard imports
 ]
 "tests/**/*.py" = [
+    # Shared test corpus. These entries are present in every Ataraxis framework and Sollertia platform project.
     "S101",    # Tests assert by design
-    "S106",    # Token arguments in tests carry fake values
-    "SLF001",  # Tests exercise private module members directly
     "PLR2004", # Expected values are clearer inline than as named constants
-    "ANN001",  # Nested mock helpers do not need argument annotations
-    "ANN201",  # Test functions do not need return annotations
-    "D202",    # Conflicts with the blank line that separates setup from assertions
     "INP001",  # The test directory is not an importable package
+    "SLF001",  # Tests exercise private module members directly
     "PT006",   # Parametrize argument names are declared as a single comma-separated string
     "ARG001",  # Pytest injects fixtures that individual tests may not reference
+    "D",       # Test names and inline comments carry the intent that docstrings carry in library code
+    "ANN",     # Test functions and mock helpers do not need annotations
+
+    # Project-specific
+    "S106",    # Token arguments in tests carry fake values
     "FBT001",  # Mock helpers mirror the boolean signatures of the functions they replace
     "FBT002",  # Mock helpers mirror the boolean defaults of the functions they replace
     "EM101",   # Mock failure messages are clearer inline than as named variables
