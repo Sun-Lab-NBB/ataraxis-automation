@@ -1,0 +1,50 @@
+from pathlib import Path
+
+from .automation import (
+    ProjectEnvironment as ProjectEnvironment,
+    move_stubs as move_stubs,
+    delete_stubs as delete_stubs,
+    robust_rmtree as robust_rmtree,
+    verify_pypirc as verify_pypirc,
+    format_message as format_message,
+    colorize_message as colorize_message,
+    verify_netlifyrc as verify_netlifyrc,
+    read_netlify_site as read_netlify_site,
+    write_netlify_site as write_netlify_site,
+    derive_netlify_site as derive_netlify_site,
+    resolve_pypirc_path as resolve_pypirc_path,
+    deploy_documentation as deploy_documentation,
+    resolve_library_root as resolve_library_root,
+    generate_typed_marker as generate_typed_marker,
+    migrate_legacy_pypirc as migrate_legacy_pypirc,
+    resolve_netlifyrc_path as resolve_netlifyrc_path,
+    migrate_legacy_netlifyrc as migrate_legacy_netlifyrc,
+    resolve_project_directory as resolve_project_directory,
+    resolve_documented_project_directory as resolve_documented_project_directory,
+)
+
+_MINIMUM_PYPI_TOKEN_LENGTH: int
+_MAXIMUM_PYPI_TOKEN_LENGTH: int
+_MINIMUM_NETLIFY_TOKEN_LENGTH: int
+_MAXIMUM_NETLIFY_TOKEN_LENGTH: int
+CONTEXT_SETTINGS: dict[str, int]
+
+def cli() -> None: ...
+def process_typed_markers() -> None: ...
+def process_stubs() -> None: ...
+def purge_stubs() -> None: ...
+def acquire_pypi_token(*, replace_token: bool) -> None: ...
+def acquire_netlify_token(*, replace_token: bool, replace_site: bool) -> None: ...
+def deploy_docs() -> None: ...
+def upload_project() -> None: ...
+def install_project(environment_name: str, environment_directory: Path | None, *, prerelease: bool) -> None: ...
+def uninstall_project(environment_name: str, environment_directory: Path | None) -> None: ...
+def create_environment(
+    environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
+) -> None: ...
+def remove_environment(environment_name: str, environment_directory: Path | None) -> None: ...
+def provision_environment(
+    environment_name: str, python_version: str, environment_directory: Path | None, *, prerelease: bool
+) -> None: ...
+def import_environment(environment_name: str, environment_directory: Path | None) -> None: ...
+def export_environment(environment_name: str, environment_directory: Path | None) -> None: ...
