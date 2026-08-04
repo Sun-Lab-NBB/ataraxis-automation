@@ -200,11 +200,6 @@ length-sort = true                 # Places shorter imports first
 [tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true       # Ignores unused *args and **kwargs
 
-# Pytest configuration. The import mode is declared here so that a bare 'pytest' invocation resolves test modules the
-# same way the '{py}-test' tox task does.
-[tool.pytest.ini_options]
-addopts = "--import-mode=importlib"
-
 # MyPy configuration section.
 [tool.mypy]
 # Strict mode settings (--strict), plus the unused-config warning that --strict does not enable
@@ -238,6 +233,11 @@ exclude = [
     "recipe/",                  # Ignores recipe directory (grayskull output target)
     "tests/",                   # Ignores the test directory.
 ]
+
+# Pytest configuration. The import mode is declared here so that a bare 'pytest' invocation resolves test modules the
+# same way the '{py}-test' tox task does.
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
 
 # Lists the source files excluded from coverage measurement in full. Interface modules, such as the CLI, are covered
 # by the tests written for the functions they wrap.

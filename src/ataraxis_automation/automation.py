@@ -500,7 +500,6 @@ def move_stubs(stubs_directory: Path, library_root: Path) -> None:
     """Moves typing stub (.pyi) files from the 'stubs' directory to the appropriate level(s) of the library directory
     tree.
 
-    This function should be called after running stubgen on the built library package (wheel). It distributes the stubs
     Notes:
         The 'stubs' directory is expected to hold the output of stubgen, which is exactly one subdirectory with an
         __init__.pyi file. That subdirectory is considered to be the library root in the 'stubs' directory structure.

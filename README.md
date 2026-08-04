@@ -199,7 +199,7 @@ for type-checkers like mypy to recognize the library as 'typed' and process it d
 Example tox.ini section:
 ```
 [testenv:stubs]
-description = Generates the py.typed marker and the .pyi stub files using the project's wheel distribution.
+description = Generates the py.typed marker and the .pyi stub files using the project's sdist distribution.
 depends = lint
 dependency_groups = dev
 commands =
@@ -230,7 +230,7 @@ description =
 dependency_groups = dev
 setenv = COVERAGE_FILE = reports{/}.coverage.{envname}
 commands =
-    pytest --import-mode=append --cov=ataraxis_automation --cov-config=pyproject.toml --cov-report=xml \
+    pytest --import-mode=importlib --cov=ataraxis_automation --cov-config=pyproject.toml --cov-report=xml \
     --junitxml=reports/pytest.xml.{envname} -n logical --dist loadgroup
 ```
 
@@ -651,8 +651,8 @@ To expedite the task's runtime, use the `tox --parallel` command to run some tas
 Claude Code skills and other AI development assets for this project are distributed through the
 [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) marketplace as part of the **automation** plugin. Install the
 plugin from the marketplace to make all associated skills and development tools available to compatible AI coding
-agents. See the [Claude Code Skills](https://github.com/Sun-Lab-NBB/ataraxis#claude-code-skills) section of the
-ataraxis README for the full list of available skills and installation instructions.
+agents. See the [ataraxis](https://github.com/Sun-Lab-NBB/ataraxis) README for the full list of available skills and
+installation instructions.
 
 ### Automation Troubleshooting
 

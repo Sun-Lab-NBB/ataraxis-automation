@@ -106,9 +106,9 @@ Both enforce conventions consistent with the Python style guide used across all 
 - **uv for Package Installation**: Uses uv instead of pip for faster package installation.
 - **Stub File Management**: Automated distribution and purging of `stubgen`-generated `.pyi` files with OS-specific
   duplicate handling.
-- **ProjectEnvironment Dataclass**: Encapsulates the environment commands (activate, deactivate, create, create
-  dry-run, remove, install, update) as string fields of a single frozen dataclass, and performs the environment export
-  through the `export_environment()` method, which invokes mamba directly and writes the .yml file atomically.
+- **ProjectEnvironment Dataclass**: Encapsulates the mamba and uv commands that manage the project environment as
+  fields of a single frozen dataclass, and performs the environment export through the `export_environment()` method,
+  which invokes mamba directly and writes the .yml file atomically.
 
 ### Core components
 
