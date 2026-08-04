@@ -5,7 +5,7 @@
 At the beginning of each coding session, before making any code changes, you should build a comprehensive
 understanding of the codebase by invoking the `/explore-codebase` skill.
 
-## Style guide requirements
+## Style guide compliance
 
 You MUST invoke the appropriate skill before performing ANY of the following tasks:
 
@@ -61,7 +61,10 @@ framework libraries, but Ataraxis framework libraries never depend on Sollertia 
 | `/tox-config`           | Apply Ataraxis framework tox.ini conventions (REQUIRED for tox configuration) |
 | `/skill-design`         | Generate, update, and verify skill files and CLAUDE.md                        |
 | `/audit-facts`          | Fact-check documentation against source code (findings only)                  |
+| `/audit-correctness`    | Hunt for active and latent bugs in source code (findings only)                |
+| `/audit-performance`    | Hunt for numeric, algorithmic, and memory costs in source code (findings only)|
 | `/audit-style`          | Audit files for style and convention compliance (findings only)               |
+| `/audit-project`        | Orchestrate the four audits and merge their findings (findings only)          |
 
 ## Project context
 
@@ -103,8 +106,9 @@ Both enforce conventions consistent with the Python style guide used across all 
 - **uv for Package Installation**: Uses uv instead of pip for faster package installation.
 - **Stub File Management**: Automated distribution and purging of `stubgen`-generated `.pyi` files with OS-specific
   duplicate handling.
-- **ProjectEnvironment Dataclass**: Encapsulates all environment commands (create, remove, install, export, etc.) into
-  a single frozen dataclass.
+- **ProjectEnvironment Dataclass**: Encapsulates the environment commands (activate, deactivate, create, create
+  dry-run, remove, install, update) as string fields of a single frozen dataclass, and performs the environment export
+  through the `export_environment()` method, which invokes mamba directly and writes the .yml file atomically.
 
 ### Core components
 
@@ -124,7 +128,7 @@ Both enforce conventions consistent with the Python style guide used across all 
 
 ### Code standards
 
-- MyPy strict mode with full type annotations
+- mypy strict mode with full type annotations
 - Google-style docstrings
 - 120 character line limit
 - See `/python-style` for complete conventions

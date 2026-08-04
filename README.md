@@ -27,8 +27,7 @@ ___
 
 - Supports Windows, Linux, and macOS.
 - Optimized for runtime speed by using mamba and uv for all environment management tasks.
-- Complements the extensive suite of tox environments and tasks used by all Ataraxis framework projects to streamline
-  development.
+- Supplies the CLI commands used by the tox environments of all Ataraxis framework projects.
 - Apache 2.0 License.
 
 ___
@@ -116,7 +115,7 @@ commands =
     automation-cli create-environment --environment-name axa_dev --python-version 3.14 {posargs:}
 ```
 
-See the [tox.ini file](tox.ini) configuration file for the most up-to-date project development automation
+See the [tox.ini](tox.ini) configuration file for the most up-to-date project development automation
 suite used in the Ataraxis framework. For the most up-to-date C-extension project automation suite, see the
 tox.ini file of the [ataraxis-time](https://github.com/Sun-Lab-NBB/ataraxis-time) library.
 
@@ -128,9 +127,9 @@ supported CLI commands.
 
 ### Supported Checkout Tox Tasks
 
-This library is tightly linked to the environments defined in the [tox.ini file](tox.ini) configuration file.
+This library is tightly linked to the environments defined in the [tox.ini](tox.ini) configuration file.
 
-***Warning!*** Commands listed in this section may and frequently are modified based on the specific needs of
+Commands listed in this section are frequently modified based on the specific needs of
 each Ataraxis framework project. This section is ***not*** a replacement for studying the tox.ini file for each
 Ataraxis framework project.
 
@@ -159,7 +158,7 @@ basepython = py312
 commands =
     automation-cli purge-stubs
     ruff format
-    ruff check --fix ./src
+    ruff check --fix ./src ./tests
     mypy ./src
 ```
 
@@ -298,21 +297,26 @@ commands =
 
 Shell command: `tox -e build`
 
-This task builds a source-code distribution (sdist) and a binary distribution (wheel) for the project. These
-distributions can then be uploaded to GitHub or PyPI or shared with the intended audience through any other means.
+This task clears the project's 'dist' directory and then builds a source-code distribution (sdist) and a binary
+distribution (wheel) for the project, so that artifacts built for an earlier version cannot be carried into the
+'upload' task. These distributions can then be uploaded to GitHub or PyPI or shared with the intended audience through
+any other means.
 Pure-python projects use [hatchling](https://hatch.pypa.io/latest/) and [build](https://build.pypa.io/en/stable/) to
 generate one source-code and one binary distribution. C-extension projects use
 [cibuildwheel](https://cibuildwheel.pypa.io/en/stable/) to compile the C-code for all supported platforms and
-architectures, building many binary distribution files alongside source-code distribution generated via build.
+architectures, building many binary distribution files alongside the source-code distribution generated via build.
 
 Example tox.ini section for a pure-python project:
 ```
 [testenv:build]
 skip_install = true
-description = Builds the project's source code distribution (sdist) and binary distribution (wheel).
+description =
+    Builds the project's source code distribution (sdist) and binary distribution (wheel), clearing the 'dist'
+    directory beforehand so that artifacts built for an earlier version cannot be carried into the upload task.
 deps = ataraxis-automation==9.0.0
 allowlist_externals = docker
 commands =
+    python -c "import shutil; shutil.rmtree('dist', ignore_errors=True)"
     python -m build . --sdist
     python -m build . --wheel
 ```
@@ -327,6 +331,7 @@ description =
 deps = ataraxis-automation==9.0.0
 allowlist_externals = docker
 commands =
+    python -c "import shutil; shutil.rmtree('dist', ignore_errors=True)"
     python -m build . --sdist
     cibuildwheel --output-dir dist --platform auto
 ```
@@ -350,7 +355,9 @@ Example tox.ini section:
 ```
 [testenv:upload]
 skip_install = true
-description = Uses twine to upload all files inside the project's 'dist' directory to PyPI.
+description =
+    Uses twine to upload the wheel ('*.whl') and source ('*.tar.gz') distributions found inside the project's 'dist'
+    directory to PyPI.
 deps = ataraxis-automation==9.0.0
 commands =
     automation-cli acquire-pypi-token {posargs:}
@@ -497,7 +504,9 @@ commands =
 Shell command: `tox -e provision`
 
 This task is a combination of the 'remove' and 'create' tasks. It is designed to reset the project's development
-environment by recreating it from scratch. This is used to both reset and actualize project development environments
+environment by recreating it from scratch. Before removing the existing environment, the task verifies that the
+replacement environment specification resolves. If it does not, the task aborts and leaves the existing environment in
+place. This is used to both reset and actualize project development environments
 to match the latest version of the pyproject.toml file dependency specification. To allow installing prerelease
 packages, use `tox -e provision -- --prerelease`.
 

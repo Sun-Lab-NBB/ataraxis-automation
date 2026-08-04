@@ -109,7 +109,7 @@ packages = ["src/ataraxis_automation"]
 # Ruff Configuration.
 [tool.ruff]
 line-length = 120         # Deviates from the commonly used '80' standard.
-indent-width = 4          # Same as black, indents are 4 spaces
+indent-width = 4
 target-version = "py312"  # Targets the lowest supported version of python
 src = ["src"]             # The name of the root source code directory
 
@@ -121,7 +121,7 @@ lint.select = ["ALL"]
 
 # General ignore directives
 lint.ignore = [
-    # Shared corpus. These entries are present in every Ataraxis framework and Sollertia platform project.
+    # Universal lint.ignore corpus. Present in every Ataraxis framework and Sollertia platform project.
     "W291",    # Conflicts with docstring formatting
     "ANN401",  # While suboptimal, ANY is a helpful type when used with caution
     "BLE001",  # Broad exception handling is necessary at library boundaries
@@ -129,11 +129,11 @@ lint.ignore = [
     "PLR0911", # Sometimes complex return graphs are necessary
     "PLR0912", # Sometimes complex functions are necessary
     "PLR0913", # Sometimes complex functions are necessary
-    "PLR0915", # Sometimes complex type definitions are necessary
+    "PLR0915", # Sometimes functions with many statements are necessary
     "PLR0917", # Call sites pass keyword arguments, so the positional count is immaterial
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
-    "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-182590771
+    "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "D107",    # __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
@@ -148,9 +148,9 @@ lint.ignore = [
 
 # Additional formatting configurations
 [tool.ruff.format]
-quote-style = "double"             # Uses double quotes for strings
-indent-style = "space"             # Uses space for indents
-skip-magic-trailing-comma = false  # Like black, ignores trailing commas
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false  # Like black, honors magic trailing commas
 line-ending = "auto"               # Automatically detects and standardizes line-ending character
 
 # Docstrings and comments' line length
@@ -175,6 +175,7 @@ convention = "google"
     "SLF001",  # Tests exercise private module members directly
     "PT006",   # Parametrize argument names are declared as a single comma-separated string
     "ARG001",  # Pytest injects fixtures that individual tests may not reference
+    "T201",    # Diagnostic prints are how a test reports intermediate state
     "D",       # Test names and inline comments carry the intent that docstrings carry in library code
     "ANN",     # Test functions and mock helpers do not need annotations
 
@@ -189,7 +190,7 @@ convention = "google"
 
 # Import sorting (isort) configuration.
 [tool.ruff.lint.isort]
-case-sensitive = true              # Takes case into account when sorting imports
+case-sensitive = true
 combine-as-imports = true          # Combines multiple "as" imports for the same package
 force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line (after combining for package)
 force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close
@@ -201,7 +202,7 @@ ignore-variadic-names = true       # Ignores unused *args and **kwargs
 
 # MyPy configuration section.
 [tool.mypy]
-# Strict mode settings (equivalent to --strict)
+# Strict mode settings (--strict), plus the unused-config warning that --strict does not enable
 warn_unused_configs = true
 disallow_any_generics = true
 disallow_subclassing_any = true
@@ -223,10 +224,10 @@ extra_checks = true
 pretty = true
 
 exclude = [
-    "ataraxis-automation-\\d+", # Ignores temporary folder created by setuptools when building the sdist
+    "ataraxis-automation-\\d+", # Ignores the temporary folder created when building the sdist
     "venv.*/",                  # Ignores virtual environments
-    "build/",                   # Ignores the sdist directory
-    "dist/",                    # Ignores the wheel directory
+    "build/",                   # Ignores the build scratch directory
+    "dist/",                    # Ignores the distribution (sdist and wheel) directory
     "docs/",                    # Ignores the sphinx / doxygen directory
     "stubs/",                   # Ignores stubs directory (stubgen output target)
     "recipe/",                  # Ignores recipe directory (grayskull output target)
