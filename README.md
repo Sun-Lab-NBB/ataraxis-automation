@@ -258,7 +258,8 @@ skip_install = true
 description =
     Combines test-coverage data from multiple test runs (for different python versions) into a single html file and
     verifies that the combined data covers 100% of the measured statements. The file can be viewed by loading the
-    'reports/coverage_html/index.html'.
+    'reports/coverage_html/index.html'. The task also merges the per-version JUnit test-result reports into
+    'reports/pytest.xml' and writes an xml coverage report to the project root.
 deps = ataraxis-automation==9.0.1
 setenv = COVERAGE_FILE = reports/.coverage
 depends = {py312, py313, py314}-test
@@ -301,10 +302,11 @@ Example tox.ini section for a C-extension project:
 ```
 [testenv:docs]
 description =
-    Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
-    'docs/build/html/index.html'.
+    Builds the API documentation from source code docstrings using Doxygen, Breathe and Sphinx. The result can be
+    viewed by loading 'docs/build/html/index.html'.
 depends = uninstall
 deps = ataraxis-automation==9.0.1
+allowlist_externals = doxygen
 commands =
     doxygen Doxyfile
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
@@ -343,8 +345,8 @@ Example tox.ini section for a C-extension project:
 [testenv:build]
 skip_install = true
 description =
-    Builds the project's source code distribution (sdist) and compiles and assembles binary wheels for all
-    supported platform architectures.
+    Builds the project's source code distribution (sdist) and binary distribution (wheel), clearing the 'dist'
+    directory beforehand so that artifacts built for an earlier version cannot be carried into the upload task.
 deps = ataraxis-automation==9.0.1
 allowlist_externals = docker
 commands =
@@ -532,7 +534,9 @@ Example tox.ini section:
 [testenv:provision]
 skip_install = true
 deps = ataraxis-automation==9.0.1
-description = Provisions the project's development mamba environment by removing and (re)creating the environment.
+description =
+    Provisions the project's development mamba environment by verifying that the new environment specification
+    resolves, then removing and (re)creating the environment and installing the project dependencies into it.
 commands =
     automation-cli provision-environment --environment-name axa_dev --python-version 3.14 {posargs:}
 ```
