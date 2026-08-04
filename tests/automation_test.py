@@ -273,6 +273,14 @@ def test_check_package_engines_missing_uv(monkeypatch: pytest.MonkeyPatch) -> No
         ("package; platform_system=='Linux' and python_version>='3.8'", "package"),
         ("'package==1.0; platform_system==\"Windows\"'", "package"),
         ("package[test,dev]>=1.0; platform_system=='Darwin'", "package"),
+        # Hyphenated and dotted distribution names, which the shared dependency corpus is built from. Dropping either
+        # character from the base-name pattern would collapse sibling packages onto one name.
+        ("ataraxis-automation>=9,<10", "ataraxis-automation"),
+        ("pytest-cov>=7,<8", "pytest-cov"),
+        ("sphinx-autodoc-typehints>=3,<4", "sphinx-autodoc-typehints"),
+        ("ruamel.yaml>=0.17", "ruamel.yaml"),
+        ("backports.tarfile", "backports.tarfile"),
+        ("cibuildwheel[uv]>=4,<5", "cibuildwheel"),
     ],
 )
 def test_get_base_name(dependency: str, expected: str) -> None:
@@ -540,48 +548,54 @@ def test_project_environment_resolve(
     # Verifies the returned ProjectEnvironment class instance contains the expected fields.
     assert isinstance(result, ProjectEnvironment)
 
-    # Checks conda initialization and activation.
-    if platform.startswith("win"):
-        assert "call conda.bat" in result.activate_command
-        assert "call conda.bat" in result.deactivate_command
-    else:
-        assert ". $(conda info --base)/etc/profile.d/conda.sh" in result.activate_command
-        assert ". $(conda info --base)/etc/profile.d/conda.sh" in result.deactivate_command
-
-    assert f"test_env{os_suffix}" in result.activate_command
-    assert "conda deactivate" in result.deactivate_command
-    assert f"python={python_version} uv tox tox-uv --yes" in result.create_command
-    assert f"test_env{os_suffix} --all --yes" in result.remove_command
-    assert result.environment_name == f"test_env{os_suffix}"
-
-    # Checks dependency installation command (prerelease disabled by default).
-    assert "uv pip install" in result.install_dependencies_command
-    assert '"runtime_dep==1.0"' in result.install_dependencies_command
-    assert '"dev_dep==1.0"' in result.install_dependencies_command
-    assert "--prerelease=allow" not in result.install_dependencies_command
-    assert "--prerelease=allow" not in result.install_project_command
-
-    # Checks other commands. The update command is only populated when an environment .yml file exists, so its type
-    # is 'str | None'. The .yml file created above guarantees it is set here.
-    assert result.update_command is not None
-    assert f"mamba env update -n test_env{os_suffix}" in result.update_command
-    assert f"mamba env export --name test_env{os_suffix}" in result.export_yaml_command
-    assert "uv pip install ." in result.install_project_command
-    assert "uv pip uninstall test-project" in result.uninstall_project_command
-
-    # Verifies that OS-specific returned parameters match expectation.
+    # Every command is pinned by full equality rather than by substring containment, so that dropping or altering any
+    # flag inside a command fails the test.
+    environment_directory = f"/path/to/miniforge3/envs/test_env{os_suffix}"
     if platform == "win32":
-        assert "findstr -v" in result.export_yaml_command
-    elif platform == "linux":
-        assert "head -n -1" in result.export_yaml_command
-    elif platform == "darwin":
-        assert "tail -r | tail -n +2 | tail -r" in result.export_yaml_command
+        conda_initialization = "call conda.bat >NUL 2>&1"
+        quoted_directory = f'"{environment_directory}"'
+        quoted_yaml_path = f'"{yaml_path}"'
+    else:
+        conda_initialization = '. "$(conda info --base)/etc/profile.d/conda.sh"'
+        quoted_directory = environment_directory
+        quoted_yaml_path = str(yaml_path)
 
-    # Checks for yml-related commands.
-    assert (
-        result.create_from_yaml_command == f"mamba env create -f {yaml_path} --yes --retry-clean-cache --pyc --use-uv"
+    assert result.environment_name == f"test_env{os_suffix}"
+    assert result.environment_directory == Path(environment_directory)
+    assert result.environment_yaml_path == yaml_path
+
+    assert result.activate_command == f"{conda_initialization} && conda activate {quoted_directory}"
+    assert result.deactivate_command == f"{conda_initialization} && conda deactivate"
+    assert result.create_command == (
+        f"mamba create -n test_env{os_suffix} python={python_version} uv tox tox-uv --yes "
+        f"--retry-clean-cache --pyc --use-uv"
     )
-    assert result.update_command == f"mamba env update -n test_env{os_suffix} -f {yaml_path} --yes --prune --use-uv"
+    assert result.create_dry_run_command == (
+        f"mamba create -n test_env{os_suffix} python={python_version} uv tox tox-uv --yes "
+        f"--retry-clean-cache --pyc --use-uv --dry-run"
+    )
+    assert result.remove_command == f"mamba remove -n test_env{os_suffix} --all --yes"
+
+    # Checks dependency installation command (prerelease disabled by default). Runtime dependencies are ordered ahead
+    # of development dependencies.
+    assert result.install_dependencies_command == (
+        f'uv pip install "runtime_dep==1.0" "dev_dep==1.0" --resolution highest --refresh --compile-bytecode '
+        f"--python={quoted_directory} --strict --exact"
+    )
+    assert result.install_project_command == (
+        f"uv pip install . --resolution highest --refresh --reinstall-package test-project --compile-bytecode "
+        f"--python={quoted_directory} --strict"
+    )
+    assert result.uninstall_project_command == f"uv pip uninstall test-project --python={quoted_directory}"
+
+    # Checks for yml-related commands. Both pin the target environment name, so the 'name' key inside the .yml file
+    # cannot redirect them.
+    assert result.create_from_yaml_command == (
+        f"mamba env create -n test_env{os_suffix} -f {quoted_yaml_path} --yes --retry-clean-cache --pyc --use-uv"
+    )
+    assert result.update_command == (
+        f"mamba env update -n test_env{os_suffix} -f {quoted_yaml_path} --yes --prune --use-uv"
+    )
 
     # Also tests the case where .yml files are not present in the /envs folder.
     yaml_path.unlink()
@@ -889,19 +903,58 @@ def test_migrate_legacy_pypirc(tmp_path: Path, application_dir: Path) -> None:
 def test_migrate_legacy_netlifyrc(tmp_path: Path, application_dir: Path) -> None:
     """Verifies the functionality of the migrate_legacy_netlifyrc() function."""
     # A project without a legacy file has nothing to migrate.
-    assert aa.migrate_legacy_netlifyrc(project_root=tmp_path) is False
+    result = aa.migrate_legacy_netlifyrc(project_root=tmp_path)
+    assert result == aa.NetlifyMigrationResult(token_migrated=False, site_migrated=False)
+    assert not result
 
     legacy_config = ConfigParser()
     legacy_config["netlify"] = {"site": "project-api-docs.netlify.app", "token": "faketoken1234567890abcdef"}
     with tmp_path.joinpath(".netlifyrc").open("w") as legacy_file:
         legacy_config.write(legacy_file)
 
-    assert aa.migrate_legacy_netlifyrc(project_root=tmp_path) is True
+    result = aa.migrate_legacy_netlifyrc(project_root=tmp_path)
+    assert result == aa.NetlifyMigrationResult(token_migrated=True, site_migrated=True)
     assert aa.verify_netlifyrc(file_path=application_dir.joinpath(".netlifyrc"))
     assert aa.read_netlify_site(project_root=tmp_path) == "project-api-docs.netlify.app"
 
     # Both credentials are already configured, so a second call does not overwrite them.
-    assert aa.migrate_legacy_netlifyrc(project_root=tmp_path) is False
+    result = aa.migrate_legacy_netlifyrc(project_root=tmp_path)
+    assert result == aa.NetlifyMigrationResult(token_migrated=False, site_migrated=False)
+
+
+def test_migrate_legacy_netlifyrc_partial_migrations(tmp_path: Path, application_dir: Path) -> None:
+    """Verifies that migrate_legacy_netlifyrc() reports the token and the site migrations independently."""
+    # The shared token is already configured, so only the site identifier migrates.
+    shared_config = ConfigParser()
+    shared_config["netlify"] = {"token": "sharedtoken1234567890abcd"}
+    application_dir.mkdir(parents=True, exist_ok=True)
+    with application_dir.joinpath(".netlifyrc").open("w") as shared_file:
+        shared_config.write(shared_file)
+
+    legacy_config = ConfigParser()
+    legacy_config["netlify"] = {"site": "project-api-docs.netlify.app", "token": "projecttoken9876543210zyx"}
+    with tmp_path.joinpath(".netlifyrc").open("w") as legacy_file:
+        legacy_config.write(legacy_file)
+
+    result = aa.migrate_legacy_netlifyrc(project_root=tmp_path)
+    assert result == aa.NetlifyMigrationResult(token_migrated=False, site_migrated=True)
+
+    # The shared file keeps the token it already stored.
+    shared_credentials = ConfigParser()
+    shared_credentials.read(application_dir.joinpath(".netlifyrc"))
+    assert shared_credentials.get(section="netlify", option="token") == "sharedtoken1234567890abcd"
+
+    # The project already carries a site identifier, so only the token migrates.
+    other_project = tmp_path.joinpath("other")
+    other_project.mkdir()
+    other_project.joinpath(".netlify-site").write_text("deviating-site.netlify.app\n")
+    application_dir.joinpath(".netlifyrc").unlink()
+    with other_project.joinpath(".netlifyrc").open("w") as legacy_file:
+        legacy_config.write(legacy_file)
+
+    result = aa.migrate_legacy_netlifyrc(project_root=other_project)
+    assert result == aa.NetlifyMigrationResult(token_migrated=True, site_migrated=False)
+    assert aa.read_netlify_site(project_root=other_project) == "deviating-site.netlify.app"
 
 
 @pytest.fixture
@@ -1067,11 +1120,12 @@ def test_project_environment_exists(monkeypatch: pytest.MonkeyPatch) -> None:
         remove_command="mamba remove -n test_env",
         install_dependencies_command="uv pip install deps",
         update_command=None,
-        export_yaml_command="mamba env export",
         install_project_command="uv pip install .",
         uninstall_project_command="uv pip uninstall project",
         environment_name="test_env",
         environment_directory=Path("/path/to/env"),
+        environment_yaml_path=Path("/path/to/envs/test_env.yml"),
+        create_dry_run_command="mamba create -n test_env --dry-run",
     )
 
     # Tests the case where the environment exists.
@@ -1587,3 +1641,372 @@ def test_rmtree_onerror_reraises_non_permission_error() -> None:
     exc_info = _capture_exc_info(OSError("Disk error"))
     with pytest.raises(OSError, match="Disk error"):
         aa._rmtree_onerror(func=os.remove, path="/nonexistent", exc_info=exc_info)
+
+
+# Group 6: Shell-command quoting and environment export.
+
+
+@pytest.mark.parametrize(
+    "platform, directory, expected",
+    [
+        ("linux", "/home/user/project/envs", "/home/user/project/envs"),
+        ("linux", "/home/user/My Projects/envs", "'/home/user/My Projects/envs'"),
+        ("darwin", "/Users/user/My Projects/envs", "'/Users/user/My Projects/envs'"),
+        ("win32", "/Users/John Smith/miniforge3/envs", '"/Users/John Smith/miniforge3/envs"'),
+        ("win32", "/Users/user/miniforge3/envs", '"/Users/user/miniforge3/envs"'),
+    ],
+)
+def test_quote_path(monkeypatch: pytest.MonkeyPatch, platform: str, directory: str, expected: str) -> None:
+    """Verifies that _quote_path() wraps paths in the syntax used by the host platform's command shell."""
+    monkeypatch.setattr(sys, "platform", platform)
+    assert aa._quote_path(path=Path(directory)) == expected
+
+
+@pytest.mark.parametrize(
+    "specification_lines, expected",
+    [
+        # A specification exported for an environment mamba does not track.
+        (["name: missing", "channels:", "dependencies:"], False),
+        # A specification with no dependencies key at all.
+        (["name: missing", "channels:"], False),
+        # A fully populated specification.
+        (["name: env", "channels:", "  - conda-forge", "dependencies:", "  - python=3.14"], True),
+        # An empty export.
+        ([], False),
+    ],
+)
+def test_declares_dependencies(specification_lines: list[str], expected: bool) -> None:
+    """Verifies that _declares_dependencies() distinguishes a populated specification from a contentless one."""
+    assert aa._declares_dependencies(specification_lines=specification_lines) is expected
+
+
+def _build_environment(yaml_path: Path, environment_directory: Path) -> ProjectEnvironment:
+    """Builds a ProjectEnvironment instance for tests that exercise its methods directly."""
+    return ProjectEnvironment(
+        activate_command="conda init && conda activate test_env",
+        deactivate_command="conda init && conda deactivate",
+        create_command="mamba create -n test_env",
+        create_dry_run_command="mamba create -n test_env --dry-run",
+        create_from_yaml_command=None,
+        remove_command="mamba remove -n test_env",
+        install_dependencies_command="uv pip install deps",
+        update_command=None,
+        install_project_command="uv pip install .",
+        uninstall_project_command="uv pip uninstall project",
+        environment_name="test_env_lin",
+        environment_directory=environment_directory,
+        environment_yaml_path=yaml_path,
+    )
+
+
+def test_export_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that export_environment() writes the specification without the host-specific prefix line."""
+    yaml_path = tmp_path.joinpath("test_env_lin.yml")
+    yaml_path.write_text("name: test_env_lin\ndependencies:\n  - stale=1.0\nprefix: /old\n")
+    environment = _build_environment(yaml_path=yaml_path, environment_directory=tmp_path.joinpath("env"))
+
+    captured: dict[str, Any] = {}
+
+    def mock_run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+        specification = "name: test_env_lin\nchannels:\n  - conda-forge\ndependencies:\n  - python=3.14\nprefix: /x\n"
+        return subprocess.CompletedProcess(command, 0, stdout=specification, stderr="")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    environment.export_environment()
+
+    # The export is issued without a shell, so the environment name cannot be re-parsed by one.
+    assert captured["command"] == ["mamba", "env", "export", "--name", "test_env_lin", "--use-uv"]
+    assert captured["kwargs"]["check"] is True
+    assert captured["kwargs"]["capture_output"] is True
+
+    # The host-specific prefix line is stripped and no temporary file survives the write.
+    assert yaml_path.read_text() == "name: test_env_lin\nchannels:\n  - conda-forge\ndependencies:\n  - python=3.14\n"
+    assert not tmp_path.joinpath("test_env_lin.yml.tmp").exists()
+
+
+def test_export_environment_mamba_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that a failing mamba export leaves the previously exported file unchanged."""
+    yaml_path = tmp_path.joinpath("test_env_lin.yml")
+    original = "name: test_env_lin\ndependencies:\n  - python=3.14\n"
+    yaml_path.write_text(original)
+    environment = _build_environment(yaml_path=yaml_path, environment_directory=tmp_path.joinpath("env"))
+
+    def mock_run(command: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[str]:
+        raise subprocess.CalledProcessError(109, command, stderr="solver failure")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    message: str = (
+        "Unable to export the 'test_env_lin' mamba environment to a .yml file. Mamba exited with the code 109 and "
+        "the following error: solver failure."
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        environment.export_environment()
+
+    assert yaml_path.read_text() == original
+
+
+def test_export_environment_contentless_specification(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that a specification declaring no dependencies does not overwrite the exported file.
+
+    Mamba answers a request for an environment it does not track with a zero exit code and a contentless skeleton,
+    which would otherwise replace the stored dependency pins.
+    """
+    yaml_path = tmp_path.joinpath("test_env_lin.yml")
+    original = "name: test_env_lin\ndependencies:\n  - python=3.14\n"
+    yaml_path.write_text(original)
+    environment = _build_environment(yaml_path=yaml_path, environment_directory=tmp_path.joinpath("env"))
+
+    def mock_run(command: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            command, 0, stdout="name: test_env_lin\nchannels:\ndependencies:\n", stderr=""
+        )
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    message: str = (
+        "Unable to export the 'test_env_lin' mamba environment to a .yml file. Mamba exported a specification that "
+        "declares no dependencies, which indicates that it does not track an environment under that name. The "
+        "previously exported file has been left unchanged."
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        environment.export_environment()
+
+    assert yaml_path.read_text() == original
+
+
+def test_environment_exists_reports_broken_activation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that a registered environment that fails to activate is reported as an error rather than as absent.
+
+    Collapsing the two conditions into a False return lets the callers that remove environments delete a working one.
+    """
+    environment_directory = tmp_path.joinpath("test_env_lin")
+    environment_directory.joinpath("conda-meta").mkdir(parents=True)
+    environment = _build_environment(
+        yaml_path=tmp_path.joinpath("test_env_lin.yml"), environment_directory=environment_directory
+    )
+
+    def mock_run(*_args: Any, **_kwargs: Any) -> subprocess.CompletedProcess[bytes]:
+        raise subprocess.CalledProcessError(127, "cmd")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    message: str = (
+        f"Unable to activate the 'test_env_lin' mamba environment stored under {environment_directory}, although the "
+        f"directory contains a valid environment. This typically indicates that conda is not installed or "
+        f"initialized on this machine. Make sure miniforge3 is installed and initialized before using the "
+        f"ataraxis-automation cli."
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        environment.environment_exists()
+
+
+def test_environment_exists_pins_subprocess_arguments(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that environment_exists() runs the activation command with check enabled."""
+    environment = _build_environment(
+        yaml_path=tmp_path.joinpath("test_env_lin.yml"), environment_directory=tmp_path.joinpath("env")
+    )
+    captured: dict[str, Any] = {}
+
+    def mock_run(command: str, **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    assert environment.environment_exists() is True
+    assert captured["command"] == environment.activate_command
+    assert captured["kwargs"]["check"] is True
+    assert captured["kwargs"]["shell"] is True
+
+
+def test_check_package_engines_pins_subprocess_arguments(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that _check_package_engines() probes both engines with check enabled."""
+    captured: list[dict[str, Any]] = []
+
+    def mock_run(command: str, **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
+        captured.append({"command": command, "kwargs": kwargs})
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    aa._check_package_engines()
+
+    assert [entry["command"] for entry in captured] == ["mamba --version", "uv --version"]
+    assert all(entry["kwargs"]["check"] is True for entry in captured)
+
+
+# Group 7: Guards that reject malformed inputs.
+
+
+def test_resolve_project_name_rejects_empty_name(project_dir: Path) -> None:
+    """Verifies that an empty project name is rejected alongside a missing one."""
+    project_dir.joinpath("pyproject.toml").write_text('[project]\nname = ""\n')
+
+    message = (
+        "Unable to resolve the project name from the pyproject.toml file. The 'name' field is missing or empty in "
+        "the [project] section of the file."
+    )
+    with pytest.raises(ValueError, match=_error_format(message)):
+        aa._resolve_project_name(project_root=project_dir)
+
+
+def test_resolve_project_environment_rejects_empty_dependencies(
+    project_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verifies that a project declaring no dependencies is rejected before any environment command is built."""
+    project_dir.joinpath("pyproject.toml").write_text('[project]\nname = "test-project"\n')
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(aa, "_check_package_engines", lambda: None)
+    monkeypatch.setenv("CONDA_PREFIX", "/path/to/miniforge3")
+    monkeypatch.setenv("CONDA_DEFAULT_ENV", "base")
+
+    message = (
+        f"Unable to resolve the mamba environment for the project stored under {project_dir}. The project's "
+        f"pyproject.toml file declares no runtime or development dependencies, so there is nothing to install into "
+        f"the environment."
+    )
+    with pytest.raises(ValueError, match=_error_format(message)):
+        ProjectEnvironment.resolve_project_environment(project_root=project_dir, environment_name="test_env")
+
+
+@pytest.mark.parametrize("conda_executable", ["mamba", "/mamba", "bin/mamba"])
+def test_resolve_mamba_envs_rejects_unusable_conda_exe(
+    tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch, conda_executable: str
+) -> None:
+    """Verifies that a relative or single-component CONDA_EXE value falls through to the remaining methods.
+
+    Indexing such a value raises IndexError, and resolving a relative one would silently select the 'envs' directory
+    of whichever project happens to be the working directory.
+    """
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+    clean_mamba_env.setattr(Path, "home", staticmethod(lambda: fake_home))
+    clean_mamba_env.setattr(sys, "platform", "linux")
+    clean_mamba_env.setenv("CONDA_EXE", conda_executable)
+
+    # Creates an 'envs' directory in the working directory, which every valid project root carries.
+    os.chdir(tmp_path)
+    tmp_path.joinpath("envs").mkdir(exist_ok=True)
+
+    message = (
+        "Unable to resolve the path to the mamba environments directory. This version of ataraxis-automation expects "
+        "that mamba is installed via miniforge3, following the deprecation of mambaforge. Make sure miniforge3 is "
+        "installed and initialized before using ataraxis-automation cli. Install from: "
+        "https://github.com/conda-forge/miniforge"
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        aa._resolve_mamba_environments_directory()
+
+
+@pytest.mark.parametrize(
+    "required_items, present_items",
+    [
+        (aa._PYTHON_PROJECT_ITEMS, ("tox.ini",)),
+        (aa._PYTHON_PROJECT_ITEMS, ("src", "envs", "tox.ini")),
+        (aa._DOCUMENTED_PROJECT_ITEMS, ("src", "tox.ini")),
+    ],
+)
+def test_resolve_project_directory_rejects_partial_layouts(
+    tmp_path: Path, required_items: tuple[str, ...], present_items: tuple[str, ...]
+) -> None:
+    """Verifies that a directory holding only some of the required items is rejected."""
+    for item in present_items:
+        target = tmp_path.joinpath(item)
+        if "." in item:
+            target.touch()
+        else:
+            target.mkdir()
+
+    os.chdir(tmp_path)
+    with pytest.raises(RuntimeError, match="Unable to confirm that ataraxis automation CLI"):
+        aa._resolve_project_directory(
+            required_items=required_items, project_description="Python", items_description="the required items"
+        )
+
+
+# Group 8: Deserialization and formatting oracles.
+
+
+@pytest.mark.parametrize(
+    "json_value, json_error, expected",
+    [
+        # Netlify prefers the HTTPS address when the site serves it.
+        ({"ssl_url": "https://site.netlify.app", "url": "http://site.netlify.app"}, None, "https://site.netlify.app"),
+        # A response carrying no JSON body still describes an accepted deployment.
+        (None, ValueError("Expecting value"), "https://project-api-docs.netlify.app"),
+        # A JSON array body carries no address keys.
+        ([], None, "https://project-api-docs.netlify.app"),
+    ],
+)
+def test_deploy_documentation_resolves_website_url(
+    monkeypatch: pytest.MonkeyPatch,
+    documentation_directory: Path,
+    json_value: Any,
+    json_error: Exception | None,
+    expected: str,
+) -> None:
+    """Verifies the address reported for each shape of the Netlify success response."""
+
+    def _mock_post(**_kwargs: Any) -> Mock:
+        response = Mock()
+        response.ok = True
+        if json_error is not None:
+            response.json.side_effect = json_error
+        else:
+            response.json.return_value = json_value
+        return response
+
+    monkeypatch.setattr(aa.requests, "post", _mock_post)
+
+    result = aa.deploy_documentation(
+        documentation_directory=documentation_directory, site="project-api-docs.netlify.app", token="faketoken"
+    )
+    assert result == expected
+
+
+def test_format_message_wraps_at_120_characters() -> None:
+    """Verifies that format_message() wraps text at the width shared by all Ataraxis framework output."""
+    message = " ".join(["word"] * 60)
+    formatted = aa.format_message(message=message)
+
+    assert all(len(line) <= 120 for line in formatted.splitlines())
+    assert formatted.splitlines()[0] == " ".join(["word"] * 24)
+
+    # Long words and hyphenated words are never broken across lines.
+    unbroken = aa.format_message(message="a" * 200)
+    assert unbroken == "a" * 200
+
+
+def test_move_stubs_rejects_missing_library_directory(project_dir: Path) -> None:
+    """Verifies that a stubs directory holding no qualifying subdirectory is rejected by the structure guard."""
+    stubs_directory = project_dir.joinpath("stubs")
+    library_root = project_dir / "src" / "library"
+    stubs_directory.mkdir()
+    library_root.mkdir(parents=True)
+
+    message: str = (
+        f"Unable to move the generated stub files to appropriate levels of the library source code directory. "
+        f"Expected exactly one subdirectory with __init__.pyi in '{stubs_directory}', but found {0}."
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
+
+
+def test_move_stubs_keeps_highest_numbered_duplicate_content(project_dir: Path) -> None:
+    """Verifies that the duplicate collapsing keeps the content of the highest-numbered copy."""
+    stubs_directory = project_dir / "stubs"
+    library_root = project_dir / "src" / "library"
+    stubs_directory.mkdir()
+    library_root.mkdir(parents=True)
+
+    stub_lib_dir = stubs_directory / "library"
+    stub_lib_dir.mkdir()
+    stub_lib_dir.joinpath("__init__.pyi").touch()
+    stub_lib_dir.joinpath("module 1.pyi").write_text("superseded")
+    stub_lib_dir.joinpath("module 2.pyi").write_text("current")
+
+    aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
+
+    assert (library_root / "module.pyi").read_text() == "current"
