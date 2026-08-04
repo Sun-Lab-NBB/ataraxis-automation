@@ -5,7 +5,7 @@
 At the beginning of each coding session, before making any code changes, you should build a comprehensive
 understanding of the codebase by invoking the `/explore-codebase` skill.
 
-## Style guide requirements
+## Style guide compliance
 
 You MUST invoke the appropriate skill before performing ANY of the following tasks:
 
@@ -128,7 +128,7 @@ Both enforce conventions consistent with the Python style guide used across all 
 
 ### Code standards
 
-- MyPy strict mode with full type annotations
+- mypy strict mode with full type annotations
 - Google-style docstrings
 - 120 character line limit
 - See `/python-style` for complete conventions

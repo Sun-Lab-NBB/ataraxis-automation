@@ -22,36 +22,36 @@ from ataraxis_automation.automation import ProjectEnvironment
 
 
 @pytest.fixture
-def project_dir(tmp_path: Path) -> Path:
+def project_directory(tmp_path: Path) -> Path:
     """Generates the test project root directory with the required files expected by the automation functions."""
-    project_dir = tmp_path.joinpath("project")
-    project_dir.mkdir()
-    project_dir.joinpath("src").mkdir()
-    project_dir.joinpath("envs").mkdir()
-    project_dir.joinpath("pyproject.toml").touch()
-    project_dir.joinpath("tox.ini").touch()
-    return project_dir
+    project_directory = tmp_path.joinpath("project")
+    project_directory.mkdir()
+    project_directory.joinpath("src").mkdir()
+    project_directory.joinpath("envs").mkdir()
+    project_directory.joinpath("pyproject.toml").touch()
+    project_directory.joinpath("tox.ini").touch()
+    return project_directory
 
 
 @pytest.fixture
-def documented_project_dir(tmp_path: Path) -> Path:
+def documented_project_directory(tmp_path: Path) -> Path:
     """Generates the test project root directory with the file layout shared by every project archetype that builds
     API documentation.
     """
-    project_dir = tmp_path.joinpath("project")
-    project_dir.mkdir()
-    project_dir.joinpath("src").mkdir()
-    project_dir.joinpath("docs").mkdir()
-    project_dir.joinpath("tox.ini").touch()
-    return project_dir
+    project_directory = tmp_path.joinpath("project")
+    project_directory.mkdir()
+    project_directory.joinpath("src").mkdir()
+    project_directory.joinpath("docs").mkdir()
+    project_directory.joinpath("tox.ini").touch()
+    return project_directory
 
 
 @pytest.fixture
-def application_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def application_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Isolates the shared application directory from the host machine to avoid polluting real user state."""
-    application_dir = tmp_path.joinpath("application")
-    monkeypatch.setattr(platformdirs, "user_data_dir", lambda **_kwargs: str(application_dir))
-    return application_dir
+    application_directory = tmp_path.joinpath("application")
+    monkeypatch.setattr(platformdirs, "user_data_dir", lambda **_kwargs: str(application_directory))
+    return application_directory
 
 
 @pytest.fixture
@@ -71,8 +71,6 @@ def _error_format(message: str) -> str:
     """Formats the input message with format_message() and escapes it using re, so that it can be used to verify
     raised exceptions.
 
-    This function is used to set up pytest 'match' clauses to verify raised exceptions.
-
     Args:
         message: The message to format and escape, according to standard Ataraxis testing parameters.
 
@@ -82,11 +80,11 @@ def _error_format(message: str) -> str:
     return re.escape(aa.format_message(message=message))
 
 
-def test_resolve_project_directory(project_dir: Path) -> None:
+def test_resolve_project_directory(project_directory: Path) -> None:
     """Verifies the functionality of the resolve_project_directory() function."""
-    os.chdir(project_dir)
+    os.chdir(project_directory)
     result = aa.resolve_project_directory()
-    assert result == project_dir
+    assert result == project_directory
 
 
 def test_resolve_project_directory_error(tmp_path: Path) -> None:
@@ -109,53 +107,50 @@ def test_resolve_project_directory_error(tmp_path: Path) -> None:
         ("src/library", "src/library"),
     ],
 )
-def test_resolve_library_root(project_dir: Path, init_location: str, expected: str) -> None:
-    """Verifies the functionality of the resolve_library_root() function.
-
-    Tests the following scenarios:
-        0 - library root being the /src directory (used by Ataraxis framework c-extension projects).
-        1 - library root being a subfolder under the /src directory (Used by Ataraxis framework pure-python projects).
+def test_resolve_library_root(project_directory: Path, init_location: str, expected: str) -> None:
+    """Verifies the functionality of the resolve_library_root() function, for the library root resolving to the /src
+    directory as in c-extension projects, and to a subfolder under /src as in pure-python projects.
     """
-    init_dir = project_dir.joinpath(init_location)
-    init_dir.mkdir(parents=True, exist_ok=True)
-    init_dir.joinpath("__init__.py").touch()
-    result = aa.resolve_library_root(project_root=project_dir)
-    assert result == project_dir / expected
+    init_directory = project_directory.joinpath(init_location)
+    init_directory.mkdir(parents=True, exist_ok=True)
+    init_directory.joinpath("__init__.py").touch()
+    result = aa.resolve_library_root(project_root=project_directory)
+    assert result == project_directory / expected
 
 
-def test_resolve_library_root_error(project_dir: Path) -> None:
+def test_resolve_library_root_error(project_directory: Path) -> None:
     """Verifies the error-handling behavior of the resolve_library_root() function."""
     # Verifies the method correctly fails when __init__.py is not found under /src or any subdirectory directly under
     # src
     message: str = (
-        f"Unable to resolve the path to the library root directory from the project root path {project_dir}. "
+        f"Unable to resolve the path to the library root directory from the project root path {project_directory}. "
         f"Specifically, did not find an __init__.py inside the /src directory and found {0} "
         f"sub-directories with __init__.py inside the /src directory. Make sure there is an __init__.py "
         f"inside /src or ONE of the sub-directories under /src."
     )
     with pytest.raises(RuntimeError, match=_error_format(message)):
-        aa.resolve_library_root(project_root=project_dir)
+        aa.resolve_library_root(project_root=project_directory)
 
     # Verifies that the method fails for cases where multiple subdirectories under src have __init__.py.
-    library1 = project_dir.joinpath("src/library1")
-    library2 = project_dir.joinpath("src/library2")
+    library1 = project_directory.joinpath("src/library1")
+    library2 = project_directory.joinpath("src/library2")
     library1.mkdir(parents=True, exist_ok=True)
     library2.mkdir(parents=True, exist_ok=True)
     library1.joinpath("__init__.py").touch()
     library2.joinpath("__init__.py").touch()
     message = (
-        f"Unable to resolve the path to the library root directory from the project root path {project_dir}. "
+        f"Unable to resolve the path to the library root directory from the project root path {project_directory}. "
         f"Specifically, did not find an __init__.py inside the /src directory and found {2} "
         f"sub-directories with __init__.py inside the /src directory. Make sure there is an __init__.py "
         f"inside /src or ONE of the sub-directories under /src."
     )
     with pytest.raises(RuntimeError, match=_error_format(message)):
-        aa.resolve_library_root(project_root=project_dir)
+        aa.resolve_library_root(project_root=project_directory)
 
 
-def test_resolve_environment_files(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_resolve_environment_files(project_directory: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies the functionality of the _resolve_environment_files() function."""
-    os.chdir(project_dir)  # Ensures working directory is set to the project directory
+    os.chdir(project_directory)
     environment_base_name: str = "test_env"
 
     resolved_project_directory: Path = aa.resolve_project_directory()
@@ -188,29 +183,29 @@ def test_resolve_environment_files(project_dir: Path, monkeypatch: pytest.Monkey
     assert yaml_path == resolved_project_directory / "envs" / f"{environment_base_name}_osx.yml"
 
 
-def test_resolve_environment_files_error(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_resolve_environment_files_error(project_directory: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies the error handling behavior of the _resolve_environment_files() function."""
     supported_platforms: dict[str, str] = {"win32": "_win", "linux": "_lin", "darwin": "_osx"}
     monkeypatch.setattr(sys, "platform", "unsupported")
     environment_base_name: str = "test_env"
-    os.chdir(project_dir)
+    os.chdir(project_directory)
     message: str = (
         f"Unable to resolve the operating-system-specific suffix to use for mamba environment file names. The "
         f"local machine is using an unsupported operating system 'unsupported'. Currently, only the following "
         f"operating systems are supported: {', '.join(supported_platforms.keys())}."
     )
     with pytest.raises(RuntimeError, match=_error_format(message)):
-        aa._resolve_environment_files(project_root=project_dir, environment_base_name=environment_base_name)
+        aa._resolve_environment_files(project_root=project_directory, environment_base_name=environment_base_name)
 
 
 def test_check_package_engines(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies the functionality of the _check_package_engines() function when both mamba and uv are available."""
 
-    def mock_subprocess_run(cmd: str, *_args: Any, **_kwargs: Any) -> Mock:
+    def mock_subprocess_run(command: str, *_args: Any, **_kwargs: Any) -> Mock:
         """Returns success code for mamba and uv commands."""
-        if "mamba --version" in cmd or "uv --version" in cmd:
+        if "mamba --version" in command or "uv --version" in command:
             return Mock(returncode=0)
-        raise subprocess.CalledProcessError(1, cmd)
+        raise subprocess.CalledProcessError(1, command)
 
     monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
     # Completes without raising when both tools are available.
@@ -220,11 +215,11 @@ def test_check_package_engines(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_check_package_engines_missing_mamba(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies error handling behavior of the _check_package_engines() function when mamba is not available."""
 
-    def mock_subprocess_run(cmd: str, *_args: Any, **_kwargs: Any) -> Mock:
+    def mock_subprocess_run(command: str, *_args: Any, **_kwargs: Any) -> Mock:
         """Fails for mamba but succeeds for uv."""
-        if "uv --version" in cmd:
+        if "uv --version" in command:
             return Mock(returncode=0)
-        raise subprocess.CalledProcessError(1, cmd)
+        raise subprocess.CalledProcessError(1, command)
 
     monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
     message: str = (
@@ -239,11 +234,11 @@ def test_check_package_engines_missing_mamba(monkeypatch: pytest.MonkeyPatch) ->
 def test_check_package_engines_missing_uv(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies error handling behavior of the _check_package_engines() function when uv is not available."""
 
-    def mock_subprocess_run(cmd: str, *_args: Any, **_kwargs: Any) -> Mock:
+    def mock_subprocess_run(command: str, *_args: Any, **_kwargs: Any) -> Mock:
         """Succeeds for mamba but fails for uv."""
-        if "mamba --version" in cmd:
+        if "mamba --version" in command:
             return Mock(returncode=0)
-        raise subprocess.CalledProcessError(1, cmd)
+        raise subprocess.CalledProcessError(1, command)
 
     monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
     message = (
@@ -338,35 +333,29 @@ def test_add_dependency() -> None:
         )
 
 
-def _write_pyproject_toml(project_dir: Path, content: str) -> None:
+def _write_pyproject_toml(project_directory: Path, content: str) -> None:
     """Writes the given content to the pyproject.toml file in the project directory.
 
-    Assumes that the project_dir is configured according to the testing standards (obtained from the project_dir
-    fixture).
-
     Args:
-        project_dir: The path to the processed project root directory.
+        project_directory: The path to the processed project root directory.
         content: The string-content to write to the pyproject.toml file of the processed project.
     """
-    pyproject_path: Path = project_dir.joinpath("pyproject.toml")
+    pyproject_path: Path = project_directory.joinpath("pyproject.toml")
     pyproject_path.write_text(content)
 
 
-def _write_tox_ini(project_dir: Path, content: str) -> None:
+def _write_tox_ini(project_directory: Path, content: str) -> None:
     """Writes the given content to the tox.ini file in the project directory.
 
-    Assumes that the project_dir is configured according to the testing standards (obtained from the project_dir
-    fixture).
-
     Args:
-        project_dir: The path to the processed project root directory.
+        project_directory: The path to the processed project root directory.
         content: The string-content to write to the tox.ini file of the processed project.
     """
-    tox_path: Path = project_dir.joinpath("tox.ini")
+    tox_path: Path = project_directory.joinpath("tox.ini")
     tox_path.write_text(content)
 
 
-def test_resolve_dependencies(project_dir: Path) -> None:
+def test_resolve_dependencies(project_directory: Path) -> None:
     """Verifies the functionality of the _resolve_dependencies() function."""
     pyproject_content = """
         [project]
@@ -375,7 +364,7 @@ def test_resolve_dependencies(project_dir: Path) -> None:
         [dependency-groups]
         dev = ["dev_dep1[test]", "dev_dep2<2.0.1"]
     """
-    _write_pyproject_toml(project_dir=project_dir, content=pyproject_content)
+    _write_pyproject_toml(project_directory=project_directory, content=pyproject_content)
 
     tox_content = """
         [testenv]
@@ -386,17 +375,17 @@ def test_resolve_dependencies(project_dir: Path) -> None:
         requires =
             dep2
     """
-    _write_tox_ini(project_dir=project_dir, content=tox_content)
+    _write_tox_ini(project_directory=project_directory, content=tox_content)
 
     # Resolves the dependencies declared by the mock pyproject.toml file.
     runtime_deps = aa._resolve_dependencies(
-        project_root=project_dir,
+        project_root=project_directory,
     )
 
     assert set(runtime_deps) == {'"dep1==1.0"', '"dep2>=2.0"', '"dev_dep1[test]"', '"dev_dep2<2.0.1"'}
 
 
-def test_resolve_dependencies_duplicate_dep(project_dir: Path) -> None:
+def test_resolve_dependencies_duplicate_dep(project_directory: Path) -> None:
     """Verifies that _resolve_dependencies() function correctly catches duplicate dependencies in supported .toml
     lists.
     """
@@ -407,7 +396,7 @@ def test_resolve_dependencies_duplicate_dep(project_dir: Path) -> None:
     [dependency-groups]
     dev = ["dev_dep1", "dev_dep2", "dep1<3.0"]
     """
-    _write_pyproject_toml(project_dir=project_dir, content=pyproject_content)
+    _write_pyproject_toml(project_directory=project_directory, content=pyproject_content)
 
     tox_content = """
 [testenv]
@@ -418,42 +407,42 @@ deps =
 requires =
     dep2
 """
-    _write_tox_ini(project_dir=project_dir, content=tox_content)
+    _write_tox_ini(project_directory=project_directory, content=tox_content)
     message: str = (
         "Unable to resolve project dependencies. Found a duplicate dependency for 'dep1<3.0', listed in the "
         "pyproject.toml file. A dependency should only be found once across the 'dependencies' and "
         "'dependency-groups' lists."
     )
     with pytest.raises(ValueError, match=_error_format(message)):
-        aa._resolve_dependencies(project_root=project_dir)
+        aa._resolve_dependencies(project_root=project_directory)
 
 
-def test_resolve_project_name(project_dir: Path) -> None:
+def test_resolve_project_name(project_directory: Path) -> None:
     """Verifies the functionality of the _resolve_project_name() function."""
     pyproject_content = """
     [project]
     name = "test-project"
     """
-    pyproject_path = project_dir.joinpath("pyproject.toml")
+    pyproject_path = project_directory.joinpath("pyproject.toml")
     pyproject_path.write_text(pyproject_content)
 
-    result = aa._resolve_project_name(project_root=project_dir)
+    result = aa._resolve_project_name(project_root=project_directory)
     assert result == "test-project"
 
 
-def test_resolve_project_name_errors(project_dir: Path) -> None:
+def test_resolve_project_name_errors(project_directory: Path) -> None:
     """Verifies the error-handling behavior of the _resolve_project_name() function."""
     # Verifies that malformed pyproject.toml files are not processed.
     pyproject_content = """
         [project
         name = "test-project"
         """
-    pyproject_path = project_dir.joinpath("pyproject.toml")
+    pyproject_path = project_directory.joinpath("pyproject.toml")
     pyproject_path.write_text(pyproject_content)
 
     message: str = "Unable to parse the pyproject.toml file. The file may be corrupted or contains invalid TOML syntax."
     with pytest.raises(ValueError, match=_error_format(message)):
-        aa._resolve_project_name(project_root=project_dir)
+        aa._resolve_project_name(project_root=project_directory)
 
     # Verifies that processing fails when the 'name' section does not exist.
     pyproject_content = """
@@ -467,7 +456,7 @@ def test_resolve_project_name_errors(project_dir: Path) -> None:
     )
 
     with pytest.raises(ValueError, match=_error_format(message)):
-        aa._resolve_project_name(project_root=project_dir)
+        aa._resolve_project_name(project_root=project_directory)
 
 
 def test_resolve_mamba_environments_directory(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -495,7 +484,7 @@ def test_resolve_mamba_environments_directory(monkeypatch: pytest.MonkeyPatch) -
     ],
 )
 def test_project_environment_resolve(
-    project_dir: Path,
+    project_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
     os_suffix: str,
     platform: str,
@@ -514,7 +503,7 @@ def test_project_environment_resolve(
     [dependency-groups]
     dev = ["dev_dep==1.0"]
     """
-    pyproject_path = project_dir.joinpath("pyproject.toml")
+    pyproject_path = project_directory.joinpath("pyproject.toml")
     pyproject_path.write_text(pyproject_content)
 
     # Mocks tox.ini
@@ -524,7 +513,7 @@ def test_project_environment_resolve(
         runtime_dep
         dev_dep
     """
-    _write_tox_ini(project_dir=project_dir, content=tox_content)
+    _write_tox_ini(project_directory=project_directory, content=tox_content)
 
     # Mocks platform and environment resolution.
     monkeypatch.setattr(sys, "platform", platform)
@@ -538,13 +527,13 @@ def test_project_environment_resolve(
     monkeypatch.setattr(aa, "_check_package_engines", mock_check_engines)
 
     # Creates a mock .yml file.
-    yaml_path = project_dir / f"envs/test_env{os_suffix}.yml"
+    yaml_path = project_directory / f"envs/test_env{os_suffix}.yml"
     yaml_path.parent.mkdir(parents=True, exist_ok=True)
     yaml_path.touch()
 
     # Runs the tested command.
     result = ProjectEnvironment.resolve_project_environment(
-        project_root=project_dir, environment_name="test_env", python_version=python_version
+        project_root=project_directory, environment_name="test_env", python_version=python_version
     )
 
     # Verifies the returned ProjectEnvironment class instance contains the expected fields.
@@ -602,7 +591,7 @@ def test_project_environment_resolve(
     # Also tests the case where .yml files are not present in the /envs folder.
     yaml_path.unlink()
     result = ProjectEnvironment.resolve_project_environment(
-        project_root=project_dir, environment_name="test_env", python_version=python_version
+        project_root=project_directory, environment_name="test_env", python_version=python_version
     )
     assert result.create_from_yaml_command is None
     assert result.update_command is None
@@ -610,7 +599,7 @@ def test_project_environment_resolve(
     # Verifies that prerelease=True includes the --prerelease=allow flag in uv commands.
     yaml_path.touch()
     result = ProjectEnvironment.resolve_project_environment(
-        project_root=project_dir, environment_name="test_env", python_version=python_version, prerelease=True
+        project_root=project_directory, environment_name="test_env", python_version=python_version, prerelease=True
     )
     assert "--prerelease=allow" in result.install_dependencies_command
     assert "--prerelease=allow" in result.install_project_command
@@ -621,14 +610,14 @@ def test_generate_typed_marker(tmp_path: Path) -> None:
     # Sets up a mock library directory structure.
     library_root = tmp_path / "library"
     library_root.mkdir()
-    subdir1 = library_root / "subdir1"
-    subdir1.mkdir()
-    subdir2 = library_root / "subdir2"
-    subdir2.mkdir()
+    subdirectory1 = library_root / "subdirectory1"
+    subdirectory1.mkdir()
+    subdirectory2 = library_root / "subdirectory2"
+    subdirectory2.mkdir()
 
     # Creates py.typed files in subdirectories.
-    (subdir1 / "py.typed").touch()
-    (subdir2 / "py.typed").touch()
+    (subdirectory1 / "py.typed").touch()
+    (subdirectory2 / "py.typed").touch()
 
     aa.generate_typed_marker(library_root=library_root)
 
@@ -636,8 +625,8 @@ def test_generate_typed_marker(tmp_path: Path) -> None:
     assert (library_root / "py.typed").exists()
 
     # Verifies that py.typed has been removed from subdirectories.
-    assert not (subdir1 / "py.typed").exists()
-    assert not (subdir2 / "py.typed").exists()
+    assert not (subdirectory1 / "py.typed").exists()
+    assert not (subdirectory2 / "py.typed").exists()
 
     # Runs the function again to ensure it doesn't cause issues when py.typed already exists in the root.
     aa.generate_typed_marker(library_root=library_root)
@@ -646,25 +635,25 @@ def test_generate_typed_marker(tmp_path: Path) -> None:
     assert (library_root / "py.typed").exists()
 
     # Verifies that no new py.typed files have been created in subdirectories.
-    assert not (subdir1 / "py.typed").exists()
-    assert not (subdir2 / "py.typed").exists()
+    assert not (subdirectory1 / "py.typed").exists()
+    assert not (subdirectory2 / "py.typed").exists()
 
 
-def test_move_stubs(project_dir: Path) -> None:
+def test_move_stubs(project_directory: Path) -> None:
     """Verifies the functionality of the move_stubs() function."""
     # Sets up mock directories.
-    stubs_directory = project_dir / "stubs"
-    library_root = project_dir / "src" / "library"
+    stubs_directory = project_directory / "stubs"
+    library_root = project_directory / "src" / "library"
     stubs_directory.mkdir()
     library_root.mkdir(parents=True)
 
     # Creates mock stub files.
-    stub_lib_dir = stubs_directory.joinpath("library")
-    stub_lib_dir.mkdir()
-    stub_lib_dir.joinpath("__init__.pyi").touch()
-    stub_lib_dir.joinpath("module1.pyi").touch()
-    stub_lib_dir.joinpath("submodule").mkdir()
-    (stub_lib_dir / "submodule" / "module2.pyi").touch()
+    stub_library_directory = stubs_directory.joinpath("library")
+    stub_library_directory.mkdir()
+    stub_library_directory.joinpath("__init__.pyi").touch()
+    stub_library_directory.joinpath("module1.pyi").touch()
+    stub_library_directory.joinpath("submodule").mkdir()
+    (stub_library_directory / "submodule" / "module2.pyi").touch()
 
     aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
 
@@ -674,26 +663,26 @@ def test_move_stubs(project_dir: Path) -> None:
     assert (library_root / "submodule" / "module2.pyi").exists()
 
     # Verifies that original stub files have been removed.
-    assert not (stub_lib_dir / "__init__.pyi").exists()
-    assert not (stub_lib_dir / "module1.pyi").exists()
-    assert not (stub_lib_dir / "submodule" / "module2.pyi").exists()
+    assert not (stub_library_directory / "__init__.pyi").exists()
+    assert not (stub_library_directory / "module1.pyi").exists()
+    assert not (stub_library_directory / "submodule" / "module2.pyi").exists()
 
 
-def test_move_stubs_osx_duplicates(project_dir: Path) -> None:
+def test_move_stubs_osx_duplicates(project_directory: Path) -> None:
     """Verifies OSX-specific duplicate file handling in move_stubs()."""
     # Sets up mock directories.
-    stubs_directory = project_dir / "stubs"
-    library_root = project_dir / "src" / "library"
+    stubs_directory = project_directory / "stubs"
+    library_root = project_directory / "src" / "library"
     stubs_directory.mkdir()
     library_root.mkdir(parents=True)
 
     # Creates stub files with OSX duplicate pattern (space + number).
-    stub_lib_dir = stubs_directory.joinpath("library")
-    stub_lib_dir.mkdir()
-    stub_lib_dir.joinpath("__init__.pyi").touch()
-    stub_lib_dir.joinpath("test 1.pyi").touch()
-    stub_lib_dir.joinpath("test 2.pyi").touch()
-    stub_lib_dir.joinpath("test 3.pyi").touch()
+    stub_library_directory = stubs_directory.joinpath("library")
+    stub_library_directory.mkdir()
+    stub_library_directory.joinpath("__init__.pyi").touch()
+    stub_library_directory.joinpath("test 1.pyi").touch()
+    stub_library_directory.joinpath("test 2.pyi").touch()
+    stub_library_directory.joinpath("test 3.pyi").touch()
 
     aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
 
@@ -704,11 +693,11 @@ def test_move_stubs_osx_duplicates(project_dir: Path) -> None:
     assert not (library_root / "test 3.pyi").exists()
 
 
-def test_move_stubs_error(project_dir: Path) -> None:
+def test_move_stubs_error(project_directory: Path) -> None:
     """Verifies the error-handling behavior of the move_stubs() function."""
     # Sets up mock directories.
-    stubs_directory = project_dir.joinpath("stubs")
-    library_root = project_dir / "src" / "library"
+    stubs_directory = project_directory.joinpath("stubs")
+    library_root = project_directory / "src" / "library"
     stubs_directory.mkdir()
     library_root.mkdir(parents=True)
 
@@ -829,19 +818,19 @@ def test_verify_netlifyrc_nonexistent_file(tmp_path: Path) -> None:
     assert result is False
 
 
-def test_resolve_documented_project_directory(documented_project_dir: Path) -> None:
+def test_resolve_documented_project_directory(documented_project_directory: Path) -> None:
     """Verifies the functionality of the resolve_documented_project_directory() function."""
-    os.chdir(documented_project_dir)
+    os.chdir(documented_project_directory)
     result = aa.resolve_documented_project_directory()
-    assert result == documented_project_dir
+    assert result == documented_project_directory
 
 
-def test_resolve_documented_project_directory_python_project(project_dir: Path) -> None:
+def test_resolve_documented_project_directory_python_project(project_directory: Path) -> None:
     """Verifies that the resolve_documented_project_directory() function accepts Python project layouts."""
-    project_dir.joinpath("docs").mkdir()
-    os.chdir(project_dir)
+    project_directory.joinpath("docs").mkdir()
+    os.chdir(project_directory)
     result = aa.resolve_documented_project_directory()
-    assert result == project_dir
+    assert result == project_directory
 
 
 def test_resolve_documented_project_directory_error(tmp_path: Path) -> None:
@@ -857,12 +846,12 @@ def test_resolve_documented_project_directory_error(tmp_path: Path) -> None:
         aa.resolve_documented_project_directory()
 
 
-def test_resolve_application_directory(application_dir: Path) -> None:
+def test_resolve_application_directory(application_directory: Path) -> None:
     """Verifies the functionality of the application directory path resolution functions."""
-    assert aa.resolve_application_directory() == application_dir
-    assert application_dir.is_dir()
-    assert aa.resolve_pypirc_path() == application_dir.joinpath(".pypirc")
-    assert aa.resolve_netlifyrc_path() == application_dir.joinpath(".netlifyrc")
+    assert aa.resolve_application_directory() == application_directory
+    assert application_directory.is_dir()
+    assert aa.resolve_pypirc_path() == application_directory.joinpath(".pypirc")
+    assert aa.resolve_netlifyrc_path() == application_directory.joinpath(".netlifyrc")
 
 
 def test_derive_netlify_site(tmp_path: Path) -> None:
@@ -885,7 +874,7 @@ def test_read_netlify_site_empty_file(tmp_path: Path) -> None:
     assert aa.read_netlify_site(project_root=tmp_path) is None
 
 
-def test_migrate_legacy_pypirc(tmp_path: Path, application_dir: Path) -> None:
+def test_migrate_legacy_pypirc(tmp_path: Path, application_directory: Path) -> None:
     """Verifies the functionality of the migrate_legacy_pypirc() function."""
     # A project without a legacy file has nothing to migrate.
     assert aa.migrate_legacy_pypirc(project_root=tmp_path) is False
@@ -896,13 +885,13 @@ def test_migrate_legacy_pypirc(tmp_path: Path, application_dir: Path) -> None:
         legacy_config.write(legacy_file)
 
     assert aa.migrate_legacy_pypirc(project_root=tmp_path) is True
-    assert aa.verify_pypirc(file_path=application_dir.joinpath(".pypirc"))
+    assert aa.verify_pypirc(file_path=application_directory.joinpath(".pypirc"))
 
     # The shared token is already configured, so a second call does not overwrite it.
     assert aa.migrate_legacy_pypirc(project_root=tmp_path) is False
 
 
-def test_migrate_legacy_netlifyrc(tmp_path: Path, application_dir: Path) -> None:
+def test_migrate_legacy_netlifyrc(tmp_path: Path, application_directory: Path) -> None:
     """Verifies the functionality of the migrate_legacy_netlifyrc() function."""
     # A project without a legacy file has nothing to migrate.
     result = aa.migrate_legacy_netlifyrc(project_root=tmp_path)
@@ -916,7 +905,7 @@ def test_migrate_legacy_netlifyrc(tmp_path: Path, application_dir: Path) -> None
 
     result = aa.migrate_legacy_netlifyrc(project_root=tmp_path)
     assert result == aa.NetlifyMigrationResult(token_migrated=True, site_migrated=True)
-    assert aa.verify_netlifyrc(file_path=application_dir.joinpath(".netlifyrc"))
+    assert aa.verify_netlifyrc(file_path=application_directory.joinpath(".netlifyrc"))
     assert aa.read_netlify_site(project_root=tmp_path) == "project-api-docs.netlify.app"
 
     # Both credentials are already configured, so a second call does not overwrite them.
@@ -924,13 +913,13 @@ def test_migrate_legacy_netlifyrc(tmp_path: Path, application_dir: Path) -> None
     assert result == aa.NetlifyMigrationResult(token_migrated=False, site_migrated=False)
 
 
-def test_migrate_legacy_netlifyrc_partial_migrations(tmp_path: Path, application_dir: Path) -> None:
+def test_migrate_legacy_netlifyrc_partial_migrations(tmp_path: Path, application_directory: Path) -> None:
     """Verifies that migrate_legacy_netlifyrc() reports the token and the site migrations independently."""
     # The shared token is already configured, so only the site identifier migrates.
     shared_config = ConfigParser()
     shared_config["netlify"] = {"token": "sharedtoken1234567890abcd"}
-    application_dir.mkdir(parents=True, exist_ok=True)
-    with application_dir.joinpath(".netlifyrc").open("w") as shared_file:
+    application_directory.mkdir(parents=True, exist_ok=True)
+    with application_directory.joinpath(".netlifyrc").open("w") as shared_file:
         shared_config.write(shared_file)
 
     legacy_config = ConfigParser()
@@ -943,14 +932,14 @@ def test_migrate_legacy_netlifyrc_partial_migrations(tmp_path: Path, application
 
     # The shared file keeps the token it already stored.
     shared_credentials = ConfigParser()
-    shared_credentials.read(application_dir.joinpath(".netlifyrc"))
+    shared_credentials.read(application_directory.joinpath(".netlifyrc"))
     assert shared_credentials.get(section="netlify", option="token") == "sharedtoken1234567890abcd"
 
     # The project already carries a site identifier, so only the token migrates.
     other_project = tmp_path.joinpath("other")
     other_project.mkdir()
     other_project.joinpath(".netlify-site").write_text("deviating-site.netlify.app\n")
-    application_dir.joinpath(".netlifyrc").unlink()
+    application_directory.joinpath(".netlifyrc").unlink()
     with other_project.joinpath(".netlifyrc").open("w") as legacy_file:
         legacy_config.write(legacy_file)
 
@@ -1086,9 +1075,9 @@ def test_delete_stubs(tmp_path: Path) -> None:
     library_root.mkdir()
     library_root.joinpath("module1.pyi").touch()
     library_root.joinpath("module2.pyi").touch()
-    subdir = library_root.joinpath("subdir")
-    subdir.mkdir()
-    subdir.joinpath("module3.pyi").touch()
+    subdirectory = library_root.joinpath("subdirectory")
+    subdirectory.mkdir()
+    subdirectory.joinpath("module3.pyi").touch()
     library_root.joinpath("not_a_stub.py").touch()  # Survives the purge.
 
     # Counts initial .pyi files.
@@ -1105,7 +1094,7 @@ def test_delete_stubs(tmp_path: Path) -> None:
     assert (library_root / "not_a_stub.py").exists()
 
     # Verifies directory structure is maintained.
-    assert subdir.exists()
+    assert subdirectory.exists()
 
     # Runs the function again to ensure it handles the case when no .pyi files are present.
     aa.delete_stubs(library_root=library_root)  # Completes without raising.
@@ -1114,7 +1103,7 @@ def test_delete_stubs(tmp_path: Path) -> None:
 def test_project_environment_exists(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies the functionality of the ProjectEnvironment.environment_exists() method."""
     # Creates a mock ProjectEnvironment instance.
-    env = ProjectEnvironment(
+    environment = ProjectEnvironment(
         activate_command="conda init && conda activate test_env",
         deactivate_command="conda init && conda deactivate",
         create_command="mamba create -n test_env",
@@ -1135,21 +1124,21 @@ def test_project_environment_exists(monkeypatch: pytest.MonkeyPatch) -> None:
         return subprocess.CompletedProcess(args, 0)
 
     monkeypatch.setattr(subprocess, "run", mock_run_success)
-    assert env.environment_exists() is True
+    assert environment.environment_exists() is True
 
     # Tests the case where the environment does not exist.
     def mock_run_failure(*_args: Any, **_kwargs: Any) -> subprocess.CompletedProcess[bytes]:
         raise subprocess.CalledProcessError(1, "cmd")
 
     monkeypatch.setattr(subprocess, "run", mock_run_failure)
-    assert env.environment_exists() is False
+    assert environment.environment_exists() is False
 
 
-# Group 1: resolve_project_environment() fallback.
+# resolve_project_environment() fallback.
 
 
 def test_resolve_project_environment_with_manual_override(
-    project_dir: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    project_directory: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Verifies that resolve_project_environment() uses the manual override when automatic resolution fails."""
     pyproject_content = """
@@ -1160,7 +1149,7 @@ dependencies = ["dep1==1.0"]
 [dependency-groups]
 dev = ["dev_dep==1.0"]
 """
-    project_dir.joinpath("pyproject.toml").write_text(pyproject_content)
+    project_directory.joinpath("pyproject.toml").write_text(pyproject_content)
 
     monkeypatch.setattr(sys, "platform", "linux")
     monkeypatch.setattr(aa, "_check_package_engines", lambda: None)
@@ -1170,20 +1159,20 @@ dev = ["dev_dep==1.0"]
 
     monkeypatch.setattr(aa, "_resolve_mamba_environments_directory", mock_resolve_mamba)
 
-    override_dir = tmp_path / "custom_envs"
-    override_dir.mkdir()
+    override_directory = tmp_path / "custom_envs"
+    override_directory.mkdir()
 
     result = ProjectEnvironment.resolve_project_environment(
-        project_root=project_dir,
+        project_root=project_directory,
         environment_name="test_env",
-        environment_directory=override_dir,
+        environment_directory=override_directory,
     )
 
-    assert result.environment_directory == override_dir / "test_env_lin"
+    assert result.environment_directory == override_directory / "test_env_lin"
 
 
 def test_resolve_project_environment_reraise_without_override(
-    project_dir: Path, monkeypatch: pytest.MonkeyPatch
+    project_directory: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Verifies that resolve_project_environment() re-raises RuntimeError when no override is provided."""
     pyproject_content = """
@@ -1194,7 +1183,7 @@ dependencies = ["dep1==1.0"]
 [dependency-groups]
 dev = ["dev_dep==1.0"]
 """
-    project_dir.joinpath("pyproject.toml").write_text(pyproject_content)
+    project_directory.joinpath("pyproject.toml").write_text(pyproject_content)
 
     monkeypatch.setattr(sys, "platform", "linux")
     monkeypatch.setattr(aa, "_check_package_engines", lambda: None)
@@ -1206,15 +1195,15 @@ dev = ["dev_dep==1.0"]
 
     with pytest.raises(RuntimeError, match="Mamba not found"):
         ProjectEnvironment.resolve_project_environment(
-            project_root=project_dir,
+            project_root=project_directory,
             environment_name="test_env",
         )
 
 
-# Group 2: _resolve_dependencies() legacy path.
+# _resolve_dependencies() legacy path.
 
 
-def test_resolve_dependencies_optional_dependencies_fallback(project_dir: Path) -> None:
+def test_resolve_dependencies_optional_dependencies_fallback(project_directory: Path) -> None:
     """Verifies that _resolve_dependencies() falls back to [project.optional-dependencies] when [dependency-groups]
     is not present.
     """
@@ -1225,40 +1214,40 @@ dependencies = ["dep1==1.0"]
 [project.optional-dependencies]
 dev = ["dev_dep1>=2.0", "dev_dep2<3.0"]
 """
-    _write_pyproject_toml(project_dir=project_dir, content=pyproject_content)
+    _write_pyproject_toml(project_directory=project_directory, content=pyproject_content)
 
-    result = aa._resolve_dependencies(project_root=project_dir)
+    result = aa._resolve_dependencies(project_root=project_directory)
     assert set(result) == {'"dep1==1.0"', '"dev_dep1>=2.0"', '"dev_dep2<3.0"'}
 
 
-def test_resolve_dependencies_no_dev_dependencies(project_dir: Path) -> None:
+def test_resolve_dependencies_no_dev_dependencies(project_directory: Path) -> None:
     """Verifies that _resolve_dependencies() works correctly when only runtime dependencies are defined."""
     pyproject_content = """
 [project]
 dependencies = ["dep1==1.0", "dep2>=2.0"]
 """
-    _write_pyproject_toml(project_dir=project_dir, content=pyproject_content)
+    _write_pyproject_toml(project_directory=project_directory, content=pyproject_content)
 
-    result = aa._resolve_dependencies(project_root=project_dir)
+    result = aa._resolve_dependencies(project_root=project_directory)
     assert set(result) == {'"dep1==1.0"', '"dep2>=2.0"'}
 
 
-# Group 3: _resolve_mamba_environments_directory() resolution methods.
+# _resolve_mamba_environments_directory() resolution methods.
 
 
 def test_resolve_mamba_envs_via_executable_envs_dir(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
     """Verifies _resolve_mamba_environments_directory() finds envs/ by ascending from a miniforge executable."""
     # Creates tmp_path/miniforge3/envs/myenv/bin/python.
-    envs_dir = tmp_path / "miniforge3" / "envs"
-    python_dir = envs_dir / "myenv" / "bin"
-    python_dir.mkdir(parents=True)
-    python_exe = python_dir / "python"
+    envs_directory = tmp_path / "miniforge3" / "envs"
+    python_directory = envs_directory / "myenv" / "bin"
+    python_directory.mkdir(parents=True)
+    python_exe = python_directory / "python"
     python_exe.touch()
 
     clean_mamba_env.setattr(sys, "executable", str(python_exe))
 
     result = aa._resolve_mamba_environments_directory()
-    assert result == envs_dir
+    assert result == envs_directory
 
 
 def test_resolve_mamba_envs_via_executable_conda_meta(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
@@ -1267,9 +1256,9 @@ def test_resolve_mamba_envs_via_executable_conda_meta(tmp_path: Path, clean_mamb
     miniforge_root = tmp_path / "miniforge3"
     miniforge_root.joinpath("conda-meta").mkdir(parents=True)
     miniforge_root.joinpath("envs").mkdir()
-    python_dir = miniforge_root / "bin"
-    python_dir.mkdir()
-    python_exe = python_dir / "python"
+    python_directory = miniforge_root / "bin"
+    python_directory.mkdir()
+    python_exe = python_directory / "python"
     python_exe.touch()
 
     clean_mamba_env.setattr(sys, "executable", str(python_exe))
@@ -1285,18 +1274,18 @@ def test_resolve_mamba_envs_via_executable_conda_meta_parent_envs(
     named environment that lacks its own envs/ subdirectory.
     """
     # Creates tmp_path/miniforge3/envs/myenv with conda-meta and bin/python.
-    envs_dir = tmp_path / "miniforge3" / "envs"
-    myenv_dir = envs_dir / "myenv"
-    myenv_dir.joinpath("conda-meta").mkdir(parents=True)
-    python_dir = myenv_dir / "bin"
-    python_dir.mkdir()
-    python_exe = python_dir / "python"
+    envs_directory = tmp_path / "miniforge3" / "envs"
+    myenv_directory = envs_directory / "myenv"
+    myenv_directory.joinpath("conda-meta").mkdir(parents=True)
+    python_directory = myenv_directory / "bin"
+    python_directory.mkdir()
+    python_exe = python_directory / "python"
     python_exe.touch()
 
     clean_mamba_env.setattr(sys, "executable", str(python_exe))
 
     result = aa._resolve_mamba_environments_directory()
-    assert result == envs_dir
+    assert result == envs_directory
 
 
 def test_resolve_mamba_envs_via_conda_exe(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
@@ -1346,15 +1335,15 @@ def test_resolve_mamba_envs_via_windows_localappdata(tmp_path: Path, clean_mamba
     fake_home = tmp_path / "fakehome"
     fake_home.mkdir()
     # Omits miniforge3/envs at the home and AppData/Local levels, so that only LOCALAPPDATA resolves.
-    local_appdata_dir = tmp_path / "localappdata"
-    local_appdata_dir.joinpath("miniforge3", "envs").mkdir(parents=True)
+    local_appdata_directory = tmp_path / "localappdata"
+    local_appdata_directory.joinpath("miniforge3", "envs").mkdir(parents=True)
 
     clean_mamba_env.setattr(Path, "home", staticmethod(lambda: fake_home))
     clean_mamba_env.setattr(sys, "platform", "win32")
-    clean_mamba_env.setenv("LOCALAPPDATA", str(local_appdata_dir))
+    clean_mamba_env.setenv("LOCALAPPDATA", str(local_appdata_directory))
 
     result = aa._resolve_mamba_environments_directory()
-    assert result == local_appdata_dir / "miniforge3" / "envs"
+    assert result == local_appdata_directory / "miniforge3" / "envs"
 
 
 def test_resolve_mamba_envs_failure_linux(tmp_path: Path, clean_mamba_env: pytest.MonkeyPatch) -> None:
@@ -1397,20 +1386,20 @@ def test_resolve_mamba_envs_failure_windows(tmp_path: Path, clean_mamba_env: pyt
         aa._resolve_mamba_environments_directory()
 
 
-# Group 4: move_stubs() single-file rename.
+# move_stubs() single-file rename.
 
 
-def test_move_stubs_single_file_with_copy_number(project_dir: Path) -> None:
+def test_move_stubs_single_file_with_copy_number(project_directory: Path) -> None:
     """Verifies that move_stubs() correctly renames a single stub file that has an OSX copy number suffix."""
-    stubs_directory = project_dir / "stubs"
-    library_root = project_dir / "src" / "library"
+    stubs_directory = project_directory / "stubs"
+    library_root = project_directory / "src" / "library"
     stubs_directory.mkdir()
     library_root.mkdir(parents=True)
 
-    stub_lib_dir = stubs_directory / "library"
-    stub_lib_dir.mkdir()
-    stub_lib_dir.joinpath("__init__.pyi").touch()
-    stub_lib_dir.joinpath("module 1.pyi").touch()
+    stub_library_directory = stubs_directory / "library"
+    stub_library_directory.mkdir()
+    stub_library_directory.joinpath("__init__.pyi").touch()
+    stub_library_directory.joinpath("module 1.pyi").touch()
 
     aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
 
@@ -1420,7 +1409,7 @@ def test_move_stubs_single_file_with_copy_number(project_dir: Path) -> None:
     assert (library_root / "__init__.pyi").exists()
 
 
-# Group 5: Windows file lock retry helpers.
+# Windows file lock retry helpers.
 
 
 def test_unlink_with_retry_passthrough_non_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1547,12 +1536,12 @@ def test_rename_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypat
 def test_robust_rmtree_passthrough_non_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies that robust_rmtree() calls shutil.rmtree() directly on non-Windows platforms."""
     monkeypatch.setattr(sys, "platform", "linux")
-    target_dir = tmp_path / "target"
-    target_dir.mkdir()
-    (target_dir / "file.txt").touch()
+    target_directory = tmp_path / "target"
+    target_directory.mkdir()
+    (target_directory / "file.txt").touch()
 
-    aa.robust_rmtree(target_dir)
-    assert not target_dir.exists()
+    aa.robust_rmtree(target_directory)
+    assert not target_directory.exists()
 
 
 def test_robust_rmtree_retries_on_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1560,9 +1549,9 @@ def test_robust_rmtree_retries_on_windows(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setattr(aa, "_FILE_RETRY_INITIAL_DELAY", 0.01)
 
-    target_dir = tmp_path / "target"
-    target_dir.mkdir()
-    (target_dir / "file.txt").touch()
+    target_directory = tmp_path / "target"
+    target_directory.mkdir()
+    (target_directory / "file.txt").touch()
 
     call_count = 0
     original_rmtree = shutil.rmtree
@@ -1576,7 +1565,7 @@ def test_robust_rmtree_retries_on_windows(tmp_path: Path, monkeypatch: pytest.Mo
 
     monkeypatch.setattr(shutil, "rmtree", mock_rmtree)
 
-    aa.robust_rmtree(target_dir)
+    aa.robust_rmtree(target_directory)
     assert call_count == 3
 
 
@@ -1585,9 +1574,9 @@ def test_robust_rmtree_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: 
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setattr(aa, "_FILE_RETRY_INITIAL_DELAY", 0.01)
 
-    target_dir = tmp_path / "target"
-    target_dir.mkdir()
-    (target_dir / "file.txt").touch()
+    target_directory = tmp_path / "target"
+    target_directory.mkdir()
+    (target_directory / "file.txt").touch()
 
     def mock_rmtree(path: Path, onerror: object | None = None) -> None:
         raise PermissionError("Directory is locked")
@@ -1595,7 +1584,7 @@ def test_robust_rmtree_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: 
     monkeypatch.setattr(shutil, "rmtree", mock_rmtree)
 
     with pytest.raises(PermissionError, match="Directory is locked"):
-        aa.robust_rmtree(target_dir)
+        aa.robust_rmtree(target_directory)
 
 
 def _capture_exc_info(exception: BaseException) -> tuple[type[BaseException], BaseException, TracebackType]:
@@ -1629,7 +1618,7 @@ def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
     # Simulates the onerror callback with os.remove as the function.
     exc_info = _capture_exc_info(PermissionError("Permission denied"))
     try:
-        aa._rmtree_onerror(func=os.remove, path=str(target_file), exc_info=exc_info)
+        aa._rmtree_onerror(failing_function=os.remove, path=str(target_file), exception_information=exc_info)
     except Exception:
         # Restores write permission for cleanup if the test fails.
         target_file.chmod(stat.S_IWRITE)
@@ -1642,10 +1631,10 @@ def test_rmtree_onerror_reraises_non_permission_error() -> None:
     """Verifies that _rmtree_onerror() re-raises exceptions that are not PermissionError."""
     exc_info = _capture_exc_info(OSError("Disk error"))
     with pytest.raises(OSError, match="Disk error"):
-        aa._rmtree_onerror(func=os.remove, path="/nonexistent", exc_info=exc_info)
+        aa._rmtree_onerror(failing_function=os.remove, path="/nonexistent", exception_information=exc_info)
 
 
-# Group 6: Shell-command quoting, environment export, and subprocess invocation pinning.
+# Shell-command quoting, environment export, and subprocess invocation pinning.
 
 
 @pytest.mark.parametrize(
@@ -1839,40 +1828,40 @@ def test_check_package_engines_pins_subprocess_arguments(monkeypatch: pytest.Mon
     assert all(entry["kwargs"]["check"] is True for entry in captured)
 
 
-# Group 7: Guards that reject malformed inputs.
+# Guards that reject malformed inputs.
 
 
-def test_resolve_project_name_rejects_empty_name(project_dir: Path) -> None:
+def test_resolve_project_name_rejects_empty_name(project_directory: Path) -> None:
     """Verifies that an empty project name is rejected alongside a missing one."""
-    project_dir.joinpath("pyproject.toml").write_text('[project]\nname = ""\n')
+    project_directory.joinpath("pyproject.toml").write_text('[project]\nname = ""\n')
 
     message = (
         "Unable to resolve the project name from the pyproject.toml file. The 'name' field is missing or empty in "
         "the [project] section of the file."
     )
     with pytest.raises(ValueError, match=_error_format(message)):
-        aa._resolve_project_name(project_root=project_dir)
+        aa._resolve_project_name(project_root=project_directory)
 
 
 def test_resolve_project_environment_rejects_empty_dependencies(
-    project_dir: Path, monkeypatch: pytest.MonkeyPatch
+    project_directory: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Verifies that a project declaring no dependencies is rejected before any dependency-installation or
     environment-creation command is built.
     """
-    project_dir.joinpath("pyproject.toml").write_text('[project]\nname = "test-project"\n')
+    project_directory.joinpath("pyproject.toml").write_text('[project]\nname = "test-project"\n')
     monkeypatch.setattr(sys, "platform", "linux")
     monkeypatch.setattr(aa, "_check_package_engines", lambda: None)
     monkeypatch.setenv("CONDA_PREFIX", "/path/to/miniforge3")
     monkeypatch.setenv("CONDA_DEFAULT_ENV", "base")
 
     message = (
-        f"Unable to resolve the mamba environment for the project stored under {project_dir}. The project's "
+        f"Unable to resolve the mamba environment for the project stored under {project_directory}. The project's "
         f"pyproject.toml file declares no runtime or development dependencies, so there is nothing to install into "
         f"the environment."
     )
     with pytest.raises(ValueError, match=_error_format(message)):
-        ProjectEnvironment.resolve_project_environment(project_root=project_dir, environment_name="test_env")
+        ProjectEnvironment.resolve_project_environment(project_root=project_directory, environment_name="test_env")
 
 
 @pytest.mark.parametrize("conda_executable", ["mamba", "/mamba", "bin/mamba"])
@@ -1930,7 +1919,7 @@ def test_resolve_project_directory_rejects_partial_layouts(
         )
 
 
-# Group 8: Deserialization oracles, message formatting, and move_stubs() guards.
+# Deserialization oracles, message formatting, and move_stubs() guards.
 
 
 @pytest.mark.parametrize(
@@ -1983,10 +1972,10 @@ def test_format_message_wraps_at_120_characters() -> None:
     assert unbroken == "a" * 200
 
 
-def test_move_stubs_rejects_missing_library_directory(project_dir: Path) -> None:
+def test_move_stubs_rejects_missing_library_directory(project_directory: Path) -> None:
     """Verifies that a stubs directory holding no qualifying subdirectory is rejected by the structure guard."""
-    stubs_directory = project_dir.joinpath("stubs")
-    library_root = project_dir / "src" / "library"
+    stubs_directory = project_directory.joinpath("stubs")
+    library_root = project_directory / "src" / "library"
     stubs_directory.mkdir()
     library_root.mkdir(parents=True)
 
@@ -1998,18 +1987,18 @@ def test_move_stubs_rejects_missing_library_directory(project_dir: Path) -> None
         aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
 
 
-def test_move_stubs_keeps_highest_numbered_duplicate_content(project_dir: Path) -> None:
+def test_move_stubs_keeps_highest_numbered_duplicate_content(project_directory: Path) -> None:
     """Verifies that the duplicate collapsing keeps the content of the highest-numbered copy."""
-    stubs_directory = project_dir / "stubs"
-    library_root = project_dir / "src" / "library"
+    stubs_directory = project_directory / "stubs"
+    library_root = project_directory / "src" / "library"
     stubs_directory.mkdir()
     library_root.mkdir(parents=True)
 
-    stub_lib_dir = stubs_directory / "library"
-    stub_lib_dir.mkdir()
-    stub_lib_dir.joinpath("__init__.pyi").touch()
-    stub_lib_dir.joinpath("module 1.pyi").write_text("superseded")
-    stub_lib_dir.joinpath("module 2.pyi").write_text("current")
+    stub_library_directory = stubs_directory / "library"
+    stub_library_directory.mkdir()
+    stub_library_directory.joinpath("__init__.pyi").touch()
+    stub_library_directory.joinpath("module 1.pyi").write_text("superseded")
+    stub_library_directory.joinpath("module 2.pyi").write_text("current")
 
     aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
 

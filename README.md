@@ -27,8 +27,7 @@ ___
 
 - Supports Windows, Linux, and macOS.
 - Optimized for runtime speed by using mamba and uv for all environment management tasks.
-- Complements the extensive suite of tox environments and tasks used by all Ataraxis framework projects to streamline
-  development.
+- Supplies the CLI commands used by the tox environments of all Ataraxis framework projects.
 - Apache 2.0 License.
 
 ___
@@ -116,7 +115,7 @@ commands =
     automation-cli create-environment --environment-name axa_dev --python-version 3.14 {posargs:}
 ```
 
-See the [tox.ini file](tox.ini) configuration file for the most up-to-date project development automation
+See the [tox.ini](tox.ini) configuration file for the most up-to-date project development automation
 suite used in the Ataraxis framework. For the most up-to-date C-extension project automation suite, see the
 tox.ini file of the [ataraxis-time](https://github.com/Sun-Lab-NBB/ataraxis-time) library.
 
@@ -128,9 +127,9 @@ supported CLI commands.
 
 ### Supported Checkout Tox Tasks
 
-This library is tightly linked to the environments defined in the [tox.ini file](tox.ini) configuration file.
+This library is tightly linked to the environments defined in the [tox.ini](tox.ini) configuration file.
 
-***Warning!*** Commands listed in this section may and frequently are modified based on the specific needs of
+Commands listed in this section are frequently modified based on the specific needs of
 each Ataraxis framework project. This section is ***not*** a replacement for studying the tox.ini file for each
 Ataraxis framework project.
 
@@ -159,7 +158,7 @@ basepython = py312
 commands =
     automation-cli purge-stubs
     ruff format
-    ruff check --fix ./src
+    ruff check --fix ./src ./tests
     mypy ./src
 ```
 
@@ -305,7 +304,7 @@ any other means.
 Pure-python projects use [hatchling](https://hatch.pypa.io/latest/) and [build](https://build.pypa.io/en/stable/) to
 generate one source-code and one binary distribution. C-extension projects use
 [cibuildwheel](https://cibuildwheel.pypa.io/en/stable/) to compile the C-code for all supported platforms and
-architectures, building many binary distribution files alongside source-code distribution generated via build.
+architectures, building many binary distribution files alongside the source-code distribution generated via build.
 
 Example tox.ini section for a pure-python project:
 ```
