@@ -26,7 +26,7 @@ You MUST invoke the appropriate skill before performing ANY of the following tas
 This is non-negotiable. Each skill contains verification checklists that you MUST complete before submitting any work.
 Failure to invoke the appropriate skill results in style violations.
 
-## Dependency position
+## Cross-referenced library verification
 
 Unlike most Ataraxis framework and Sollertia platform projects, **ataraxis-automation has no `ataraxis-*` or
 `sollertia-*` library dependencies**. Its runtime dependencies are exclusively third-party development tools (Click,
@@ -95,7 +95,8 @@ Both enforce conventions consistent with the Python style guide used across all 
 - **Automation Module** (`automation.py`): Core logic including the `ProjectEnvironment` dataclass, project directory
   resolution, dependency parsing, stub file management, shared PyPI and Netlify credential storage and validation,
   Netlify documentation deployment, and OS-specific mamba/uv command generation.
-- **No MCP Server**: This library does not provide an MCP server.
+- **No MCP server**: This library does not provide an MCP server. It is consumed through the `automation-cli` entry
+  point.
 
 ### Key patterns
 
@@ -106,9 +107,9 @@ Both enforce conventions consistent with the Python style guide used across all 
 - **uv for Package Installation**: Uses uv instead of pip for faster package installation.
 - **Stub File Management**: Automated distribution and purging of `stubgen`-generated `.pyi` files with OS-specific
   duplicate handling.
-- **ProjectEnvironment Dataclass**: Encapsulates the environment commands (activate, deactivate, create, create
-  dry-run, remove, install, update) as string fields of a single frozen dataclass, and performs the environment export
-  through the `export_environment()` method, which invokes mamba directly and writes the .yml file atomically.
+- **ProjectEnvironment Dataclass**: Encapsulates the mamba and uv commands that manage the project environment as
+  fields of a single frozen dataclass, and performs the environment export through the `export_environment()` method,
+  which invokes mamba directly and writes the .yml file atomically.
 
 ### Core components
 

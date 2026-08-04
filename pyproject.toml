@@ -130,16 +130,16 @@ lint.ignore = [
     "PLR0912", # Sometimes complex functions are necessary
     "PLR0913", # Sometimes complex functions are necessary
     "PLR0915", # Sometimes functions with many statements are necessary
-    "PLR0917", # Call sites pass keyword arguments, so the positional count is immaterial
+    "PLR0917", # PLR0913 already covers argument counts, and call sites pass keyword arguments
     "COM812",  # Conflicts with the formatter
     "ISC001",  # Conflicts with the formatter
     "PT001",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "PT023",   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
     "D107",    # __init__ is documented inside the main class docstring where applicable
     "D205",    # Bugs out for file descriptions
-    "PLW0603", # While global statement usage is not ideal, it greatly streamlines certain development patterns
-    "TID252",  # Conflicts with the library import management strategy
-    "CPY001",  # The license is declared in the LICENSE file and the project metadata
+    "PLW0603", # While global statement usage is not ideal, it streamlines certain development patterns
+    "TID252",  # Conflicts with the library import management strategy, which requires parent-relative imports
+    "CPY001",  # The license is declared in the LICENSE file and the license and license-files metadata fields
 
     # Project-specific
     "S602",    # Subprocess calls with shell=True are necessary to drive mamba and uv
@@ -192,18 +192,13 @@ convention = "google"
 [tool.ruff.lint.isort]
 case-sensitive = true
 combine-as-imports = true          # Combines multiple "as" imports for the same package
-force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line (after combining for package)
+force-wrap-aliases = true          # Wraps "as" imports so that each uses a separate line
 force-sort-within-sections = true  # Forces "as" and "from" imports for the same package to be close
 length-sort = true                 # Places shorter imports first
 
 # Unused-argument linting configuration.
 [tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true       # Ignores unused *args and **kwargs
-
-# Pytest configuration. The import mode is declared here so that a bare 'pytest' invocation resolves test modules the
-# same way the '{py}-test' tox task does.
-[tool.pytest.ini_options]
-addopts = "--import-mode=importlib"
 
 # MyPy configuration section.
 [tool.mypy]
@@ -229,15 +224,20 @@ extra_checks = true
 pretty = true
 
 exclude = [
-    "ataraxis-automation-\\d+", # Ignores the temporary folder created when building the sdist
-    "venv.*/",                  # Ignores virtual environments
-    "build/",                   # Ignores the build scratch directory
-    "dist/",                    # Ignores the distribution (sdist and wheel) directory
-    "docs/",                    # Ignores the sphinx / doxygen directory
-    "stubs/",                   # Ignores stubs directory (stubgen output target)
-    "recipe/",                  # Ignores recipe directory (grayskull output target)
-    "tests/",                   # Ignores the test directory.
+    "ataraxis-automation-\\d+",  # The temporary folder created when building the sdist
+    "venv.*/",
+    "build/",
+    "dist/",
+    "docs/",
+    "stubs/",             # stubgen output target
+    "recipe/",            # grayskull output target
+    "tests/",
 ]
+
+# Pytest configuration. The import mode is declared here so that a bare 'pytest' invocation resolves test modules the
+# same way the '{py}-test' tox task does.
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
 
 # Lists the source files excluded from coverage measurement in full. Interface modules, such as the CLI, are covered
 # by the tests written for the functions they wrap.
