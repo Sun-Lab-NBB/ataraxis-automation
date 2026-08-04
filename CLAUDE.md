@@ -95,8 +95,8 @@ Both enforce conventions consistent with the Python style guide used across all 
 - **Automation Module** (`automation.py`): Core logic including the `ProjectEnvironment` dataclass, project directory
   resolution, dependency parsing, stub file management, shared PyPI and Netlify credential storage and validation,
   Netlify documentation deployment, and OS-specific mamba/uv command generation.
-- **Agent surface**: The library is consumed through the `automation-cli` entry point rather than an MCP tool
-  surface, so it ships no MCP server even though most sibling projects do.
+- **No MCP server**: This library does not provide an MCP server. It is consumed through the `automation-cli` entry
+  point.
 
 ### Key patterns
 

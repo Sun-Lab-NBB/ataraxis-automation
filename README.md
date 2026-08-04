@@ -95,7 +95,7 @@ All library functions designed to be called by automation pipelines are exposed 
 Line Interface (CLI). This CLI is automatically exposed by installing the library into a Python environment. The
 commands are intended to be invoked through 'tox' tasks rather than directly by end-users.
 
-| Command                   | Purpose                                                                              |
+| Command                   | Description                                                                          |
 |---------------------------|--------------------------------------------------------------------------------------|
 | `process-typed-markers`   | Ensures the 'py.typed' marker exists only at the root of the library directory tree. |
 | `process-stubs`           | Distributes generated stub (.pyi) files to the library source directories.           |

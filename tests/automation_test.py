@@ -1393,11 +1393,11 @@ def test_unlink_with_retry_missing_ok_non_windows(tmp_path: Path, monkeypatch: p
     nonexistent = tmp_path / "nonexistent.txt"
 
     # Completes without raising when missing_ok is True.
-    aa._unlink_with_retry(nonexistent, missing_ok=True)
+    aa._unlink_with_retry(path=nonexistent, missing_ok=True)
 
     # Raises FileNotFoundError when missing_ok is False.
     with pytest.raises(FileNotFoundError):
-        aa._unlink_with_retry(nonexistent, missing_ok=False)
+        aa._unlink_with_retry(path=nonexistent, missing_ok=False)
 
 
 def test_unlink_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
