@@ -69,6 +69,18 @@ def clean_mamba_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
 
 
 @pytest.fixture
+def clean_certificate_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
+    """Clears every certificate-bundle env var and conda guard var, so that the host configuration cannot reach the
+    repair_stale_certificate_variables() tests.
+    """
+    for variable_name, guard_name in aa._CERTIFICATE_VARIABLES.items():
+        monkeypatch.delenv(variable_name, raising=False)
+        if guard_name is not None:
+            monkeypatch.delenv(guard_name, raising=False)
+    return monkeypatch
+
+
+@pytest.fixture
 def documentation_directory(tmp_path: Path) -> Path:
     """Generates a mock built documentation directory with the file layout produced by the 'docs' tox task."""
     documentation_directory = tmp_path.joinpath("html")
@@ -1706,7 +1718,9 @@ def test_environment_exists_reports_broken_activation(tmp_path: Path, monkeypatc
     Collapsing the two conditions into a False return lets the callers that remove environments delete a working one.
     """
     environment_directory = tmp_path.joinpath("test_env_lin")
-    environment_directory.joinpath("conda-meta").mkdir(parents=True)
+    conda_meta_directory = environment_directory.joinpath("conda-meta")
+    conda_meta_directory.mkdir(parents=True)
+    conda_meta_directory.joinpath("python-3.14.6-h4b44e0e_101_cp314.json").write_text("{}")
     environment = _build_environment(
         yaml_path=tmp_path.joinpath("test_env_lin.yml"), environment_directory=environment_directory
     )
@@ -1724,6 +1738,125 @@ def test_environment_exists_reports_broken_activation(tmp_path: Path, monkeypatc
     )
     with pytest.raises(RuntimeError, match=_error_format(message)):
         environment.environment_exists()
+
+
+def test_environment_exists_reports_interrupted_removal_as_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verifies that an environment directory holding an empty conda-meta directory is reported as absent."""
+    environment_directory = tmp_path.joinpath("test_env_lin")
+    environment_directory.joinpath("conda-meta").mkdir(parents=True)
+    environment = _build_environment(
+        yaml_path=tmp_path.joinpath("test_env_lin.yml"), environment_directory=environment_directory
+    )
+
+    def mock_run(*_args: Any, **_kwargs: Any) -> subprocess.CompletedProcess[bytes]:
+        raise subprocess.CalledProcessError(127, "cmd")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    assert environment.environment_exists() is False
+
+
+def test_verify_removable_rejects_the_hosting_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that verify_removable() refuses to remove the environment that hosts the running interpreter."""
+    environment_directory = tmp_path.joinpath("test_env_lin")
+    environment_directory.mkdir()
+    environment = _build_environment(
+        yaml_path=tmp_path.joinpath("test_env_lin.yml"), environment_directory=environment_directory
+    )
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys, "base_prefix", str(environment_directory))
+
+    message: str = (
+        f"Unable to remove the 'test_env_lin' mamba environment stored under {environment_directory}. This "
+        f"environment provides the interpreter that runs the current command, and Windows keeps the files of a "
+        f"running interpreter locked, so mamba is unable to delete them. Run this command from the 'base' "
+        f"environment instead."
+    )
+    with pytest.raises(RuntimeError, match=_error_format(message)):
+        environment.verify_removable()
+
+
+def test_verify_removable_rejects_the_activated_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that verify_removable() refuses to remove the environment named by the conda prefix."""
+    environment_directory = tmp_path.joinpath("test_env_lin")
+    environment_directory.mkdir()
+    environment = _build_environment(
+        yaml_path=tmp_path.joinpath("test_env_lin.yml"), environment_directory=environment_directory
+    )
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys, "base_prefix", str(tmp_path.joinpath("other_env")))
+    monkeypatch.setattr(sys, "prefix", str(tmp_path.joinpath("other_env")))
+    monkeypatch.setenv("CONDA_PREFIX", str(environment_directory))
+
+    with pytest.raises(RuntimeError, match="provides the interpreter that runs the current command"):
+        environment.verify_removable()
+
+
+def test_verify_removable_accepts_an_unrelated_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that verify_removable() clears an environment that hosts no part of the running process."""
+    environment_directory = tmp_path.joinpath("test_env_lin")
+    environment_directory.mkdir()
+    environment = _build_environment(
+        yaml_path=tmp_path.joinpath("test_env_lin.yml"), environment_directory=environment_directory
+    )
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys, "base_prefix", str(tmp_path.joinpath("other_env")))
+    monkeypatch.setattr(sys, "prefix", str(tmp_path.joinpath("other_env")))
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path.joinpath("other_env")))
+
+    assert environment.verify_removable() is None
+
+
+def test_verify_removable_skips_posix_platforms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that verify_removable() permits the removal on platforms that unlink the files of a running process."""
+    environment_directory = tmp_path.joinpath("test_env_lin")
+    environment_directory.mkdir()
+    environment = _build_environment(
+        yaml_path=tmp_path.joinpath("test_env_lin.yml"), environment_directory=environment_directory
+    )
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(sys, "base_prefix", str(environment_directory))
+
+    assert environment.verify_removable() is None
+
+
+def test_repair_stale_certificate_variables_clears_dangling_values(
+    tmp_path: Path, clean_certificate_env: pytest.MonkeyPatch
+) -> None:
+    """Verifies that repair_stale_certificate_variables() clears the variables whose paths no longer exist."""
+    clean_certificate_env.setenv("SSL_CERT_FILE", str(tmp_path.joinpath("removed_env", "cacert.pem")))
+    clean_certificate_env.setenv("__CONDA_OPENSSL_CERT_FILE_SET", "1")
+    clean_certificate_env.setenv("CURL_CA_BUNDLE", str(tmp_path.joinpath("removed_env", "cacert.pem")))
+
+    assert aa.repair_stale_certificate_variables() == ("SSL_CERT_FILE", "CURL_CA_BUNDLE")
+    assert "SSL_CERT_FILE" not in os.environ
+    assert "CURL_CA_BUNDLE" not in os.environ
+
+    # The guard is cleared alongside the variable it tracks, as conda activation scripts skip a guarded variable.
+    assert "__CONDA_OPENSSL_CERT_FILE_SET" not in os.environ
+
+
+def test_repair_stale_certificate_variables_preserves_resolvable_values(
+    tmp_path: Path, clean_certificate_env: pytest.MonkeyPatch
+) -> None:
+    """Verifies that repair_stale_certificate_variables() leaves the variables whose paths still exist untouched."""
+    bundle_path = tmp_path.joinpath("cacert.pem")
+    bundle_path.write_text("certificates")
+    clean_certificate_env.setenv("SSL_CERT_FILE", str(bundle_path))
+    clean_certificate_env.setenv("SSL_CERT_DIR", str(tmp_path))
+
+    assert aa.repair_stale_certificate_variables() == ()
+    assert os.environ["SSL_CERT_FILE"] == str(bundle_path)
+    assert os.environ["SSL_CERT_DIR"] == str(tmp_path)
+
+
+def test_repair_stale_certificate_variables_ignores_unset_variables(
+    clean_certificate_env: pytest.MonkeyPatch,
+) -> None:
+    """Verifies that repair_stale_certificate_variables() reports no work when every variable is unset."""
+    assert aa.repair_stale_certificate_variables() == ()
 
 
 def test_environment_exists_pins_subprocess_arguments(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

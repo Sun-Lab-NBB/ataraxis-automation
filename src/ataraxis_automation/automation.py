@@ -77,6 +77,16 @@ _DOCUMENTED_PROJECT_ITEMS: tuple[str, ...] = ("src", "docs", "tox.ini")
 """Stores the names of the root directory items shared by every Ataraxis framework project archetype that builds API
 documentation, including the C++ PlatformIO projects that have no Python package layout."""
 
+_CERTIFICATE_VARIABLES: dict[str, str | None] = {
+    "SSL_CERT_FILE": "__CONDA_OPENSSL_CERT_FILE_SET",
+    "SSL_CERT_DIR": "__CONDA_OPENSSL_CERT_DIR_SET",
+    "REQUESTS_CA_BUNDLE": None,
+    "CURL_CA_BUNDLE": None,
+}
+"""Stores the environment variables that override the certificate bundle used by the package managers this library
+calls, mapped to the conda guard variable that marks the override as conda-generated. Variables that conda does not
+manage are mapped to None."""
+
 
 @dataclass(frozen=True, slots=True)
 class ProjectEnvironment:
@@ -249,6 +259,41 @@ class ProjectEnvironment:
             environment_yaml_path=yaml_path,
         )
 
+    def verify_removable(self) -> None:
+        """Verifies that the environment is not the one hosting the interpreter of the running process.
+
+        Notes:
+            Windows holds an open handle on every loaded module, so the files of the environment that provides the
+            running interpreter stay locked for as long as the process lives. Mamba unlinks the packages, renames the
+            files it is unable to delete to '.mamba_trash', and leaves a directory that no longer resolves as an
+            environment. The check runs before the removal starts, which keeps the environment intact.
+
+        Raises:
+            RuntimeError: If the environment provides the interpreter or the conda prefix of the running process.
+        """
+        # POSIX platforms unlink the files of a running process on request, so the removal completes there.
+        if sys.platform != "win32":
+            return
+
+        # The base prefix names the environment whose interpreter created the virtual environment this command runs
+        # in, and the conda prefix names the environment the calling shell activated.
+        hosting_directories: list[Path] = [Path(sys.base_prefix), Path(sys.prefix)]
+        conda_prefix: str | None = os.environ.get("CONDA_PREFIX")
+        if conda_prefix:
+            hosting_directories.append(Path(conda_prefix))
+
+        environment_directory = self.environment_directory.resolve()
+        if all(environment_directory != directory.resolve() for directory in hosting_directories):
+            return
+
+        message: str = (
+            f"Unable to remove the '{self.environment_name}' mamba environment stored under "
+            f"{self.environment_directory}. This environment provides the interpreter that runs the current command, "
+            f"and Windows keeps the files of a running interpreter locked, so mamba is unable to delete them. Run "
+            f"this command from the 'base' environment instead."
+        )
+        raise RuntimeError(format_message(message=message))
+
     def environment_exists(self) -> bool:
         """Determines whether the environment can be activated (exists).
 
@@ -256,7 +301,7 @@ class ProjectEnvironment:
             True if the project's mamba environment exists and can be activated, and False if it does not exist.
 
         Raises:
-            RuntimeError: If the environment directory carries the conda-meta marker, which identifies it as a
+            RuntimeError: If the environment directory carries conda-meta package records, which identify it as a
                 registered environment that the conda activation machinery is nonetheless unable to activate.
         """
         # Verifies that the project- and os-specific mamba environment can be activated.
@@ -269,10 +314,11 @@ class ProjectEnvironment:
                 stderr=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError:
-            # A directory holding conda-meta is a registered environment, so a failure to activate it points at the
-            # conda installation rather than at a missing environment. Reporting the two conditions as one would let
-            # the callers that remove environments delete a working one.
-            if self.environment_directory.joinpath("conda-meta").is_dir():
+            # A conda-meta directory holding package records is a registered environment, so a failure to activate it
+            # points at the conda installation rather than at a missing environment. Reporting the two conditions as
+            # one would let the callers that remove environments delete a working one. An empty conda-meta directory
+            # is the remnant of an interrupted removal, which the callers clear as a missing environment instead.
+            if any(self.environment_directory.joinpath("conda-meta").glob("*.json")):
                 message: str = (
                     f"Unable to activate the '{self.environment_name}' mamba environment stored under "
                     f"{self.environment_directory}, although the directory contains a valid environment. This "
@@ -920,6 +966,42 @@ def robust_rmtree(path: Path) -> None:
                 raise
         else:
             return
+
+
+def repair_stale_certificate_variables() -> tuple[str, ...]:
+    """Clears the certificate-bundle environment variables that point to paths which no longer exist.
+
+    Notes:
+        The conda-forge openssl package ships activation scripts only for Windows, where they point SSL_CERT_FILE and
+        SSL_CERT_DIR into the active environment. Those scripts assign a variable only when it is unset, so a value
+        left behind by a removed environment survives every later activation. The package managers this library calls
+        then read a bundle that is absent and refuse to trust any certificate, which fails every download.
+
+        Each variable is cleared rather than repointed at the active conda prefix, because the environment named by a
+        stale value is usually the one the caller is rebuilding. Clearing it restores the bundled certificate roots of
+        uv and requests. The conda guard variable is cleared alongside the variable it tracks, as the activation
+        scripts skip a variable whose guard remains set.
+
+    Returns:
+        The names of the cleared environment variables, in the order they were evaluated.
+    """
+    cleared_variables: list[str] = []
+    for variable_name, guard_name in _CERTIFICATE_VARIABLES.items():
+        variable_value: str | None = os.environ.get(variable_name)
+
+        # A value that still resolves to an existing path is left alone, as it may have been assigned deliberately to
+        # redirect the package managers at a specific certificate bundle.
+        if not variable_value or Path(variable_value).exists():
+            continue
+
+        del os.environ[variable_name]
+        cleared_variables.append(variable_name)
+
+        # Clears the guard so that the next conda activation assigns the variable instead of skipping it.
+        if guard_name is not None:
+            os.environ.pop(guard_name, None)
+
+    return tuple(cleared_variables)
 
 
 def _quote_path(path: Path) -> str:

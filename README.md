@@ -127,7 +127,7 @@ any of the exposed CLI's commands as part of a tox environment, add it to the 'c
 ```
 [testenv:create]
 deps =
-    ataraxis-automation==9.0.1
+    ataraxis-automation==9.0.2
 commands =
     automation-cli create-environment --environment-name axa_dev --python-version 3.14 {posargs:}
 ```
@@ -260,7 +260,7 @@ description =
     verifies that the combined data covers 100% of the measured statements. The file can be viewed by loading the
     'reports/coverage_html/index.html'. The task also merges the per-version JUnit test-result reports into
     'reports/pytest.xml' and writes an xml coverage report to the project root.
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 setenv = COVERAGE_FILE = reports/.coverage
 depends = {py312, py313, py314}-test
 commands =
@@ -287,7 +287,7 @@ description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 commands =
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
 ```
@@ -305,7 +305,7 @@ description =
     Builds the API documentation from source code docstrings using Doxygen, Breathe and Sphinx. The result can be
     viewed by loading 'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 allowlist_externals = doxygen
 commands =
     doxygen Doxyfile
@@ -332,7 +332,7 @@ skip_install = true
 description =
     Builds the project's source code distribution (sdist) and binary distribution (wheel), clearing the 'dist'
     directory beforehand so that artifacts built for an earlier version cannot be carried into the upload task.
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 allowlist_externals = docker
 commands =
     python -c "import shutil; shutil.rmtree('dist', ignore_errors=True)"
@@ -347,7 +347,7 @@ skip_install = true
 description =
     Builds the project's source code distribution (sdist) and binary distribution (wheel), clearing the 'dist'
     directory beforehand so that artifacts built for an earlier version cannot be carried into the upload task.
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 allowlist_externals = docker
 commands =
     python -c "import shutil; shutil.rmtree('dist', ignore_errors=True)"
@@ -377,7 +377,7 @@ skip_install = true
 description =
     Uses twine to upload the wheel ('*.whl') and source ('*.tar.gz') distributions found inside the project's 'dist'
     directory to PyPI.
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 commands =
     automation-cli acquire-pypi-token {posargs:}
     automation-cli upload-project
@@ -425,7 +425,7 @@ skip_install = true
 description =
     Uploads the API documentation built by the 'docs' task to the project's Netlify site. Build the documentation with
     'tox -e docs' before calling this task.
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 commands =
     automation-cli acquire-netlify-token {posargs:}
     automation-cli deploy-docs
@@ -448,7 +448,7 @@ Example tox.ini section:
 ```
 [testenv:install]
 skip_install = true
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 depends =
     lint
     stubs
@@ -471,7 +471,7 @@ Example tox.ini section:
 ```
 [testenv:uninstall]
 skip_install = true
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 description = Uninstalls the project from its development mamba environment.
 commands =
     automation-cli uninstall-project --environment-name axa_dev
@@ -492,7 +492,7 @@ Example tox.ini section:
 ```
 [testenv:create]
 skip_install = true
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 description =
     Creates the project's development mamba environment using the requested python version and installs runtime and
     development project dependencies extracted from the pyproject.toml file.
@@ -508,11 +508,14 @@ Removes the project's development mamba environment. Primarily, this task is int
 system after project development is finished. ***Note,*** to reset the environment, use the 'provision' task instead
 (see below).
 
+***Warning!*** On Windows, run this task from an environment other than the one it removes, such as 'base'. Windows
+keeps the files of a running interpreter locked, so the task refuses to remove the environment that hosts it.
+
 Example tox.ini section:
 ```
 [testenv:remove]
 skip_install = true
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 description = Removes the project's development mamba environment.
 commands =
     automation-cli remove-environment --environment-name axa_dev
@@ -529,11 +532,14 @@ place. This is used to both reset and actualize project development environments
 to match the latest version of the pyproject.toml file dependency specification. To allow installing prerelease
 packages, use `tox -e provision -- --prerelease`.
 
+***Warning!*** On Windows, run this task from an environment other than the one it recreates, such as 'base'. Windows
+keeps the files of a running interpreter locked, so the task refuses to remove the environment that hosts it.
+
 Example tox.ini section:
 ```
 [testenv:provision]
 skip_install = true
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 description =
     Provisions the project's development mamba environment by verifying that the new environment specification
     resolves, then removing and (re)creating the environment and installing the project dependencies into it.
@@ -553,7 +559,7 @@ Example tox.ini section:
 ```
 [testenv:export]
 skip_install = true
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 depends = uninstall
 description = Exports the project's development mamba environment to the 'envs' project directory as a .yml file.
 commands =
@@ -572,7 +578,7 @@ Example tox.ini section:
 ```
 [testenv:import]
 skip_install = true
-deps = ataraxis-automation==9.0.1
+deps = ataraxis-automation==9.0.2
 description =
     Creates or updates the project's development mamba environment using the .yml file stored in the 'envs' project
     directory.
