@@ -27,7 +27,7 @@ _MINIMUM_PYPI_TOKEN_LENGTH: int
 _MAXIMUM_PYPI_TOKEN_LENGTH: int
 _MINIMUM_NETLIFY_TOKEN_LENGTH: int
 _MAXIMUM_NETLIFY_TOKEN_LENGTH: int
-CONTEXT_SETTINGS: dict[str, int]
+_CONTEXT_SETTINGS: dict[str, int]
 
 def cli() -> None: ...
 def process_typed_markers() -> None: ...

@@ -37,7 +37,7 @@ ___
 - [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Automation Command-Line Interface](#automation-command-line-interface)
+  - [CLI Commands](#cli-commands)
   - [Supported Checkout Tox Tasks](#supported-checkout-tox-tasks)
   - [Supported Mamba Environment Manipulation Tox Tasks](#supported-mamba-environment-manipulation-tox-tasks)
 - [API Documentation](#api-documentation)
@@ -89,11 +89,28 @@ ___
 command terminates with an error, the terminal output describes whether the error is due to an invalid project
 configuration or file structure.
 
-### Automation Command-Line Interface
+### CLI Commands
 
 All library functions designed to be called by automation pipelines are exposed through the 'automation-cli' Command
 Line Interface (CLI). This CLI is automatically exposed by installing the library into a Python environment. The
 commands are intended to be invoked through 'tox' tasks rather than directly by end-users.
+
+| Command                   | Purpose                                                                              |
+|---------------------------|--------------------------------------------------------------------------------------|
+| `process-typed-markers`   | Ensures the 'py.typed' marker exists only at the root of the library directory tree. |
+| `process-stubs`           | Distributes generated stub (.pyi) files to the library source directories.           |
+| `purge-stubs`             | Removes all existing stub (.pyi) files from the library source directories.          |
+| `acquire-pypi-token`      | Ensures the shared '.pypirc' file holds a validly formatted PyPI API token.          |
+| `acquire-netlify-token`   | Ensures the project's site identifier and the shared Netlify API token are set.      |
+| `deploy-docs`             | Deploys the documentation built by the 'docs' task to the project's Netlify site.    |
+| `upload-project`          | Uploads the wheel and sdist distributions built by the 'build' task to PyPI.         |
+| `install-project`         | Builds and installs the project into its mamba environment as a library.             |
+| `uninstall-project`       | Uninstalls the project library from its mamba environment.                           |
+| `create-environment`      | Creates the project's mamba environment and installs its dependencies.               |
+| `remove-environment`      | Removes the project's mamba environment and its environment directory.               |
+| `provision-environment`   | Recreates the project's mamba environment and reinstalls its dependencies.           |
+| `import-environment`      | Creates or updates the mamba environment from the os-specific .yml file in /envs.    |
+| `export-environment`      | Exports the mamba environment to the /envs directory as an os-specific .yml file.    |
 
 #### Automation-CLI
 
