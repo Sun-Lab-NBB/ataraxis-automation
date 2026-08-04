@@ -8,6 +8,7 @@ Authors: Ivan Kondratyev (Inkaros)
 
 from .automation import (
     ProjectEnvironment,
+    NetlifyMigrationResult,
     move_stubs,
     delete_stubs,
     robust_rmtree,
@@ -31,6 +32,7 @@ from .automation import (
 )
 
 __all__ = [
+    "NetlifyMigrationResult",
     "ProjectEnvironment",
     "colorize_message",
     "delete_stubs",

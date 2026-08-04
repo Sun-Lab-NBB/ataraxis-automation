@@ -149,16 +149,24 @@ def acquire_pypi_token(*, replace_token: bool) -> None:
         click.echo(colorize_message(message=message, color="yellow"))
 
     # If the file exists, recreating the file is not requested, and the file appears well-formed, ends the runtime.
-    if verify_pypirc(file_path=pypirc_path) and not replace_token:
+    token_is_valid: bool = verify_pypirc(file_path=pypirc_path)
+    if token_is_valid and not replace_token:
         message = "Existing PyPI token found inside the shared '.pypirc' file."
         click.echo(colorize_message(message=message, color="green"))
         return
 
-    # Otherwise, proceeds to generating a new file and token entry.
-    message = (
-        "Unable to use the existing PyPI token: the shared '.pypirc' file does not exist, is invalid, or "
-        "does not contain a valid PyPI API token. Proceeding to new token acquisition."
-    )
+    # Otherwise, proceeds to generating a new file and token entry. The two ways of reaching this point are reported
+    # separately, as a replacement requested for a valid token says nothing about the state of the stored file.
+    if token_is_valid:
+        message = (
+            "Replacing the valid PyPI token stored inside the shared '.pypirc' file, as requested by the "
+            "'--replace-token' flag."
+        )
+    else:
+        message = (
+            "Unable to use the existing PyPI token: the shared '.pypirc' file does not exist, is invalid, or "
+            "does not contain a valid PyPI API token. Proceeding to new token acquisition."
+        )
     click.echo(colorize_message(message=message, color="white"))
 
     # Enters the while loop to iteratively ask for the token until a valid token entry is provided.
@@ -247,12 +255,25 @@ def acquire_netlify_token(*, replace_token: bool, replace_site: bool) -> None:
     # directory. The site identifier differs for each project, so it is stored in the project's root directory.
     netlifyrc_path: Path = resolve_netlifyrc_path()
 
-    if migrate_legacy_netlifyrc(project_root=project_root):
+    # The token and the site identifier migrate independently, so each is reported only when it was actually written.
+    migration = migrate_legacy_netlifyrc(project_root=project_root)
+    if migration.token_migrated:
         message: str = (
-            f"Existing Netlify credentials migrated from the project's '.netlifyrc' file to the shared '.netlifyrc' "
-            f"file stored under {netlifyrc_path.parent} and to the project's '.netlify-site' file. The project-local "
-            f"'.netlifyrc' file is no longer used and can be deleted."
+            f"Existing Netlify API token migrated from the project's '.netlifyrc' file to the shared '.netlifyrc' "
+            f"file stored under {netlifyrc_path.parent}."
         )
+        click.echo(colorize_message(message=message, color="yellow"))
+    if migration.site_migrated:
+        message = (
+            "Existing Netlify site identifier migrated from the project's '.netlifyrc' file to the project's "
+            "'.netlify-site' file."
+        )
+        click.echo(colorize_message(message=message, color="yellow"))
+
+    # The deletion advice is withheld unless the token was copied, as the project-local file otherwise holds the only
+    # copy of a token this machine does not store anywhere else.
+    if migration.token_migrated:
+        message = "The project-local '.netlifyrc' file is no longer used and can be deleted."
         click.echo(colorize_message(message=message, color="yellow"))
 
     stored_site: str | None = read_netlify_site(project_root=project_root)
@@ -290,15 +311,24 @@ def acquire_netlify_token(*, replace_token: bool, replace_site: bool) -> None:
         )
         click.echo(colorize_message(message=message, color="green"))
 
-    if verify_netlifyrc(file_path=netlifyrc_path) and not replace_token:
+    token_is_valid: bool = verify_netlifyrc(file_path=netlifyrc_path)
+    if token_is_valid and not replace_token:
         message = "Existing Netlify API token found inside the shared '.netlifyrc' file."
         click.echo(colorize_message(message=message, color="green"))
         return
 
-    message = (
-        "Unable to use the existing Netlify token: the shared '.netlifyrc' file does not exist, is invalid, or does "
-        "not contain a valid Netlify API token. Proceeding to new token acquisition."
-    )
+    # The two ways of reaching this point are reported separately, as a replacement requested for a valid token says
+    # nothing about the state of the stored file.
+    if token_is_valid:
+        message = (
+            "Replacing the valid Netlify token stored inside the shared '.netlifyrc' file, as requested by the "
+            "'--replace-token' flag."
+        )
+    else:
+        message = (
+            "Unable to use the existing Netlify token: the shared '.netlifyrc' file does not exist, is invalid, or "
+            "does not contain a valid Netlify API token. Proceeding to new token acquisition."
+        )
     click.echo(colorize_message(message=message, color="white"))
 
     # Enters the while loop to iteratively ask for the token until a valid token entry is provided.
@@ -395,7 +425,15 @@ def upload_project() -> None:
         )
         raise RuntimeError(format_message(message=message))
 
-    distributions: list[str] = sorted(str(path) for path in project_root.joinpath("dist").glob("*") if path.is_file())
+    # Selects only genuine distribution artifacts, so that an unrelated file left inside the 'dist' directory, such as
+    # a filesystem metadata file, is never handed to twine.
+    distribution_directory: Path = project_root.joinpath("dist")
+    distributions: list[str] = sorted(
+        str(path)
+        for pattern in ("*.whl", "*.tar.gz")
+        for path in distribution_directory.glob(pattern)
+        if path.is_file()
+    )
     if not distributions:
         message = (
             "Unable to upload the project to PyPI. The project's 'dist' directory does not exist or contains no "
@@ -478,7 +516,8 @@ def install_project(environment_name: str, environment_directory: Path | None, *
     except subprocess.CalledProcessError:
         message = (
             f"Unable to build and install the project into the requested mamba environment "
-            f"'{environment.environment_name}'. See uv-generated error messages for specific details about the "
+            f"'{environment.environment_name}'. The command activates the environment before invoking uv, so the "
+            f"failure originates from either step. See the error messages above for specific details about the "
             f"errors that prevented the installation."
         )
         raise RuntimeError(format_message(message=message)) from None
@@ -533,7 +572,8 @@ def uninstall_project(environment_name: str, environment_directory: Path | None)
     except subprocess.CalledProcessError:
         message = (
             f"Unable to uninstall the project from the requested mamba environment '{environment.environment_name}'. "
-            f"See uv-generated error messages for specific details about the errors that prevented the uninstallation."
+            f"The command activates the environment before invoking uv, so the failure originates from either step. "
+            f"See the error messages above for specific details about the errors that prevented the uninstallation."
         )
         raise RuntimeError(format_message(message=message)) from None
 
@@ -618,7 +658,8 @@ def create_environment(
     except subprocess.CalledProcessError:
         message = (
             f"Unable to install project dependencies into created '{environment.environment_name}' mamba environment. "
-            f"See uv-generated error messages above for more information."
+            f"The command activates the environment before invoking uv, so the failure originates from either step. "
+            f"See the error messages above for more information."
         )
         raise RuntimeError(format_message(message=message)) from None
 
@@ -673,8 +714,8 @@ def remove_environment(environment_name: str, environment_directory: Path | None
     # Handles a rare case where the environment does not exist, but its directory exists. In this case, removes the
     # directory and ends the runtime.
     if not environment_exists and directory_exists:
-        robust_rmtree(path=environment.environment_directory)
-        message = f"Removed mamba environment '{environment.environment_name}'."
+        _remove_environment_directory(environment=environment)
+        message = f"Removed the directory of the '{environment.environment_name}' mamba environment."
         click.echo(colorize_message(message=message, color="green"))
         return
 
@@ -682,18 +723,19 @@ def remove_environment(environment_name: str, environment_directory: Path | None
     try:
         command: str = f"{environment.deactivate_command} && {environment.remove_command}"
         subprocess.run(command, shell=True, check=True)
-        # Ensures the environment directory is deleted.
-        if environment.environment_directory.exists():
-            robust_rmtree(path=environment.environment_directory)
-        message = f"Removed mamba environment '{environment.environment_name}'."
-        click.echo(colorize_message(message=message, color="green"))
-
     except subprocess.CalledProcessError:
         message = (
-            f"Unable to remove the requested mamba environment '{environment.environment_name}'. See the mamba-issued "
-            f"error-messages above for more information."
+            f"Unable to remove the requested mamba environment '{environment.environment_name}'. The command "
+            f"deactivates the active environment before invoking mamba, so the failure originates from either step. "
+            f"See the error-messages above for more information."
         )
         raise RuntimeError(format_message(message=message)) from None
+
+    # Ensures the environment directory is deleted.
+    if environment.environment_directory.exists():
+        _remove_environment_directory(environment=environment)
+    message = f"Removed mamba environment '{environment.environment_name}'."
+    click.echo(colorize_message(message=message, color="green"))
 
 
 @cli.command()
@@ -746,30 +788,44 @@ def provision_environment(
         prerelease=prerelease,
     )
 
+    # Verifies that the replacement environment resolves before the existing one is removed. Provisioning destroys the
+    # current environment, so a specification that cannot be solved would otherwise leave the machine with no
+    # environment at all.
+    try:
+        subprocess.run(environment.create_dry_run_command, shell=True, check=True)
+    except subprocess.CalledProcessError:
+        message = (
+            f"Unable to provision the requested mamba environment '{environment.environment_name}'. The environment "
+            f"specification does not resolve, so the existing environment has been left in place. See the "
+            f"mamba-issued error-messages above for more information."
+        )
+        raise RuntimeError(format_message(message=message)) from None
+
     # Checks if the project's mamba environment is accessible via subprocess activation call. If it is not accessible
     # (does not exist), skips the environment removal step.
     if not environment.environment_exists():
         # Ensures the environment directory also does not exist.
         if environment.environment_directory.exists():
-            robust_rmtree(path=environment.environment_directory)
+            _remove_environment_directory(environment=environment)
     else:
         # Otherwise, removes the existing environment.
         try:
             command: str = f"{environment.deactivate_command} && {environment.remove_command}"
             subprocess.run(command, shell=True, check=True)
-            # Ensures the environment directory is deleted.
-            if environment.environment_directory.exists():
-                robust_rmtree(path=environment.environment_directory)
-            message = f"Removed mamba environment '{environment.environment_name}'."
-            click.echo(colorize_message(message=message, color="green"))
-
         except subprocess.CalledProcessError:
             message = (
-                f"Unable to provision the requested mamba environment '{environment.environment_name}'. The process "
-                f"failed at the environment removal step. See the mamba-issued error-messages above for more "
+                f"Unable to provision the requested mamba environment '{environment.environment_name}'. The removal "
+                f"command deactivates the active environment before invoking mamba, so the failure originates from "
+                f"either step. The existing environment has been left in place. See the error-messages above for more "
                 f"information."
             )
             raise RuntimeError(format_message(message=message)) from None
+
+        # Ensures the environment directory is deleted.
+        if environment.environment_directory.exists():
+            _remove_environment_directory(environment=environment)
+        message = f"Removed mamba environment '{environment.environment_name}'."
+        click.echo(colorize_message(message=message, color="green"))
 
     # Recreates the environment.
     try:
@@ -778,8 +834,11 @@ def provision_environment(
         click.echo(colorize_message(message=message, color="white"))
     except subprocess.CalledProcessError:
         message = (
-            f"Unable to provision the requested mamba environment '{environment.environment_name}'. See the "
-            f"mamba-issued error-messages above for more information."
+            f"Unable to provision the requested mamba environment '{environment.environment_name}'. The previous "
+            f"environment has already been removed, so this machine currently has no '{environment.environment_name}' "
+            f"environment. Restore it with the 'import-environment' ('tox -e import') command, which recreates it from "
+            f"the .yml file stored in the /envs directory. See the mamba-issued error-messages above for more "
+            f"information."
         )
         raise RuntimeError(format_message(message=message)) from None
 
@@ -795,7 +854,8 @@ def provision_environment(
     except subprocess.CalledProcessError:
         message = (
             f"Unable to install project dependencies into the provisioned '{environment.environment_name}' mamba "
-            f"environment. See uv-generated error messages above for more information."
+            f"environment. The command activates the environment before invoking uv, so the failure originates from "
+            f"either step. See the error messages above for more information."
         )
         raise RuntimeError(format_message(message=message)) from None
 
@@ -913,14 +973,32 @@ def export_environment(environment_name: str, environment_directory: Path | None
         )
         raise RuntimeError(format_message(message=message))
 
-    # Exports environment as a .yml file.
+    # Exports environment as a .yml file. The export writes the file only after mamba reports a successful export, so
+    # a failure leaves the previously exported file intact.
+    environment.export_environment()
+    message = f"'{environment.environment_name}' mamba environment exported to /envs as a .yml file."
+    click.echo(colorize_message(message=message, color="green"))
+
+
+def _remove_environment_directory(environment: ProjectEnvironment) -> None:
+    """Removes the directory of the target mamba environment, translating filesystem errors into a formatted error.
+
+    Notes:
+        The removal is retried on Windows before it fails, as the environment tree is frequently held by an antivirus
+        scanner or an indexer for a short time after mamba releases it.
+
+    Args:
+        environment: The environment whose directory is removed.
+
+    Raises:
+        RuntimeError: If the environment directory cannot be removed.
+    """
     try:
-        subprocess.run(environment.export_yaml_command, shell=True, check=True)
-        message = f"'{environment.environment_name}' mamba environment exported to /envs as a .yml file."
-        click.echo(colorize_message(message=message, color="green"))
-    except subprocess.CalledProcessError:
-        message = (
-            f"Unable to export the '{environment.environment_name}' mamba environment to .yml file. See mamba-issued "
-            f"error-message above for more information."
+        robust_rmtree(path=environment.environment_directory)
+    except OSError as error:
+        message: str = (
+            f"Unable to remove the directory of the '{environment.environment_name}' mamba environment stored under "
+            f"{environment.environment_directory}. Close any process that may be holding files inside the environment "
+            f"and try again. The removal failed with the following error: {error}."
         )
         raise RuntimeError(format_message(message=message)) from None
