@@ -211,10 +211,9 @@ class ProjectEnvironment:
         )
 
         # Generates mamba environment manipulation commands.
-        # Creation (base) generates a minimal mamba environment. It is expected that mamba and uv dependencies
-        # are added via separate dependency commands generated above. Note, installs the latest versions of tox, uv,
-        # and tox-uv with the expectation that dependency installation commands use --reinstall to override the
-        # versions of these packages as necessary.
+        # Creation (base) generates a minimal mamba environment. Project dependencies are added afterwards by the uv
+        # command generated above. Note, installs the latest versions of tox, uv, and tox-uv with the expectation that
+        # the dependency installation command uses --exact to pin these packages to the requested versions.
         create_command = (
             f"mamba create -n {extended_environment_name} python={python_version} uv tox tox-uv --yes "
             f"--retry-clean-cache --pyc --use-uv"
@@ -1039,6 +1038,7 @@ def _unlink_with_retry(path: Path, *, missing_ok: bool = False) -> None:
         missing_ok: Determines whether to suppress ``FileNotFoundError`` if the file does not exist.
 
     Raises:
+        FileNotFoundError: If the file does not exist and 'missing_ok' is False.
         PermissionError: If the file cannot be removed after exhausting all retry attempts on Windows, or immediately
             on non-Windows platforms.
     """
@@ -1296,7 +1296,7 @@ def _resolve_mamba_environments_directory() -> Path:
         if os.environ.get("CONDA_DEFAULT_ENV") == "base":
             return mamba_prefix_path.joinpath("envs")
 
-        # Otherwise, for named environments, the root /envs directory is one level below the named directory:
+        # Otherwise, for named environments, the root /envs directory is one level above the named directory:
         # e.g., /path/to/miniforge3/envs/myenv -> /path/to/miniforge3/envs.
         return mamba_prefix_path.parent
 
@@ -1314,8 +1314,9 @@ def _resolve_mamba_environments_directory() -> Path:
             if current.name == "envs":
                 return current
 
-            # If the 'conda-meta' directory is found while ascending towards the root, this indicates that this is the
-            # root of a mamba environment manager.
+            # A 'conda-meta' directory marks a conda-managed directory, which while ascending towards the filesystem
+            # root is either the manager root or one of the named environments directly under its /envs folder. The
+            # two cases are told apart by the checks below.
             if current.joinpath("conda-meta").exists():
                 # In a mamba environment, the /envs folder will be found directly under the root.
                 environments_path = current.joinpath("envs")

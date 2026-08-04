@@ -56,7 +56,9 @@ def application_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 @pytest.fixture
 def clean_mamba_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
-    """Clears all env vars that _resolve_mamba_environments_directory() checks."""
+    """Clears all env vars that _resolve_mamba_environments_directory() checks and repoints sys.executable away from
+    any miniforge installation, so that only the resolution method under test can succeed.
+    """
     monkeypatch.delenv("CONDA_PREFIX", raising=False)
     monkeypatch.delenv("CONDA_DEFAULT_ENV", raising=False)
     monkeypatch.delenv("CONDA_EXE", raising=False)
@@ -176,7 +178,7 @@ def test_resolve_environment_files(project_dir: Path, monkeypatch: pytest.Monkey
     assert environment_name == f"{environment_base_name}_win"
     assert yaml_path == resolved_project_directory / "envs" / f"{environment_base_name}_win.yml"
 
-    # Verifies environment resolution works as expected for the Darwin (macOS ARM64) platform.
+    # Verifies environment resolution works as expected for the Darwin (macOS) platform.
     monkeypatch.setattr(sys, "platform", "darwin")
     environment_name, yaml_path = aa._resolve_environment_files(
         project_root=resolved_project_directory,
@@ -297,8 +299,8 @@ def test_add_dependency() -> None:
     processed_dependencies = set()
     dependencies = []
 
-    # Ensures that if the base name of the dependency (stripped of "version") is correctly added to dependencies,
-    # unless it is already contained in processed_dependencies.
+    # Ensures that the full dependency string is quoted and added to 'dependencies', while its base name (stripped
+    # of the version) is recorded in 'processed_dependencies', unless that base name was already recorded.
     aa._add_dependency(
         dependency="package==1.0",
         dependencies=dependencies,
@@ -548,8 +550,8 @@ def test_project_environment_resolve(
     # Verifies the returned ProjectEnvironment class instance contains the expected fields.
     assert isinstance(result, ProjectEnvironment)
 
-    # Every command is pinned by full equality rather than by substring containment, so that dropping or altering any
-    # flag inside a command fails the test.
+    # The commands of the default configuration are pinned by full equality rather than by substring containment, so
+    # that dropping or altering any flag inside them fails the test.
     environment_directory = f"/path/to/miniforge3/envs/test_env{os_suffix}"
     if platform == "win32":
         conda_initialization = "call conda.bat >NUL 2>&1"
@@ -1643,7 +1645,7 @@ def test_rmtree_onerror_reraises_non_permission_error() -> None:
         aa._rmtree_onerror(func=os.remove, path="/nonexistent", exc_info=exc_info)
 
 
-# Group 6: Shell-command quoting and environment export.
+# Group 6: Shell-command quoting, environment export, and subprocess invocation pinning.
 
 
 @pytest.mark.parametrize(
@@ -1855,7 +1857,9 @@ def test_resolve_project_name_rejects_empty_name(project_dir: Path) -> None:
 def test_resolve_project_environment_rejects_empty_dependencies(
     project_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Verifies that a project declaring no dependencies is rejected before any environment command is built."""
+    """Verifies that a project declaring no dependencies is rejected before any dependency-installation or
+    environment-creation command is built.
+    """
     project_dir.joinpath("pyproject.toml").write_text('[project]\nname = "test-project"\n')
     monkeypatch.setattr(sys, "platform", "linux")
     monkeypatch.setattr(aa, "_check_package_engines", lambda: None)
@@ -1926,7 +1930,7 @@ def test_resolve_project_directory_rejects_partial_layouts(
         )
 
 
-# Group 8: Deserialization and formatting oracles.
+# Group 8: Deserialization oracles, message formatting, and move_stubs() guards.
 
 
 @pytest.mark.parametrize(
