@@ -8,6 +8,7 @@ import re
 import sys
 import stat
 import time
+import shlex
 from types import TracebackType
 import shutil
 from typing import Any
@@ -95,6 +96,8 @@ class ProjectEnvironment:
     """Stores the command used to deactivate any current environment and switch to the base environment."""
     create_command: str
     """Stores the command used to generate a minimally-configured mamba environment."""
+    create_dry_run_command: str
+    """Stores the command used to verify that the project's mamba environment resolves without creating it."""
     create_from_yaml_command: str | None
     """Stores the command used to create a new mamba environment from an existing .yml file."""
     remove_command: str
@@ -103,8 +106,6 @@ class ProjectEnvironment:
     """Stores the command used to install all project dependencies into the project's mamba environment using uv."""
     update_command: str | None
     """Stores the command used to update an already existing mamba environment using an existing .yml file."""
-    export_yaml_command: str
-    """Stores the command used to export the project's mamba environment to a .yml file."""
     install_project_command: str
     """Stores the command used to build and install the project as a library into the project's mamba environment."""
     uninstall_project_command: str
@@ -113,6 +114,8 @@ class ProjectEnvironment:
     """Stores the name of the project's mamba environment with the appended os-suffix."""
     environment_directory: Path
     """Stores the path to the project's mamba environment directory."""
+    environment_yaml_path: Path
+    """Stores the path to the os-specific .yml file that keeps the project's exported environment specification."""
 
     @classmethod
     def resolve_project_environment(
@@ -142,8 +145,8 @@ class ProjectEnvironment:
         Raises:
             RuntimeError: If the host OS is unsupported, mamba or uv is not accessible, or the mamba environments
                 directory cannot be resolved and no manual override is provided.
-            ValueError: If the project name cannot be extracted from pyproject.toml or duplicate dependencies are
-                found.
+            ValueError: If the project name cannot be extracted from pyproject.toml, duplicate dependencies are
+                found, or the pyproject.toml file declares no dependencies at all.
         """
         # Gets the environment name with the appropriate os-extension and the path to the .yml file.
         extended_environment_name, yaml_path = _resolve_environment_files(
@@ -167,56 +170,44 @@ class ProjectEnvironment:
                 # If no manual override is available, re-raises the original error.
                 raise
 
-        # Generates commands that depend on the host OS type. Relies on _resolve_environment_files() to err if the
-        # host is running an unsupported OS, as the OS versions evaluated below are the same as used by
-        # _resolve_environment_files().
-
-        # WINDOWS
-        if "_win" in extended_environment_name:
-            # .yml export.
-            export_yaml_command = (
-                f'mamba env export --name {extended_environment_name} --use-uv | findstr -v "prefix" > {yaml_path}'
-            )
-
-            # Mamba environment activation and deactivation commands. Uses 'conda' for activation, as it is more
-            # streamlined and performs equally well.
-            conda_initialization_command = "call conda.bat >NUL 2>&1"  # Redirects stdout and stderr to null
-
-        # LINUX
-        elif "_lin" in extended_environment_name:
-            # .yml export.
-            export_yaml_command = (
-                f"mamba env export --name {extended_environment_name} --use-uv | head -n -1 > {yaml_path}"
-            )
-
-            # Conda environment activation command.
-            conda_initialization_command = ". $(conda info --base)/etc/profile.d/conda.sh"
-
-        # MACOS
+        # Resolves the command used to initialize conda before an environment is activated or deactivated. The host OS
+        # is read from sys.platform, which is the same source _resolve_environment_files() uses to select the
+        # os-suffix, so the initialization command and the environment name always agree.
+        if sys.platform == "win32":
+            # Uses 'conda' for activation, as it is more streamlined and performs equally well. Redirects stdout and
+            # stderr to null.
+            conda_initialization_command = "call conda.bat >NUL 2>&1"
         else:
-            # .yml export.
-            export_yaml_command = (
-                f"mamba env export --name {extended_environment_name} --use-uv | tail -r | "
-                f"tail -n +2 | tail -r > {yaml_path}"
-            )
+            conda_initialization_command = '. "$(conda info --base)/etc/profile.d/conda.sh"'
 
-            # Conda environment activation command.
-            conda_initialization_command = ". $(conda info --base)/etc/profile.d/conda.sh"
-
-        # Resolves activation and deactivation commands using the resolved conda initialization command.
-        activate_command = f"{conda_initialization_command} && conda activate {target_environment_directory}"
+        # Resolves activation and deactivation commands using the resolved conda initialization command. Every
+        # interpolated path is quoted, as these commands are executed through the host's command shell, which would
+        # otherwise split a path containing spaces into separate arguments.
+        quoted_environment_directory = _quote_path(path=target_environment_directory)
+        activate_command = f"{conda_initialization_command} && conda activate {quoted_environment_directory}"
         deactivate_command = f"{conda_initialization_command} && conda deactivate"
+
+        # Resolves the dependencies to install into the environment. An empty list produces a uv command with no
+        # package operands, so it is rejected here, where the cause can still be named.
+        dependencies = _resolve_dependencies(project_root=project_root)
+        if not dependencies:
+            message: str = (
+                f"Unable to resolve the mamba environment for the project stored under {project_root}. The project's "
+                f"pyproject.toml file declares no runtime or development dependencies, so there is nothing to install "
+                f"into the environment."
+            )
+            raise ValueError(format_message(message=message))
 
         # Generates dependency installation commands using uv:
         prerelease_flag = " --prerelease=allow" if prerelease else ""
         install_dependencies_command = (
-            f"uv pip install {' '.join(_resolve_dependencies(project_root=project_root))} --resolution highest "
-            f"--refresh --compile-bytecode --python={target_environment_directory} --strict --exact{prerelease_flag}"
+            f"uv pip install {' '.join(dependencies)} --resolution highest "
+            f"--refresh --compile-bytecode --python={quoted_environment_directory} --strict --exact{prerelease_flag}"
         )
-        uninstall_project_command = f"uv pip uninstall {project_name} --python={target_environment_directory}"
+        uninstall_project_command = f"uv pip uninstall {project_name} --python={quoted_environment_directory}"
         install_project_command = (
             f"uv pip install . --resolution highest --refresh --reinstall-package {project_name} --compile-bytecode "
-            f"--python={target_environment_directory} --strict{prerelease_flag}"
+            f"--python={quoted_environment_directory} --strict{prerelease_flag}"
         )
 
         # Generates mamba environment manipulation commands.
@@ -228,21 +219,29 @@ class ProjectEnvironment:
             f"mamba create -n {extended_environment_name} python={python_version} uv tox tox-uv --yes "
             f"--retry-clean-cache --pyc --use-uv"
         )
+        create_dry_run_command = f"{create_command} --dry-run"
         remove_command = f"mamba remove -n {extended_environment_name} --all --yes"
 
         # Resolves .yml based commands. These commands are set to valid string-commands only if the .yml file for the
-        # project's environment exists and to None otherwise.
+        # project's environment exists and to None otherwise. Both commands pin the target environment name, so the
+        # 'name' key stored inside the .yml file cannot redirect them to a different environment.
         yaml_create_command: str | None = None
         update_command: str | None = None
         if yaml_path.exists():
-            yaml_create_command = f"mamba env create -f {yaml_path} --yes --retry-clean-cache --pyc --use-uv"
-            update_command = f"mamba env update -n {extended_environment_name} -f {yaml_path} --yes --prune --use-uv"
+            quoted_yaml_path = _quote_path(path=yaml_path)
+            yaml_create_command = (
+                f"mamba env create -n {extended_environment_name} -f {quoted_yaml_path} --yes --retry-clean-cache "
+                f"--pyc --use-uv"
+            )
+            update_command = (
+                f"mamba env update -n {extended_environment_name} -f {quoted_yaml_path} --yes --prune --use-uv"
+            )
 
         return cls(
             activate_command=activate_command,
             deactivate_command=deactivate_command,
-            export_yaml_command=export_yaml_command,
             create_command=create_command,
+            create_dry_run_command=create_dry_run_command,
             create_from_yaml_command=yaml_create_command,
             remove_command=remove_command,
             install_dependencies_command=install_dependencies_command,
@@ -251,10 +250,19 @@ class ProjectEnvironment:
             install_project_command=install_project_command,
             uninstall_project_command=uninstall_project_command,
             environment_directory=target_environment_directory,
+            environment_yaml_path=yaml_path,
         )
 
     def environment_exists(self) -> bool:
-        """Determines whether the environment can be activated (exists)."""
+        """Determines whether the environment can be activated (exists).
+
+        Returns:
+            True if the project's mamba environment exists and can be activated, and False if it does not exist.
+
+        Raises:
+            RuntimeError: If the environment directory carries the conda-meta marker, which identifies it as a
+                registered environment that the conda activation machinery is nonetheless unable to activate.
+        """
         # Verifies that the project- and os-specific mamba environment can be activated.
         try:
             subprocess.run(
@@ -265,9 +273,88 @@ class ProjectEnvironment:
                 stderr=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError:
+            # A directory holding conda-meta is a registered environment, so a failure to activate it points at the
+            # conda installation rather than at a missing environment. Reporting the two conditions as one would let
+            # the callers that remove environments delete a working one.
+            if self.environment_directory.joinpath("conda-meta").is_dir():
+                message: str = (
+                    f"Unable to activate the '{self.environment_name}' mamba environment stored under "
+                    f"{self.environment_directory}, although the directory contains a valid environment. This "
+                    f"typically indicates that conda is not installed or initialized on this machine. Make sure "
+                    f"miniforge3 is installed and initialized before using the ataraxis-automation cli."
+                )
+                raise RuntimeError(format_message(message=message)) from None
             return False
         else:
             return True
+
+    def export_environment(self) -> None:
+        """Exports the project's mamba environment to the os-specific .yml file stored in the project's 'envs'
+        directory.
+
+        Notes:
+            The specification is written to a temporary file inside the target directory and renamed over the
+            destination only after mamba reports a successful export that declares at least one dependency. A failed
+            export therefore leaves the previously exported file intact.
+
+        Raises:
+            RuntimeError: If mamba fails to export the environment or exports a specification that declares no
+                dependencies.
+        """
+        try:
+            completed_process = subprocess.run(  # noqa: S603 - Every command element is generated by this library.
+                ["mamba", "env", "export", "--name", self.environment_name, "--use-uv"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as error:
+            message: str = (
+                f"Unable to export the '{self.environment_name}' mamba environment to a .yml file. Mamba exited with "
+                f"the code {error.returncode} and the following error: {error.stderr.strip()}."
+            )
+            raise RuntimeError(format_message(message=message)) from None
+
+        # Mamba appends the absolute path to the environment as the last line of the specification. The path is
+        # host-specific, so it is removed to keep the exported file portable across machines.
+        specification_lines: list[str] = completed_process.stdout.splitlines()
+        if specification_lines and specification_lines[-1].startswith("prefix:"):
+            specification_lines = specification_lines[:-1]
+
+        # Mamba exports a contentless skeleton with a zero exit code when it is asked for an environment it does not
+        # track. Writing that skeleton over the project's file would discard the stored dependency pins.
+        if not _declares_dependencies(specification_lines=specification_lines):
+            message = (
+                f"Unable to export the '{self.environment_name}' mamba environment to a .yml file. Mamba exported a "
+                f"specification that declares no dependencies, which indicates that it does not track an environment "
+                f"under that name. The previously exported file has been left unchanged."
+            )
+            raise RuntimeError(format_message(message=message))
+
+        # Writes the specification through a temporary file in the destination directory, so that an interrupted write
+        # cannot leave the exported file partially overwritten.
+        temporary_path = self.environment_yaml_path.with_name(f"{self.environment_yaml_path.name}.tmp")
+        temporary_path.write_text("\n".join(specification_lines) + "\n", encoding="utf-8")
+        temporary_path.replace(self.environment_yaml_path)
+
+
+@dataclass(frozen=True, slots=True)
+class NetlifyMigrationResult:
+    """Stores the outcome of migrating the legacy Netlify credentials of a project.
+
+    Notes:
+        The token and the site identifier are migrated independently, so a migration frequently moves one of them and
+        leaves the other in place.
+    """
+
+    token_migrated: bool
+    """Stores whether the API token was copied to the shared .netlifyrc file."""
+    site_migrated: bool
+    """Stores whether the site identifier was written to the project's .netlify-site file."""
+
+    def __bool__(self) -> bool:
+        """Returns True if at least one credential was migrated."""
+        return self.token_migrated or self.site_migrated
 
 
 def format_message(message: str) -> str:
@@ -697,7 +784,7 @@ def migrate_legacy_pypirc(project_root: Path) -> bool:
     return True
 
 
-def migrate_legacy_netlifyrc(project_root: Path) -> bool:
+def migrate_legacy_netlifyrc(project_root: Path) -> NetlifyMigrationResult:
     """Splits the Netlify credentials stored in the target project's root directory between the shared application
     directory and the project's .netlify-site file.
 
@@ -710,8 +797,8 @@ def migrate_legacy_netlifyrc(project_root: Path) -> bool:
         project_root: The absolute path to the root directory of the processed project.
 
     Returns:
-        True if at least one credential was migrated and False if the shared token and the project's site identifier
-        are already configured or there are no legacy credentials to migrate.
+        The result of the migration, which reports the token and the site identifier separately, as each is migrated
+        only when its destination is not already configured.
 
     Raises:
         configparser.Error: If either .netlifyrc file exists but contains malformed INI syntax.
@@ -719,9 +806,10 @@ def migrate_legacy_netlifyrc(project_root: Path) -> bool:
     legacy_credentials: ConfigParser = ConfigParser()
     legacy_credentials.read(project_root.joinpath(_NETLIFYRC_FILE_NAME))
     if not legacy_credentials.has_section("netlify"):
-        return False
+        return NetlifyMigrationResult(token_migrated=False, site_migrated=False)
 
-    migrated: bool = False
+    token_migrated: bool = False
+    site_migrated: bool = False
 
     token = legacy_credentials.get(section="netlify", option="token", fallback="").strip()
     if token and not verify_netlifyrc(file_path=resolve_netlifyrc_path()):
@@ -729,14 +817,14 @@ def migrate_legacy_netlifyrc(project_root: Path) -> bool:
         credentials["netlify"] = {"token": token}
         with resolve_netlifyrc_path().open(mode="w") as config_file:
             credentials.write(config_file)
-        migrated = True
+        token_migrated = True
 
     site = legacy_credentials.get(section="netlify", option="site", fallback="").strip()
     if site and read_netlify_site(project_root=project_root) is None:
         write_netlify_site(project_root=project_root, site=site)
-        migrated = True
+        site_migrated = True
 
-    return migrated
+    return NetlifyMigrationResult(token_migrated=token_migrated, site_migrated=site_migrated)
 
 
 def deploy_documentation(documentation_directory: Path, site: str, token: str) -> str:
@@ -796,8 +884,15 @@ def deploy_documentation(documentation_directory: Path, site: str, token: str) -
         raise RuntimeError(format_message(message=message))
 
     # Netlify reports the address of the deployed website under one of two keys, depending on whether the site is
-    # configured to serve traffic over HTTPS.
-    deployment_data: dict[str, Any] = response.json()
+    # configured to serve traffic over HTTPS. A success status carrying an empty or non-JSON body still describes an
+    # accepted deployment, so the site domain is used as the address in that case.
+    try:
+        deployment_data: Any = response.json()
+    except ValueError:
+        deployment_data = {}
+    if not isinstance(deployment_data, dict):
+        deployment_data = {}
+
     website_url: str = deployment_data.get("ssl_url") or deployment_data.get("url") or f"https://{site}"
     return website_url
 
@@ -836,6 +931,45 @@ def robust_rmtree(path: Path) -> None:
                 raise
         else:
             return
+
+
+def _quote_path(path: Path) -> str:
+    """Wraps the input path in the quoting syntax understood by the host platform's command shell.
+
+    Notes:
+        POSIX shells and cmd.exe use different quoting syntax, so the form is selected from sys.platform. Quoting is
+        required for every path spliced into a command executed through a shell, as an unquoted path containing
+        whitespace is split into separate arguments.
+
+    Args:
+        path: The path to quote.
+
+    Returns:
+        The quoted path, suitable for interpolation into a shell command string.
+    """
+    if sys.platform == "win32":
+        return f'"{path}"'
+
+    return shlex.quote(str(path))
+
+
+def _declares_dependencies(specification_lines: list[str]) -> bool:
+    """Determines whether an exported mamba environment specification lists at least one dependency.
+
+    Args:
+        specification_lines: The lines of the environment specification exported by mamba.
+
+    Returns:
+        True if the specification contains a 'dependencies' section holding at least one entry.
+    """
+    try:
+        dependencies_index = next(
+            index for index, line in enumerate(specification_lines) if line.startswith("dependencies:")
+        )
+    except StopIteration:
+        return False
+
+    return any(line.lstrip().startswith("- ") for line in specification_lines[dependencies_index + 1 :])
 
 
 def _resolve_project_directory(
@@ -1132,8 +1266,9 @@ def _resolve_project_name(project_root: Path) -> str:
     project_data: dict[str, Any] = pyproject_data.get("project", {})
     project_name: str | None = project_data.get("name")
 
-    # Checks if the project name was successfully extracted.
-    if project_name is None:
+    # Checks if the project name was successfully extracted. An empty name is rejected alongside a missing one, as it
+    # would otherwise reach the uv commands as a blank operand and consume the flag that follows it.
+    if not project_name:
         message = (
             "Unable to resolve the project name from the pyproject.toml file. The 'name' field is missing or "
             "empty in the [project] section of the file."
@@ -1196,9 +1331,14 @@ def _resolve_mamba_environments_directory() -> Path:
     # Method 2: Tries to find mamba by locating mamba/conda executable (mamba uses CONDA_EXE).
     mamba_executable = os.environ.get("CONDA_EXE")
     if mamba_executable:
-        environments_directory = Path(mamba_executable).parents[1].joinpath("envs")
-        if environments_directory.exists():
-            return environments_directory
+        executable_path = Path(mamba_executable)
+        # The environments directory sits two levels above the executable, so a relative value or one with fewer than
+        # two parent components cannot address it. Such a value is skipped in favor of the remaining methods, rather
+        # than resolved against the current working directory or indexed out of range.
+        if executable_path.is_absolute() and len(executable_path.parents) > 1:
+            environments_directory = executable_path.parents[1].joinpath("envs")
+            if environments_directory.exists():
+                return environments_directory
 
     # Method 3: Checks the standard miniforge3 installation location.
     home = Path.home()

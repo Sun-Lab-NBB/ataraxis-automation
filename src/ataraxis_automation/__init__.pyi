@@ -1,5 +1,6 @@
 from .automation import (
     ProjectEnvironment as ProjectEnvironment,
+    NetlifyMigrationResult as NetlifyMigrationResult,
     move_stubs as move_stubs,
     delete_stubs as delete_stubs,
     robust_rmtree as robust_rmtree,
@@ -23,6 +24,7 @@ from .automation import (
 )
 
 __all__ = [
+    "NetlifyMigrationResult",
     "ProjectEnvironment",
     "colorize_message",
     "delete_stubs",
