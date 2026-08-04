@@ -28,6 +28,7 @@ from .automation import (
     resolve_netlifyrc_path,
     migrate_legacy_netlifyrc,
     resolve_project_directory,
+    repair_stale_certificate_variables,
     resolve_documented_project_directory,
 )
 
@@ -51,6 +52,7 @@ def cli() -> None:
     Commands exposed by this interface are intended to be called via the 'tox' automation manager and should not be
     used directly by end-users.
     """
+    _repair_certificate_variables()
 
 
 @cli.command()
@@ -700,6 +702,10 @@ def remove_environment(environment_name: str, environment_directory: Path | None
         project_root=project_root, environment_name=environment_name, environment_directory=environment_directory
     )
 
+    # Verifies that this command is not asked to destroy the environment it runs on, which no later step is able to
+    # recover from.
+    environment.verify_removable()
+
     # If the environment cannot be activated, it likely does not exist and no further processing is needed.
     environment_exists = environment.environment_exists()
     directory_exists = environment.environment_directory.exists()
@@ -788,6 +794,10 @@ def provision_environment(
         prerelease=prerelease,
     )
 
+    # Verifies that this command is not asked to destroy the environment it runs on, which no later step is able to
+    # recover from.
+    environment.verify_removable()
+
     # Verifies that the replacement environment resolves before the existing one is removed. Provisioning destroys the
     # current environment, so a specification that cannot be solved would otherwise leave the machine with no
     # environment at all.
@@ -826,6 +836,10 @@ def provision_environment(
             _remove_environment_directory(environment=environment)
         message = f"Removed mamba environment '{environment.environment_name}'."
         click.echo(colorize_message(message=message, color="green"))
+
+    # The removed environment may have supplied the certificate bundle that the remaining commands of this runtime
+    # rely on to reach the package indexes.
+    _repair_certificate_variables()
 
     # Recreates the environment.
     try:
@@ -978,6 +992,20 @@ def export_environment(environment_name: str, environment_directory: Path | None
     environment.export_environment()
     message = f"'{environment.environment_name}' mamba environment exported to /envs as a .yml file."
     click.echo(colorize_message(message=message, color="green"))
+
+
+def _repair_certificate_variables() -> None:
+    """Clears the stale certificate-bundle environment variables and reports the ones that were cleared."""
+    cleared_variables = repair_stale_certificate_variables()
+    if not cleared_variables:
+        return
+
+    message: str = (
+        f"Cleared the {', '.join(cleared_variables)} environment variable(s), which pointed to certificate bundles "
+        f"that no longer exist. Restart the terminal session to restore them for the tools that run outside this "
+        f"command."
+    )
+    click.echo(colorize_message(message=message, color="yellow"))
 
 
 def _remove_environment_directory(environment: ProjectEnvironment) -> None:
