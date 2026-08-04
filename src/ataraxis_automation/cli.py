@@ -40,11 +40,11 @@ _MINIMUM_NETLIFY_TOKEN_LENGTH: int = 20
 _MAXIMUM_NETLIFY_TOKEN_LENGTH: int = 500
 """Stores the maximum length, in characters, that a valid Netlify API token may have."""
 
-CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}
+_CONTEXT_SETTINGS: dict[str, int] = {"max_content_width": 120}
 """Stores the Click settings that format displayed CLI help messages."""
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click.group(context_settings=_CONTEXT_SETTINGS)
 def cli() -> None:
     """Exposes the helper commands used to automate various project development and building steps.
 
