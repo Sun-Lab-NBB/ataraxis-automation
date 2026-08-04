@@ -127,7 +127,7 @@ any of the exposed CLI's commands as part of a tox environment, add it to the 'c
 ```
 [testenv:create]
 deps =
-    ataraxis-automation==9.0.0
+    ataraxis-automation==9.0.1
 commands =
     automation-cli create-environment --environment-name axa_dev --python-version 3.14 {posargs:}
 ```
@@ -259,7 +259,7 @@ description =
     Combines test-coverage data from multiple test runs (for different python versions) into a single html file and
     verifies that the combined data covers 100% of the measured statements. The file can be viewed by loading the
     'reports/coverage_html/index.html'.
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 setenv = COVERAGE_FILE = reports/.coverage
 depends = {py312, py313, py314}-test
 commands =
@@ -286,7 +286,7 @@ description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 commands =
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
 ```
@@ -304,7 +304,7 @@ description =
     Builds the API documentation from source code docstrings using Sphinx. The result can be viewed by loading
     'docs/build/html/index.html'.
 depends = uninstall
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 commands =
     doxygen Doxyfile
     sphinx-build -b html -d docs/build/doctrees docs/source docs/build/html -j auto -v
@@ -330,7 +330,7 @@ skip_install = true
 description =
     Builds the project's source code distribution (sdist) and binary distribution (wheel), clearing the 'dist'
     directory beforehand so that artifacts built for an earlier version cannot be carried into the upload task.
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 allowlist_externals = docker
 commands =
     python -c "import shutil; shutil.rmtree('dist', ignore_errors=True)"
@@ -345,7 +345,7 @@ skip_install = true
 description =
     Builds the project's source code distribution (sdist) and compiles and assembles binary wheels for all
     supported platform architectures.
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 allowlist_externals = docker
 commands =
     python -c "import shutil; shutil.rmtree('dist', ignore_errors=True)"
@@ -375,7 +375,7 @@ skip_install = true
 description =
     Uses twine to upload the wheel ('*.whl') and source ('*.tar.gz') distributions found inside the project's 'dist'
     directory to PyPI.
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 commands =
     automation-cli acquire-pypi-token {posargs:}
     automation-cli upload-project
@@ -423,7 +423,7 @@ skip_install = true
 description =
     Uploads the API documentation built by the 'docs' task to the project's Netlify site. Build the documentation with
     'tox -e docs' before calling this task.
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 commands =
     automation-cli acquire-netlify-token {posargs:}
     automation-cli deploy-docs
@@ -446,7 +446,7 @@ Example tox.ini section:
 ```
 [testenv:install]
 skip_install = true
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 depends =
     lint
     stubs
@@ -469,7 +469,7 @@ Example tox.ini section:
 ```
 [testenv:uninstall]
 skip_install = true
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 description = Uninstalls the project from its development mamba environment.
 commands =
     automation-cli uninstall-project --environment-name axa_dev
@@ -490,7 +490,7 @@ Example tox.ini section:
 ```
 [testenv:create]
 skip_install = true
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 description =
     Creates the project's development mamba environment using the requested python version and installs runtime and
     development project dependencies extracted from the pyproject.toml file.
@@ -510,7 +510,7 @@ Example tox.ini section:
 ```
 [testenv:remove]
 skip_install = true
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 description = Removes the project's development mamba environment.
 commands =
     automation-cli remove-environment --environment-name axa_dev
@@ -531,7 +531,7 @@ Example tox.ini section:
 ```
 [testenv:provision]
 skip_install = true
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 description = Provisions the project's development mamba environment by removing and (re)creating the environment.
 commands =
     automation-cli provision-environment --environment-name axa_dev --python-version 3.14 {posargs:}
@@ -549,7 +549,7 @@ Example tox.ini section:
 ```
 [testenv:export]
 skip_install = true
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 depends = uninstall
 description = Exports the project's development mamba environment to the 'envs' project directory as a .yml file.
 commands =
@@ -568,7 +568,7 @@ Example tox.ini section:
 ```
 [testenv:import]
 skip_install = true
-deps = ataraxis-automation==9.0.0
+deps = ataraxis-automation==9.0.1
 description =
     Creates or updates the project's development mamba environment using the .yml file stored in the 'envs' project
     directory.
