@@ -67,17 +67,16 @@ def clean_mamba_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
     return monkeypatch
 
 
-def _error_format(message: str) -> str:
-    """Formats the input message with format_message() and escapes it using re, so that it can be used to verify
-    raised exceptions.
-
-    Args:
-        message: The message to format and escape, according to standard Ataraxis testing parameters.
-
-    Returns:
-        Formatted and escaped message that can be used as the 'match' argument of the pytest.raises() method.
-    """
-    return re.escape(aa.format_message(message=message))
+@pytest.fixture
+def documentation_directory(tmp_path: Path) -> Path:
+    """Generates a mock built documentation directory with the file layout produced by the 'docs' tox task."""
+    documentation_directory = tmp_path.joinpath("html")
+    documentation_directory.mkdir()
+    documentation_directory.joinpath("index.html").write_text("<html></html>")
+    static_directory = documentation_directory.joinpath("_static")
+    static_directory.mkdir()
+    static_directory.joinpath("styles.css").write_text("body {}")
+    return documentation_directory
 
 
 def test_resolve_project_directory(project_directory: Path) -> None:
@@ -331,28 +330,6 @@ def test_add_dependency() -> None:
             dependencies=dependencies,
             processed_dependencies=processed_dependencies,
         )
-
-
-def _write_pyproject_toml(project_directory: Path, content: str) -> None:
-    """Writes the given content to the pyproject.toml file in the project directory.
-
-    Args:
-        project_directory: The path to the processed project root directory.
-        content: The string-content to write to the pyproject.toml file of the processed project.
-    """
-    pyproject_path: Path = project_directory.joinpath("pyproject.toml")
-    pyproject_path.write_text(content)
-
-
-def _write_tox_ini(project_directory: Path, content: str) -> None:
-    """Writes the given content to the tox.ini file in the project directory.
-
-    Args:
-        project_directory: The path to the processed project root directory.
-        content: The string-content to write to the tox.ini file of the processed project.
-    """
-    tox_path: Path = project_directory.joinpath("tox.ini")
-    tox_path.write_text(content)
 
 
 def test_resolve_dependencies(project_directory: Path) -> None:
@@ -948,18 +925,6 @@ def test_migrate_legacy_netlifyrc_partial_migrations(tmp_path: Path, application
     assert aa.read_netlify_site(project_root=other_project) == "deviating-site.netlify.app"
 
 
-@pytest.fixture
-def documentation_directory(tmp_path: Path) -> Path:
-    """Generates a mock built documentation directory with the file layout produced by the 'docs' tox task."""
-    documentation_directory = tmp_path.joinpath("html")
-    documentation_directory.mkdir()
-    documentation_directory.joinpath("index.html").write_text("<html></html>")
-    static_directory = documentation_directory.joinpath("_static")
-    static_directory.mkdir()
-    static_directory.joinpath("styles.css").write_text("body {}")
-    return documentation_directory
-
-
 def test_deploy_documentation(monkeypatch: pytest.MonkeyPatch, documentation_directory: Path) -> None:
     """Verifies the functionality of the deploy_documentation() function."""
     captured_request: dict[str, Any] = {}
@@ -1418,7 +1383,7 @@ def test_unlink_with_retry_passthrough_non_windows(tmp_path: Path, monkeypatch: 
     target_file = tmp_path / "test.txt"
     target_file.touch()
 
-    aa._unlink_with_retry(target_file)
+    aa._unlink_with_retry(path=target_file)
     assert not target_file.exists()
 
 
@@ -1456,7 +1421,7 @@ def test_unlink_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytes
 
     monkeypatch.setattr(Path, "unlink", mock_unlink)
 
-    aa._unlink_with_retry(target_file)
+    aa._unlink_with_retry(path=target_file)
     assert call_count == 3
 
 
@@ -1474,7 +1439,7 @@ def test_unlink_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypat
     monkeypatch.setattr(Path, "unlink", mock_unlink)
 
     with pytest.raises(PermissionError, match="File is locked"):
-        aa._unlink_with_retry(target_file)
+        aa._unlink_with_retry(path=target_file)
 
 
 def test_rename_with_retry_passthrough_non_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1484,7 +1449,7 @@ def test_rename_with_retry_passthrough_non_windows(tmp_path: Path, monkeypatch: 
     source.touch()
     destination = tmp_path / "destination.txt"
 
-    aa._rename_with_retry(source, destination)
+    aa._rename_with_retry(source=source, destination=destination)
     assert not source.exists()
     assert destination.exists()
 
@@ -1510,7 +1475,7 @@ def test_rename_with_retry_retries_on_windows(tmp_path: Path, monkeypatch: pytes
 
     monkeypatch.setattr(Path, "rename", mock_rename)
 
-    aa._rename_with_retry(source, destination)
+    aa._rename_with_retry(source=source, destination=destination)
     assert call_count == 3
     assert destination.exists()
 
@@ -1530,7 +1495,7 @@ def test_rename_with_retry_exhausts_retries_on_windows(tmp_path: Path, monkeypat
     monkeypatch.setattr(Path, "rename", mock_rename)
 
     with pytest.raises(PermissionError, match="File is locked"):
-        aa._rename_with_retry(source, destination)
+        aa._rename_with_retry(source=source, destination=destination)
 
 
 def test_robust_rmtree_passthrough_non_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1540,7 +1505,7 @@ def test_robust_rmtree_passthrough_non_windows(tmp_path: Path, monkeypatch: pyte
     target_directory.mkdir()
     (target_directory / "file.txt").touch()
 
-    aa.robust_rmtree(target_directory)
+    aa.robust_rmtree(path=target_directory)
     assert not target_directory.exists()
 
 
@@ -1565,7 +1530,7 @@ def test_robust_rmtree_retries_on_windows(tmp_path: Path, monkeypatch: pytest.Mo
 
     monkeypatch.setattr(shutil, "rmtree", mock_rmtree)
 
-    aa.robust_rmtree(target_directory)
+    aa.robust_rmtree(path=target_directory)
     assert call_count == 3
 
 
@@ -1584,27 +1549,7 @@ def test_robust_rmtree_exhausts_retries_on_windows(tmp_path: Path, monkeypatch: 
     monkeypatch.setattr(shutil, "rmtree", mock_rmtree)
 
     with pytest.raises(PermissionError, match="Directory is locked"):
-        aa.robust_rmtree(target_directory)
-
-
-def _capture_exc_info(exception: BaseException) -> tuple[type[BaseException], BaseException, TracebackType]:
-    """Raises and catches the given exception to build a populated exception info tuple.
-
-    The resulting tuple mirrors the value passed by shutil.rmtree() to its onerror callback, including a real
-    traceback object, so it can be forwarded to _rmtree_onerror() in tests.
-
-    Args:
-        exception: The exception instance to raise and capture.
-
-    Returns:
-        The exception info tuple containing the exception type, the exception instance, and a populated traceback.
-    """
-    try:
-        raise exception
-    except BaseException as caught:
-        traceback = caught.__traceback__
-        assert traceback is not None
-        return type(caught), caught, traceback
+        aa.robust_rmtree(path=target_directory)
 
 
 def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
@@ -1616,7 +1561,7 @@ def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
     target_file.chmod(stat.S_IREAD)
 
     # Simulates the onerror callback with os.remove as the function.
-    exc_info = _capture_exc_info(PermissionError("Permission denied"))
+    exc_info = _capture_exc_info(exception=PermissionError("Permission denied"))
     try:
         aa._rmtree_onerror(failing_function=os.remove, path=str(target_file), exception_information=exc_info)
     except Exception:
@@ -1629,7 +1574,7 @@ def test_rmtree_onerror_clears_readonly(tmp_path: Path) -> None:
 
 def test_rmtree_onerror_reraises_non_permission_error() -> None:
     """Verifies that _rmtree_onerror() re-raises exceptions that are not PermissionError."""
-    exc_info = _capture_exc_info(OSError("Disk error"))
+    exc_info = _capture_exc_info(exception=OSError("Disk error"))
     with pytest.raises(OSError, match="Disk error"):
         aa._rmtree_onerror(failing_function=os.remove, path="/nonexistent", exception_information=exc_info)
 
@@ -1669,25 +1614,6 @@ def test_quote_path(monkeypatch: pytest.MonkeyPatch, platform: str, directory: s
 def test_declares_dependencies(specification_lines: list[str], expected: bool) -> None:
     """Verifies that _declares_dependencies() distinguishes a populated specification from a contentless one."""
     assert aa._declares_dependencies(specification_lines=specification_lines) is expected
-
-
-def _build_environment(yaml_path: Path, environment_directory: Path) -> ProjectEnvironment:
-    """Builds a ProjectEnvironment instance for tests that exercise its methods directly."""
-    return ProjectEnvironment(
-        activate_command="conda init && conda activate test_env",
-        deactivate_command="conda init && conda deactivate",
-        create_command="mamba create -n test_env",
-        create_dry_run_command="mamba create -n test_env --dry-run",
-        create_from_yaml_command=None,
-        remove_command="mamba remove -n test_env",
-        install_dependencies_command="uv pip install deps",
-        update_command=None,
-        install_project_command="uv pip install .",
-        uninstall_project_command="uv pip uninstall project",
-        environment_name="test_env_lin",
-        environment_directory=environment_directory,
-        environment_yaml_path=yaml_path,
-    )
 
 
 def test_export_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2003,3 +1929,80 @@ def test_move_stubs_keeps_highest_numbered_duplicate_content(project_directory: 
     aa.move_stubs(stubs_directory=stubs_directory, library_root=library_root)
 
     assert (library_root / "module.pyi").read_text() == "current"
+
+
+# Private helpers shared by the tests above.
+
+
+def _error_format(message: str) -> str:
+    """Formats the input message with format_message() and escapes it using re, so that it can be used to verify
+    raised exceptions.
+
+    Args:
+        message: The message to format and escape, according to standard Ataraxis testing parameters.
+
+    Returns:
+        Formatted and escaped message that can be used as the 'match' argument of the pytest.raises() method.
+    """
+    return re.escape(aa.format_message(message=message))
+
+
+def _write_pyproject_toml(project_directory: Path, content: str) -> None:
+    """Writes the given content to the pyproject.toml file in the project directory.
+
+    Args:
+        project_directory: The path to the processed project root directory.
+        content: The string-content to write to the pyproject.toml file of the processed project.
+    """
+    pyproject_path: Path = project_directory.joinpath("pyproject.toml")
+    pyproject_path.write_text(content)
+
+
+def _write_tox_ini(project_directory: Path, content: str) -> None:
+    """Writes the given content to the tox.ini file in the project directory.
+
+    Args:
+        project_directory: The path to the processed project root directory.
+        content: The string-content to write to the tox.ini file of the processed project.
+    """
+    tox_path: Path = project_directory.joinpath("tox.ini")
+    tox_path.write_text(content)
+
+
+def _capture_exc_info(exception: BaseException) -> tuple[type[BaseException], BaseException, TracebackType]:
+    """Raises and catches the given exception to build a populated exception info tuple.
+
+    The resulting tuple mirrors the value passed by shutil.rmtree() to its onerror callback, including a real
+    traceback object, so it can be forwarded to _rmtree_onerror() in tests.
+
+    Args:
+        exception: The exception instance to raise and capture.
+
+    Returns:
+        The exception info tuple containing the exception type, the exception instance, and a populated traceback.
+    """
+    try:
+        raise exception
+    except BaseException as caught:
+        traceback = caught.__traceback__
+        assert traceback is not None
+        return type(caught), caught, traceback
+
+
+def _build_environment(yaml_path: Path, environment_directory: Path) -> ProjectEnvironment:
+    """Builds a ProjectEnvironment instance for tests that exercise its methods directly."""
+    return ProjectEnvironment(
+        activate_command="conda init && conda activate test_env",
+        deactivate_command="conda init && conda deactivate",
+        create_command="mamba create -n test_env",
+        create_dry_run_command="mamba create -n test_env --dry-run",
+        create_from_yaml_command=None,
+        remove_command="mamba remove -n test_env",
+        install_dependencies_command="uv pip install deps",
+        update_command=None,
+        install_project_command="uv pip install .",
+        uninstall_project_command="uv pip uninstall project",
+        environment_name="test_env_lin",
+        environment_directory=environment_directory,
+        environment_yaml_path=yaml_path,
+    )
