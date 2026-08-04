@@ -26,7 +26,7 @@ You MUST invoke the appropriate skill before performing ANY of the following tas
 This is non-negotiable. Each skill contains verification checklists that you MUST complete before submitting any work.
 Failure to invoke the appropriate skill results in style violations.
 
-## Dependency position
+## Cross-referenced library verification
 
 Unlike most Ataraxis framework and Sollertia platform projects, **ataraxis-automation has no `ataraxis-*` or
 `sollertia-*` library dependencies**. Its runtime dependencies are exclusively third-party development tools (Click,
@@ -95,7 +95,8 @@ Both enforce conventions consistent with the Python style guide used across all 
 - **Automation Module** (`automation.py`): Core logic including the `ProjectEnvironment` dataclass, project directory
   resolution, dependency parsing, stub file management, shared PyPI and Netlify credential storage and validation,
   Netlify documentation deployment, and OS-specific mamba/uv command generation.
-- **No MCP Server**: This library does not provide an MCP server.
+- **Agent surface**: The library is consumed through the `automation-cli` entry point rather than an MCP tool
+  surface, so it ships no MCP server even though most sibling projects do.
 
 ### Key patterns
 
