@@ -5,10 +5,11 @@ import os
 import re
 import sys
 import stat
+import shlex
 from types import TracebackType
 import shutil
 from typing import Any
-from pathlib import Path
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 import zipfile
 import subprocess
 from configparser import ConfigParser
@@ -517,19 +518,22 @@ def test_project_environment_resolve(
     assert isinstance(result, ProjectEnvironment)
 
     # The commands of the default configuration are pinned by full equality rather than by substring containment, so
-    # that dropping or altering any flag inside them fails the test.
-    environment_directory = f"/path/to/miniforge3/envs/test_env{os_suffix}"
+    # that dropping or altering any flag inside them fails the test. Both interpolated paths render with the host's
+    # path flavor rather than with the flavor of the simulated platform, so the expected commands are assembled from
+    # the same Path objects the tested code interpolates. The quoting form applied to them is pinned by
+    # test_quote_path().
+    environment_directory = Path(f"/path/to/miniforge3/envs/test_env{os_suffix}")
     if platform == "win32":
         conda_initialization = "call conda.bat >NUL 2>&1"
         quoted_directory = f'"{environment_directory}"'
         quoted_yaml_path = f'"{yaml_path}"'
     else:
         conda_initialization = '. "$(conda info --base)/etc/profile.d/conda.sh"'
-        quoted_directory = environment_directory
-        quoted_yaml_path = str(yaml_path)
+        quoted_directory = shlex.quote(str(environment_directory))
+        quoted_yaml_path = shlex.quote(str(yaml_path))
 
     assert result.environment_name == f"test_env{os_suffix}"
-    assert result.environment_directory == Path(environment_directory)
+    assert result.environment_directory == environment_directory
     assert result.environment_yaml_path == yaml_path
 
     assert result.activate_command == f"{conda_initialization} && conda activate {quoted_directory}"
@@ -1582,20 +1586,22 @@ def test_rmtree_onerror_reraises_non_permission_error() -> None:
 # Shell-command quoting, environment export, and subprocess invocation pinning.
 
 
+# Each case carries the path flavor of the platform it simulates, as a Path instantiated on the host renders its
+# separators with the host's flavor and makes the expected strings host-dependent.
 @pytest.mark.parametrize(
-    "platform, directory, expected",
+    "platform, path, expected",
     [
-        ("linux", "/home/user/project/envs", "/home/user/project/envs"),
-        ("linux", "/home/user/My Projects/envs", "'/home/user/My Projects/envs'"),
-        ("darwin", "/Users/user/My Projects/envs", "'/Users/user/My Projects/envs'"),
-        ("win32", "/Users/John Smith/miniforge3/envs", '"/Users/John Smith/miniforge3/envs"'),
-        ("win32", "/Users/user/miniforge3/envs", '"/Users/user/miniforge3/envs"'),
+        ("linux", PurePosixPath("/home/user/project/envs"), "/home/user/project/envs"),
+        ("linux", PurePosixPath("/home/user/My Projects/envs"), "'/home/user/My Projects/envs'"),
+        ("darwin", PurePosixPath("/Users/user/My Projects/envs"), "'/Users/user/My Projects/envs'"),
+        ("win32", PureWindowsPath(r"C:\Users\John Smith\miniforge3\envs"), r'"C:\Users\John Smith\miniforge3\envs"'),
+        ("win32", PureWindowsPath(r"C:\Users\user\miniforge3\envs"), r'"C:\Users\user\miniforge3\envs"'),
     ],
 )
-def test_quote_path(monkeypatch: pytest.MonkeyPatch, platform: str, directory: str, expected: str) -> None:
+def test_quote_path(monkeypatch: pytest.MonkeyPatch, platform: str, path: PurePath, expected: str) -> None:
     """Verifies that _quote_path() wraps paths in the syntax used by the host platform's command shell."""
     monkeypatch.setattr(sys, "platform", platform)
-    assert aa._quote_path(path=Path(directory)) == expected
+    assert aa._quote_path(path=path) == expected
 
 
 @pytest.mark.parametrize(
